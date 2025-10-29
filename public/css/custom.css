@@ -1,0 +1,40 @@
+/* ========================================
+   ESTILOS PERSONALIZADOS - SISTEMA DE AUDITORÍAS
+   ======================================== */
+
+/* Hacer checkboxes más grandes y visibles en todo el sistema */
+.form-check-input {
+    width: 1.5em !important;
+    height: 1.5em !important;
+    margin-top: 0.1em !important;
+    border: 2px solid #0d6efd !important;
+    cursor: pointer !important;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.form-check-input:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.form-check-label {
+    cursor: pointer !important;
+    padding-left: 0.5rem;
+}
+
+/* Resaltar la tarjeta cuando el checkbox está marcado */
+.card:has(.form-check-input:checked) {
+    border: 2px solid #0d6efd !important;
+    background-color: #e7f1ff !important;
+}
+
+/* Radio buttons también más grandes */
+input[type="radio"] {
+    width: 1.3em !important;
+    height: 1.3em !important;
+    cursor: pointer !important;
+}

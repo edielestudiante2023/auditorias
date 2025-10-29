@@ -1,0 +1,208 @@
+# ============================================================
+# Root .htaccess for Shared Hosting (When DocumentRoot Cannot Be Changed)
+# ============================================================
+#
+# Installation Instructions:
+# --------------------------
+# 1. Rename this file to .htaccess (remove the .root extension)
+# 2. Place it in the PROJECT ROOT (same directory as composer.json)
+# 3. Ensure mod_rewrite is enabled on your server
+# 4. This file redirects all requests to public/index.php
+#
+# Usage Scenarios:
+# ----------------
+# - Shared hosting where you can't modify Apache configuration
+# - Temporary deployment where public folder can't be DocumentRoot
+# - Testing environment
+#
+# WARNING:
+# --------
+# This is NOT recommended for production. The proper way is to set
+# DocumentRoot to the public/ folder using VirtualHost configuration.
+# This method exposes sensitive directories (app/, writable/, vendor/)
+# to the web if directory listing is enabled.
+#
+# Verification:
+# -------------
+# curl http://yoursite.com/health
+# Expected: {"status":"ok","timestamp":"..."}
+#
+# ============================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ========================================
+    # Dynamic RewriteBase Detection
+    # ========================================
+    # Automatically detects the base path
+    # If this doesn't work, manually set it like:
+    # RewriteBase /
+    # OR
+    # RewriteBase /cycloidmanagement/
+
+    RewriteBase /
+
+    # ========================================
+    # SECURITY: Block access to sensitive directories
+    # ========================================
+
+    # Block access to app/ directory
+    RewriteRule ^app/(.*)$ - [F,L]
+
+    # Block access to writable/ directory
+    RewriteRule ^writable/(.*)$ - [F,L]
+
+    # Block access to vendor/ directory (except public assets if needed)
+    RewriteRule ^vendor/(.*)$ - [F,L]
+
+    # Block access to tests/ directory
+    RewriteRule ^tests/(.*)$ - [F,L]
+
+    # Block access to .env file
+    RewriteRule ^\.env$ - [F,L]
+
+    # Block access to composer files
+    RewriteRule ^composer\.(json|lock)$ - [F,L]
+
+    # Block access to phpunit.xml
+    RewriteRule ^phpunit\.xml$ - [F,L]
+
+    # Block access to any .git files/folders
+    RewriteRule ^\.git - [F,L]
+
+    # Block access to any .md files (README, CHANGELOG, etc.)
+    RewriteRule \.md$ - [F,L]
+
+    # ========================================
+    # Redirect to public/index.php
+    # ========================================
+
+    # If the request is for a directory or file that exists in public/
+    # serve it directly
+    RewriteCond %{REQUEST_URI} ^/public/
+    RewriteRule ^public/(.*)$ public/$1 [L]
+
+    # If the request is NOT for an actual file or directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # AND it's not already going to public/
+    RewriteCond %{REQUEST_URI} !^/public/
+
+    # Redirect to public/index.php
+    RewriteRule ^(.*)$ public/index.php?/$1 [L,QSA]
+
+    # ========================================
+    # Allow access to public folder assets
+    # ========================================
+
+    # Allow images, CSS, JS, fonts from public/
+    RewriteCond %{REQUEST_URI} ^/public/.*\.(jpg|jpeg|gif|png|svg|css|js|ico|woff|woff2|ttf|eot|pdf)$ [NC]
+    RewriteRule ^(.*)$ - [L]
+
+</IfModule>
+
+# ========================================
+# Security Headers
+# ========================================
+
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Enable XSS protection
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer policy
+    Header always set Referrer-Policy "no-referrer-when-downgrade"
+</IfModule>
+
+# ========================================
+# Compression
+# ========================================
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+</IfModule>
+
+# ========================================
+# Browser Caching
+# ========================================
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Images
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+
+    # Fonts
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+
+    # PDFs
+    ExpiresByType application/pdf "access plus 1 month"
+</IfModule>
+
+# ========================================
+# Disable directory listing
+# ========================================
+
+Options -Indexes
+
+# ========================================
+# UTF-8 Encoding
+# ========================================
+
+AddDefaultCharset UTF-8
+
+# ========================================
+# Error documents (optional)
+# ========================================
+
+# ErrorDocument 404 /public/index.php
+# ErrorDocument 500 /public/index.php
+
+# ============================================================
+# Troubleshooting
+# ============================================================
+#
+# If you get 500 Internal Server Error:
+# 1. Check Apache error logs
+# 2. Ensure mod_rewrite is enabled: a2enmod rewrite (Linux)
+# 3. Ensure AllowOverride is set to All in Apache config
+# 4. Try adding: Options +FollowSymLinks before RewriteEngine On
+#
+# If rewrites don't work:
+# 1. Set RewriteBase manually to your subdirectory:
+#    RewriteBase /mysubfolder/
+# 2. Check that .htaccess is being read (add syntax error and reload)
+# 3. Verify mod_rewrite is active: apache2 -M | grep rewrite
+#
+# If static assets (CSS/JS/images) don't load:
+# 1. Check browser console for 404 errors
+# 2. Verify files exist in public/ folder
+# 3. Check file permissions (should be readable)
+# 4. Clear browser cache
+#
+# Testing:
+# --------
+# 1. Create a test file: public/test.html with content "TEST OK"
+# 2. Access: http://yoursite.com/public/test.html
+# 3. Should display: TEST OK
+# 4. Access: http://yoursite.com/test (without public/)
+# 5. Should route to CodeIgniter (404 or actual route)
+#
+# ============================================================

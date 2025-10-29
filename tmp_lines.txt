@@ -1,0 +1,219 @@
+1	<?php
+2	
+3	namespace App\Controllers\Admin;
+4	
+5	use App\Controllers\BaseController;
+6	use App\Models\ProveedorModel;
+7	use App\Models\ProveedoresModel;
+8	use App\Models\ContratoModel;
+9	use App\Models\UserModel;
+10	
+11	class ProveedoresController extends BaseController
+12	{
+13	    protected ProveedorModel $proveedorModel;
+14	    protected UserModel $userModel;
+15	
+16	    public function __construct()
+17	    {
+18	        $this->proveedorModel = new ProveedorModel();
+19	        $this->userModel = new UserModel();
+20	        helper(['auth']);
+21	    }
+22	
+23	    /**
+24	     * Lista todos los proveedores
+25	     */
+26	    public function index()
+27	    {
+28	        $data = [
+29	            'title'       => 'Gestión de Proveedores',
+30	            'proveedores' => $this->proveedorModel->getProveedoresWithUsers(),
+31	            'breadcrumbs' => [
+32	                ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
+33	                ['title' => 'Proveedores', 'url' => ''],
+34	            ],
+35	        ];
+36	
+37	        return view('admin/proveedores/index', $data);
+38	    }
+39	
+40	    /**
+41	     * Formulario para crear nuevo proveedor
+42	     */
+43	    public function crear()
+44	    {
+45	        // Obtener usuarios con rol proveedor (id_roles = 3) que no tengan proveedor asignado
+46	        $usuariosProveedores = $this->userModel
+47	            ->where('id_roles', 3)
+48	            ->where('estado', 'activo')
+49	            ->findAll();
+50	
+51	        // Filtrar usuarios que ya tienen proveedor asignado
+52	        $usuariosDisponibles = array_filter($usuariosProveedores, function ($user) {
+53	            return !$this->proveedorModel->userHasProveedor($user['id_users']);
+54	        });
+55	
+56	        $data = [
+57	            'title'      => 'Crear Proveedor',
+58	            'proveedor'  => null,
+59	            'usuarios'   => $usuariosDisponibles,
+60	            'validation' => \Config\Services::validation(),
+61	            'breadcrumbs' => [
+62	                ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
+63	                ['title' => 'Proveedores', 'url' => site_url('admin/proveedores')],
+64	                ['title' => 'Crear', 'url' => ''],
+65	            ],
+66	        ];
+67	
+68	        return view('admin/proveedores/form', $data);
+69	    }
+70	
+71	    /**
+72	     * Procesa la creación de un nuevo proveedor
+73	     */
+74	    public function store()
+75	    {
+76	        $data = [
+77	            'razon_social'      => $this->request->getPost('razon_social'),
+78	            'nit'               => $this->request->getPost('nit'),
+79	            'email_contacto'    => $this->request->getPost('email_contacto'),
+80	            'telefono_contacto' => $this->request->getPost('telefono_contacto'),
+81	            'id_users'          => $this->request->getPost('id_users') ?: null,
+82	            'observaciones'     => $this->request->getPost('observaciones'),
+83	        ];
+84	
+85	        // Validar que el usuario no esté asignado a otro proveedor (si se proporcionó)
+86	        if (!empty($data['id_users'])) {
+87	            if ($this->proveedorModel->userHasProveedor($data['id_users'])) {
+88	                return redirect()
+89	                    ->back()
+90	                    ->withInput()
+91	                    ->with('error', 'Este usuario ya está asignado a otro proveedor.');
+92	            }
+93	        }
+94	
+95	        // Guardar proveedor
+96	        if (!$this->proveedorModel->save($data)) {
+97	            return redirect()
+98	                ->back()
+99	                ->withInput()
+100	                ->with('errors', $this->proveedorModel->errors());
+101	        }
+102	
+103	        return redirect()
+104	            ->to('/admin/proveedores')
+105	            ->with('success', 'Proveedor creado exitosamente.');
+106	    }
+107	
+108	    /**
+109	     * Formulario para editar proveedor existente
+110	     */
+111	    public function editar(int $id)
+112	    {
+113	        $proveedor = $this->proveedorModel->getProveedorWithUser($id);
+114	
+115	        if (!$proveedor) {
+116	            return redirect()
+117	                ->to('/admin/proveedores')
+118	                ->with('error', 'Proveedor no encontrado.');
+119	        }
+120	
+121	        // Obtener usuarios proveedores disponibles
+122	        $usuariosProveedores = $this->userModel
+123	            ->where('id_roles', 3)
+124	            ->where('estado', 'activo')
+125	            ->findAll();
+126	
+127	        $data = [
+128	            'title'      => 'Editar Proveedor',
+129	            'proveedor'  => $proveedor,
+130	            'usuarios'   => $usuariosProveedores,
+131	            'validation' => \Config\Services::validation(),
+132	            'breadcrumbs' => [
+133	                ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
+134	                ['title' => 'Proveedores', 'url' => site_url('admin/proveedores')],
+135	                ['title' => 'Editar', 'url' => ''],
+136	            ],
+137	        ];
+138	
+139	        return view('admin/proveedores/form', $data);
+140	    }
+141	
+142	    /**
+143	     * Procesa la actualización de un proveedor
+144	     */
+145	    public function update(int $id)
+146	    {
+147	        $proveedor = $this->proveedorModel->find($id);
+148	
+149	        if (!$proveedor) {
+150	            return redirect()
+151	                ->to('/admin/proveedores')
+152	                ->with('error', 'Proveedor no encontrado.');
+153	        }
+154	
+155	        $data = [
+156	            'id_proveedor'      => $id,
+157	            'razon_social'      => $this->request->getPost('razon_social'),
+158	            'nit'               => $this->request->getPost('nit'),
+159	            'email_contacto'    => $this->request->getPost('email_contacto'),
+160	            'telefono_contacto' => $this->request->getPost('telefono_contacto'),
+161	            'id_users'          => $this->request->getPost('id_users') ?: null,
+162	            'observaciones'     => $this->request->getPost('observaciones'),
+163	        ];
+164	
+165	        // Validar que el usuario no esté asignado a otro proveedor
+166	        if (!empty($data['id_users']) && $data['id_users'] != $proveedor['id_users']) {
+167	            if ($this->proveedorModel->userHasProveedor($data['id_users'], $id)) {
+168	                return redirect()
+169	                    ->back()
+170	                    ->withInput()
+171	                    ->with('error', 'Este usuario ya está asignado a otro proveedor.');
+172	            }
+173	        }
+174	
+175	        // Actualizar proveedor
+176	        if (!$this->proveedorModel->save($data)) {
+177	            return redirect()
+178	                ->back()
+179	                ->withInput()
+180	                ->with('errors', $this->proveedorModel->errors());
+181	        }
+182	
+183	        return redirect()
+184	            ->to('/admin/proveedores')
+185	            ->with('success', 'Proveedor actualizado exitosamente.');
+186	    }
+187	
+188	    /**
+189	     * Elimina un proveedor
+190	     */
+191	    public function eliminar(int $id)
+192	    {
+193	        $proveedor = $this->proveedorModel->find($id);
+194	
+195	        if (!$proveedor) {
+196	            return redirect()
+197	                ->to('/admin/proveedores')
+198	                ->with('error', 'Proveedor no encontrado.');
+199	        }
+200	
+201	        // Verificar si tiene contratos asociados
+202	        if ($this->proveedorModel->hasContratos($id)) {
+203	            return redirect()
+204	                ->to('/admin/proveedores')
+205	                ->with('error', 'No se puede eliminar el proveedor porque tiene contratos asociados.');
+206	        }
+207	
+208	        // Eliminar proveedor
+209	        if (!$this->proveedorModel->delete($id)) {
+210	            return redirect()
+211	                ->to('/admin/proveedores')
+212	                ->with('error', 'No se pudo eliminar el proveedor.');
+213	        }
+214	
+215	        return redirect()
+216	            ->to('/admin/proveedores')
+217	            ->with('success', 'Proveedor eliminado exitosamente.');
+218	    }
+219	}
