@@ -275,10 +275,41 @@ class UploadService
             return $response;
         }
 
-        // SEGURIDAD: Validar MIME type usando finfo (verificación real del contenido)
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $detectedMime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        // SEGURIDAD: Validar MIME type con fallback si finfo no está disponible
+        $detectedMime = null;
+
+        if (function_exists('finfo_open')) {
+            // Intentar usar finfo si está disponible
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo !== false) {
+                $detectedMime = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+            }
+        }
+
+        // Fallback 1: usar mime_content_type si existe
+        if ($detectedMime === null && function_exists('mime_content_type')) {
+            $detectedMime = mime_content_type($file['tmp_name']);
+        }
+
+        // Fallback 2: usar el tipo declarado por el cliente
+        if ($detectedMime === null && isset($file['type'])) {
+            $detectedMime = $file['type'];
+        }
+
+        // Fallback 3: inferir por extensión (menos seguro pero funcional)
+        if ($detectedMime === null) {
+            $mimeMap = [
+                'pdf' => 'application/pdf',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'mp4' => 'video/mp4',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ];
+            $detectedMime = $mimeMap[$extension] ?? 'application/octet-stream';
+        }
 
         // SEGURIDAD: Bloquear MIME types peligrosos
         if (in_array($detectedMime, $this->dangerousMimeTypes)) {
