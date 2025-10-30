@@ -32,6 +32,10 @@ class ConsultorModel extends Model
 
     // Validation
     protected $validationRules = [
+        'id_consultor' => [
+            'label'  => 'ID Consultor',
+            'rules'  => 'permit_empty|integer',
+        ],
         'id_users' => [
             'label'  => 'Usuario',
             'rules'  => 'required|integer|is_not_unique[users.id_users]',
