@@ -23,6 +23,56 @@ $routes->get('/health', function() {
     ]);
 });
 
+// ============================================================
+// Test Email/SendGrid Configuration (TEMPORAL - BORRAR EN PRODUCCIÓN)
+// ============================================================
+$routes->get('/test-email-config', function() {
+    $html = '<h1>Test de Configuración de Email</h1>';
+
+    // Test cURL
+    $html .= '<h2>1. Test de cURL</h2>';
+    if (function_exists('curl_version')) {
+        $version = curl_version();
+        $html .= '<p style="color: green;"><strong>✓ cURL está habilitado</strong></p>';
+        $html .= '<ul>';
+        $html .= '<li><strong>Versión cURL:</strong> ' . $version['version'] . '</li>';
+        $html .= '<li><strong>SSL Versión:</strong> ' . $version['ssl_version'] . '</li>';
+        $html .= '</ul>';
+    } else {
+        $html .= '<p style="color: red;"><strong>✗ cURL NO está habilitado</strong></p>';
+    }
+
+    // Test PHP
+    $html .= '<hr><h2>2. Información de PHP</h2>';
+    $html .= '<ul>';
+    $html .= '<li><strong>Versión PHP:</strong> ' . phpversion() . '</li>';
+    $html .= '<li><strong>Sistema Operativo:</strong> ' . PHP_OS . '</li>';
+    $html .= '</ul>';
+
+    // Test Variables de Entorno
+    $html .= '<hr><h2>3. Variables de Entorno (SendGrid)</h2>';
+    $html .= '<ul>';
+    $fromEmail = getenv('email.fromEmail');
+    $fromName = getenv('email.fromName');
+    $apiKey = getenv('sendgrid.apiKey');
+
+    $html .= '<li><strong>email.fromEmail:</strong> ' . ($fromEmail ?: '<span style="color:red;">NO CONFIGURADO</span>') . '</li>';
+    $html .= '<li><strong>email.fromName:</strong> ' . ($fromName ?: '<span style="color:red;">NO CONFIGURADO</span>') . '</li>';
+    $html .= '<li><strong>sendgrid.apiKey:</strong> ' . ($apiKey ? '<span style="color:green;">CONFIGURADO (' . strlen($apiKey) . ' caracteres)</span>' : '<span style="color:red;">NO CONFIGURADO</span>') . '</li>';
+    $html .= '</ul>';
+
+    // Test Composer SendGrid
+    $html .= '<hr><h2>4. Test de SendGrid Package</h2>';
+    if (class_exists('SendGrid')) {
+        $html .= '<p style="color: green;"><strong>✓ Clase SendGrid encontrada</strong></p>';
+    } else {
+        $html .= '<p style="color: red;"><strong>✗ Clase SendGrid NO encontrada</strong></p>';
+        $html .= '<p>Ejecuta: <code>composer require sendgrid/sendgrid</code></p>';
+    }
+
+    return $html;
+});
+
 // Rutas de autenticación (sin protección)
 $routes->get('/login', 'AuthController::login');
 $routes->post('/login', 'AuthController::doLogin');
