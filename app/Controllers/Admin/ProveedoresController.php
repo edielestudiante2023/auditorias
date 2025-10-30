@@ -102,7 +102,74 @@ class ProveedoresController extends BaseController
      */
     public function store()
     {
+        // Determinar si se está creando un nuevo usuario o usando uno existente
+        $email = $this->request->getPost('email');
+        $password = $this->request->getPost('password');
+        $nombreUsuario = $this->request->getPost('nombre_usuario');
+        $idUsers = $this->request->getPost('id_users');
+
+        // MODO 1: Crear usuario nuevo (si se proporciona email y password)
+        if (!empty($email) && !empty($password) && !empty($nombreUsuario)) {
+            // Validar que el email no exista
+            $emailLimpio = strtolower(trim($email));
+            $existeEmail = $this->userModel->where('email', $emailLimpio)->first();
+
+            if ($existeEmail) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'El email <strong>' . htmlspecialchars($emailLimpio) . '</strong> ya está registrado en el sistema. Por favor usa otro email o selecciona "Usar Usuario Existente".');
+            }
+
+            // Crear usuario nuevo
+            $userData = [
+                'nombre'        => $nombreUsuario,
+                'email'         => $emailLimpio,
+                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                'id_roles'      => 3, // Rol Proveedor
+                'estado'        => 'activo',
+            ];
+
+            try {
+                if (!$this->userModel->save($userData)) {
+                    return redirect()
+                        ->back()
+                        ->withInput()
+                        ->with('errors', $this->userModel->errors());
+                }
+
+                $idUser = $this->userModel->getInsertID();
+            } catch (\Exception $e) {
+                log_message('error', 'Error creating user for proveedor: ' . $e->getMessage());
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Error al crear el usuario. El email podría estar duplicado.');
+            }
+        }
+        // MODO 2: Usar usuario existente
+        elseif (!empty($idUsers)) {
+            $idUser = $idUsers;
+
+            // Validar que el usuario no tenga ya un registro de proveedor
+            if ($this->proveedorModel->userHasProveedor($idUser)) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Este usuario ya tiene un registro de proveedor.');
+            }
+        }
+        // ERROR: No se proporcionaron datos válidos
+        else {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Debes crear un nuevo usuario o seleccionar uno existente.');
+        }
+
+        // Crear el proveedor
         $data = [
+            'id_users'             => $idUser,
             'razon_social'         => $this->request->getPost('razon_social'),
             'nit'                  => $this->request->getPost('nit'),
             'email_contacto'       => $this->request->getPost('email_contacto'),
@@ -124,7 +191,7 @@ class ProveedoresController extends BaseController
 
         return redirect()
             ->to('/admin/proveedores')
-            ->with('success', 'Proveedor creado exitosamente. Ahora puedes vincular usuarios desde Admin → Usuarios.');
+            ->with('success', 'Proveedor creado exitosamente.');
     }
 
     // Nuevo: create simple (patrón Clientes)
