@@ -148,6 +148,7 @@ class ContratoModel extends Model
                               clientes.email_contacto,
                               clientes.telefono_contacto,
                               clientes.direccion,
+                              clientes.logo_cliente_path,
                               clientes.estado,
                               clientes.created_at,
                               clientes.updated_at,
@@ -163,6 +164,7 @@ class ContratoModel extends Model
                               clientes.email_contacto,
                               clientes.telefono_contacto,
                               clientes.direccion,
+                              clientes.logo_cliente_path,
                               clientes.estado,
                               clientes.created_at,
                               clientes.updated_at')
