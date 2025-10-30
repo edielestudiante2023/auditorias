@@ -18,8 +18,25 @@ class FileController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
+        // Detectar MIME type con fallback
+        $mimeType = null;
+
+        if (function_exists('mime_content_type')) {
+            $mimeType = mime_content_type($filePath);
+        }
+
+        // Fallback: inferir por extensión
+        if ($mimeType === null || $mimeType === false) {
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $mimeMap = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+            ];
+            $mimeType = $mimeMap[$extension] ?? 'application/octet-stream';
+        }
+
         // Verificar que es una imagen
-        $mimeType = mime_content_type($filePath);
         if (!str_starts_with($mimeType, 'image/')) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
@@ -42,7 +59,25 @@ class FileController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $mimeType = mime_content_type($filePath);
+        // Detectar MIME type con fallback
+        $mimeType = null;
+
+        if (function_exists('mime_content_type')) {
+            $mimeType = mime_content_type($filePath);
+        }
+
+        // Fallback: inferir por extensión
+        if ($mimeType === null || $mimeType === false) {
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $mimeMap = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+            ];
+            $mimeType = $mimeMap[$extension] ?? 'application/octet-stream';
+        }
+
+        // Verificar que es una imagen
         if (!str_starts_with($mimeType, 'image/')) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
