@@ -6,6 +6,9 @@
     <title><?= esc($title) ?> | Auditorías</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 </head>
 <body class="bg-light">
 
@@ -267,7 +270,11 @@
     </div>
 </div>
 
+<!-- jQuery (requerido por Select2) -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 function cargarEmailCliente() {
     const selectCliente = document.getElementById('id_cliente');
@@ -279,8 +286,62 @@ function cargarEmailCliente() {
     emailCliente.value = email || '';
 }
 
-// Cargar email al cargar la página si hay un cliente seleccionado
-document.addEventListener('DOMContentLoaded', function() {
+// Inicializar Select2 en los campos principales
+$(document).ready(function() {
+    // Select2 para Cliente
+    $('#id_cliente').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Seleccionar cliente...',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron clientes";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+
+    // Select2 para Proveedor
+    $('#id_proveedor').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Seleccionar proveedor...',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron proveedores";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+
+    // Select2 para Usuario Responsable del Proveedor
+    $('#id_usuario_responsable').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Seleccionar usuario responsable...',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron usuarios";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+
+    // Evento para cargar email cuando cambia el cliente
+    $('#id_cliente').on('select2:select', function(e) {
+        cargarEmailCliente();
+    });
+
+    // Cargar email al cargar la página si hay un cliente seleccionado
     cargarEmailCliente();
 });
 </script>
