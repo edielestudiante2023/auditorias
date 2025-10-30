@@ -1,3 +1,24 @@
+<?php
+/**
+ * Helper function para detectar MIME type con fallback
+ */
+function getMimeType($filePath) {
+    if (function_exists('mime_content_type')) {
+        return mime_content_type($filePath);
+    }
+
+    // Fallback: detectar por extensión
+    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+    return match($ext) {
+        'png' => 'image/png',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'pdf' => 'application/pdf',
+        default => 'application/octet-stream'
+    };
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -210,7 +231,7 @@
                     log_message('debug', "Logo exists: " . (file_exists($logoPath) ? 'YES' : 'NO'));
                     if (file_exists($logoPath)) {
                         $logoData = base64_encode(file_get_contents($logoPath));
-                        $logoMime = mime_content_type($logoPath);
+                        $logoMime = getMimeType($logoPath);
                         log_message('debug', "Logo MIME: {$logoMime}");
                         echo '<img src="data:' . $logoMime . ';base64,' . $logoData . '" class="logo-cliente" alt="Logo Cliente">';
                     } else {
@@ -430,7 +451,7 @@
 
             // Detectar MIME con fallback si mime_content_type no está disponible
             if (function_exists('mime_content_type')) {
-                $firmaMime = mime_content_type($firmaPath);
+                $firmaMime = getMimeType($firmaPath);
             } else {
                 // Fallback: detectar por extensión
                 $ext = strtolower(pathinfo($firmaPath, PATHINFO_EXTENSION));
@@ -472,7 +493,7 @@
                 log_message('debug', "Logo 1 exists: " . (file_exists($logoPath1) ? 'YES' : 'NO'));
                 if (file_exists($logoPath1)) {
                     $logoData1 = base64_encode(file_get_contents($logoPath1));
-                    $logoMime1 = mime_content_type($logoPath1);
+                    $logoMime1 = getMimeType($logoPath1);
                     echo '<img src="data:' . $logoMime1 . ';base64,' . $logoData1 . '" class="logo-corporativo" alt="Cycloid Talent">';
                 } else {
                     echo '<div style="color: red; font-size: 7pt;">Logo 1 no encontrado</div>';
@@ -486,7 +507,7 @@
                 log_message('debug', "Logo 2 exists: " . (file_exists($logoPath2) ? 'YES' : 'NO'));
                 if (file_exists($logoPath2)) {
                     $logoData2 = base64_encode(file_get_contents($logoPath2));
-                    $logoMime2 = mime_content_type($logoPath2);
+                    $logoMime2 = getMimeType($logoPath2);
                     echo '<img src="data:' . $logoMime2 . ';base64,' . $logoData2 . '" class="logo-corporativo" alt="Enterprise SST">';
                 } else {
                     echo '<div style="color: red; font-size: 7pt;">Logo 2 no encontrado</div>';
@@ -500,7 +521,7 @@
                 log_message('debug', "Logo 3 exists: " . (file_exists($logoPath3) ? 'YES' : 'NO'));
                 if (file_exists($logoPath3)) {
                     $logoData3 = base64_encode(file_get_contents($logoPath3));
-                    $logoMime3 = mime_content_type($logoPath3);
+                    $logoMime3 = getMimeType($logoPath3);
                     echo '<img src="data:' . $logoMime3 . ';base64,' . $logoData3 . '" class="logo-corporativo" alt="SST">';
                 } else {
                     echo '<div style="color: red; font-size: 7pt;">Logo 3 no encontrado</div>';
