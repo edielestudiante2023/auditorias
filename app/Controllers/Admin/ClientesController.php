@@ -104,7 +104,11 @@ class ClientesController extends BaseController
         // Procesar logo
         $logoFile = $this->request->getFile('logo_cliente');
         if ($logoFile && $logoFile->isValid() && !$logoFile->hasMoved()) {
-            if (!$this->uploadService->isImage(['tmp_name' => $logoFile->getTempName()])) {
+            if (!$this->uploadService->isImage([
+                'name' => $logoFile->getName(),
+                'type' => $logoFile->getClientMimeType(),
+                'tmp_name' => $logoFile->getTempName()
+            ])) {
                 return redirect()->back()->withInput()->with('error', 'El logo debe ser una imagen PNG o JPG.');
             }
 
@@ -199,7 +203,11 @@ class ClientesController extends BaseController
         // Procesar nuevo logo
         $logoFile = $this->request->getFile('logo_cliente');
         if ($logoFile && $logoFile->isValid() && !$logoFile->hasMoved()) {
-            if (!$this->uploadService->isImage(['tmp_name' => $logoFile->getTempName()])) {
+            if (!$this->uploadService->isImage([
+                'name' => $logoFile->getName(),
+                'type' => $logoFile->getClientMimeType(),
+                'tmp_name' => $logoFile->getTempName()
+            ])) {
                 return redirect()->back()->withInput()->with('error', 'El logo debe ser una imagen PNG o JPG.');
             }
 
