@@ -221,6 +221,7 @@ $routes->group('consultor', ['filter' => 'role:2'], function ($routes) {
     $routes->post('auditorias/(:num)/asignar-clientes-setup', 'Consultor\AuditoriasSetupController::guardarClientesSetup/$1');
     $routes->get('auditorias/(:num)/enviar-invitacion', 'Consultor\AuditoriasSetupController::formEnviarInvitacion/$1');
     $routes->post('auditorias/(:num)/enviar-invitacion', 'Consultor\AuditoriasSetupController::enviarInvitacion/$1');
+    $routes->post('auditorias/(:num)/reenviar-email', 'Consultor\AuditoriasSetupController::reenviarEmail/$1');
 
     // Revisión de Auditoría
     $routes->get('auditoria/(:num)', 'Consultor\AuditoriasConsultorController::detalle/$1');

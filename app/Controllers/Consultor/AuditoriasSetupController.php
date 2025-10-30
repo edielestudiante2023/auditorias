@@ -572,4 +572,123 @@ class AuditoriasSetupController extends BaseController
                 ->with('error', 'Error al guardar los ítems: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Reenvía el email de invitación al proveedor
+     */
+    public function reenviarEmail(int $idAuditoria)
+    {
+        try {
+            // Obtener datos de la auditoría
+            $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+            if (!$auditoria) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Auditoría no encontrada',
+                    'error' => 'ID inválido'
+                ]);
+            }
+
+            // Verificar que la auditoría esté en estado "en_proveedor"
+            if ($auditoria['estado'] !== 'en_proveedor') {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Solo se puede reenviar email a auditorías en estado "En Proveedor"',
+                    'error' => 'Estado inválido: ' . $auditoria['estado']
+                ]);
+            }
+
+            // Obtener datos del contrato con proveedor y usuario responsable
+            $db = \Config\Database::connect();
+            $contrato = $db->table('contratos_proveedor_cliente cpc')
+                ->select('cpc.id_usuario_responsable,
+                         users.email as usuario_responsable_email,
+                         users.nombre as usuario_responsable_nombre')
+                ->join('users', 'users.id_users = cpc.id_usuario_responsable')
+                ->where('cpc.id_proveedor', $auditoria['id_proveedor'])
+                ->where('cpc.estado', 'activo')
+                ->get()
+                ->getRowArray();
+
+            if (!$contrato || empty($contrato['usuario_responsable_email'])) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'No se encontró usuario responsable del proveedor',
+                    'error' => 'Sin email configurado'
+                ]);
+            }
+
+            // Obtener ítems seleccionados
+            $itemsSeleccionados = $this->auditoriaItemModel
+                ->select('auditoria_items.*,
+                         items_banco.alcance,
+                         items_banco.titulo,
+                         items_banco.descripcion,
+                         items_banco.orden')
+                ->join('items_banco', 'items_banco.id_item = auditoria_items.id_item')
+                ->where('auditoria_items.id_auditoria', $idAuditoria)
+                ->orderBy('items_banco.orden', 'ASC')
+                ->findAll();
+
+            // Obtener clientes asignados
+            $clientes = $db->table('auditoria_clientes ac')
+                ->select('c.*')
+                ->join('clientes c', 'c.id_cliente = ac.id_cliente')
+                ->where('ac.id_auditoria', $idAuditoria)
+                ->get()
+                ->getResultArray();
+
+            // Generar nueva contraseña temporal
+            $claveTemporal = generateSecurePassword(12);
+            $hashClave = password_hash($claveTemporal, PASSWORD_DEFAULT);
+
+            // Actualizar contraseña del usuario responsable
+            $this->userModel->update($contrato['id_usuario_responsable'], [
+                'password_hash' => $hashClave
+            ]);
+
+            // URLs para el email
+            $urlLogin = site_url('login');
+            $urlAuditoria = site_url('proveedor/auditoria/' . $idAuditoria . '/wizard');
+            $nombreUsuario = $contrato['usuario_responsable_email'];
+
+            // Enviar email
+            $resultado = $this->emailService->sendInviteProveedor(
+                $contrato['usuario_responsable_email'],
+                $nombreUsuario,
+                $claveTemporal,
+                $urlLogin,
+                $urlAuditoria,
+                $contrato['usuario_responsable_nombre'],
+                $itemsSeleccionados,
+                $clientes
+            );
+
+            if ($resultado['ok']) {
+                log_message('info', "Email reenviado para auditoría #{$idAuditoria} a {$contrato['usuario_responsable_email']}");
+
+                return $this->response->setJSON([
+                    'ok' => true,
+                    'message' => 'Email reenviado exitosamente',
+                    'error' => null
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Error al enviar email',
+                    'error' => $resultado['error']
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al reenviar email auditoría #' . $idAuditoria . ': ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'ok' => false,
+                'message' => 'Error al reenviar email',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 }

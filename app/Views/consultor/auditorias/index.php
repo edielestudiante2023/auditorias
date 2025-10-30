@@ -92,9 +92,15 @@
                     <!-- Auditoría en manos del proveedor -->
                     <a href="<?= site_url('consultor/auditoria/' . $aud['id_auditoria']) ?>"
                        class="btn btn-outline-secondary"
-                       title="Proveedor aún no ha enviado la auditoría">
-                      <i class="bi bi-hourglass-split"></i> En Proveedor
+                       title="Ver auditoría">
+                      <i class="bi bi-eye"></i> Ver
                     </a>
+                    <button type="button"
+                            class="btn btn-warning"
+                            onclick="reenviarEmail(<?= $aud['id_auditoria'] ?>)"
+                            title="Reenviar invitación por email al proveedor">
+                      <i class="bi bi-envelope-arrow-up"></i> Reenviar Email
+                    </button>
                   <?php else: ?>
                     <!-- Estado borrador u otro -->
                     <a href="<?= site_url('consultor/auditoria/' . $aud['id_auditoria']) ?>"
@@ -166,5 +172,45 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function reenviarEmail(idAuditoria) {
+    if (confirm('¿Estás seguro de reenviar la invitación por email al proveedor?')) {
+        // Mostrar loading en el botón
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Enviando...';
+
+        // Hacer petición AJAX
+        fetch('<?= site_url('consultor/auditorias/') ?>' + idAuditoria + '/reenviar-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+
+            if (data.ok) {
+                alert('✓ Email reenviado exitosamente al proveedor');
+            } else {
+                alert('✗ Error al reenviar email: ' + (data.error || data.message));
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            alert('✗ Error de conexión: ' + error.message);
+            console.error('Error:', error);
+        });
+    }
+}
+</script>
 </body>
 </html>
