@@ -334,10 +334,16 @@ class AuditoriasSetupController extends BaseController
             // NO crear ítems de TODO el banco, solo de los que están en auditoria_items
 
             // Obtener los ítems que el consultor seleccionó (ya están en auditoria_items)
+            // Incluir información completa del items_banco para el email
             $itemsSeleccionados = $this->auditoriaItemModel
-                ->select('auditoria_items.*, items_banco.alcance')
+                ->select('auditoria_items.*,
+                         items_banco.alcance,
+                         items_banco.titulo,
+                         items_banco.descripcion,
+                         items_banco.orden')
                 ->join('items_banco', 'items_banco.id_item = auditoria_items.id_item')
                 ->where('auditoria_items.id_auditoria', $idAuditoria)
+                ->orderBy('items_banco.orden', 'ASC')
                 ->findAll();
 
             log_message('info', 'enviarInvitacion - Items seleccionados: ' . count($itemsSeleccionados));
@@ -416,7 +422,9 @@ class AuditoriasSetupController extends BaseController
                 $claveTemporal,  // Contraseña temporal generada
                 $urlLogin,
                 $urlAuditoria,
-                $contrato['usuario_responsable_nombre']  // Nombre del usuario responsable para el saludo
+                $contrato['usuario_responsable_nombre'],  // Nombre del usuario responsable para el saludo
+                $itemsSeleccionados,  // Ítems seleccionados con información completa
+                $clientes  // Clientes asignados a la auditoría
             );
 
             if ($resultado['ok']) {

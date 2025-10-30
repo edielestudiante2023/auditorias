@@ -32,6 +32,9 @@ class EmailService
      * @param string $clave Contraseña temporal
      * @param string $urlLogin URL de login
      * @param string|null $urlAuditoria URL directa a la auditoría (opcional)
+     * @param string|null $nombreDestinatario Nombre del destinatario
+     * @param array $items Ítems seleccionados por el consultor
+     * @param array $clientes Clientes asignados a la auditoría
      * @return array ['ok' => bool, 'message' => string, 'error' => string|null]
      */
     public function sendInviteProveedor(
@@ -40,14 +43,18 @@ class EmailService
         string $clave,
         string $urlLogin,
         ?string $urlAuditoria = null,
-        ?string $nombreDestinatario = null
+        ?string $nombreDestinatario = null,
+        array $items = [],
+        array $clientes = []
     ): array {
         $tipo = 'invitacion_proveedor';
         $asunto = 'Invitación a completar auditoría - Cycloid Talent';
         $payload = [
             'usuario' => $usuario,
             'urlLogin' => $urlLogin,
-            'urlAuditoria' => $urlAuditoria
+            'urlAuditoria' => $urlAuditoria,
+            'items_count' => count($items),
+            'clientes_count' => count($clientes)
         ];
 
         try {
@@ -58,6 +65,8 @@ class EmailService
                 'urlLogin' => $urlLogin,
                 'urlAuditoria' => $urlAuditoria,
                 'nombreProveedor' => $nombreDestinatario ?? 'Usuario',
+                'items' => $items,
+                'clientes' => $clientes,
             ]);
 
             // Modo log-only si no hay API key

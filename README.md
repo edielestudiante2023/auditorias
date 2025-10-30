@@ -43,17 +43,87 @@ Plataforma completa que permite a consultores SST gestionar auditorías para mú
 ## 📦 Instalación
 
 ### Requisitos Previos
-- PHP >= 8.0
-- MySQL >= 8.0
-- Composer
+- **PHP:** >= 8.1
+- **MySQL:** >= 8.0
+- **Composer:** 2.0+
+- **Extensiones PHP requeridas:**
+  - mysqli, mbstring, json, curl, intl, gd
+  - fileinfo (recomendada)
 
-### Configuración
+### Configuración Local
 
-1. Clonar repositorio
-2. Instalar dependencias: `composer install`
-3. Configurar `.env` con credenciales de base de datos y SendGrid
-4. Importar base de datos
-5. Configurar permisos en `writable/`
+1. **Clonar repositorio**
+```bash
+git clone <url-repositorio>
+cd auditorias
+```
+
+2. **Instalar dependencias**
+```bash
+composer install
+```
+
+3. **Configurar archivo .env**
+```bash
+cp .env.example .env
+# Editar .env con tu configuración
+```
+
+4. **Importar base de datos**
+```bash
+mysql -u root -p cycloid_auditorias < database.sql
+```
+
+5. **Configurar permisos**
+```bash
+chmod -R 775 writable/
+```
+
+6. **Acceder al sistema**
+```
+http://localhost/auditorias/public/
+```
+
+## 🚀 Despliegue a Producción
+
+Ver documentación completa en [DEPLOY.md](DEPLOY.md)
+
+### Verificación del Servidor
+
+Antes de desplegar, ejecuta:
+```bash
+php check-server.php
+```
+
+## 🐛 Solución de Problemas
+
+### Error: "Call to undefined function finfo_open()"
+
+Este error ocurre cuando la extensión `fileinfo` no está habilitada.
+
+**Solución:**
+```bash
+# En Linux
+sudo apt-get install php-fileinfo
+sudo systemctl restart apache2
+```
+
+El sistema tiene fallbacks que funcionan sin esta extensión, pero se recomienda habilitarla para mejor seguridad.
+
+Ver [TROUBLESHOOTING.md](TROUBLESHOOTING.md) para más problemas comunes.
+
+## 📚 Documentación
+
+- [DEPLOY.md](DEPLOY.md) - Guía de despliegue a producción
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Solución de problemas
+- [TUTORIAL_VIDEO.md](TUTORIAL_VIDEO.md) - Configuración de tutorial en video
+
+## 🆘 Soporte
+
+1. Revisar [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+2. Ejecutar `php check-server.php`
+3. Revisar logs: `writable/logs/log-*.log`
+4. Contactar al equipo de desarrollo
 
 ## 📝 Licencia
 

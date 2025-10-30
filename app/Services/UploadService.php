@@ -502,11 +502,30 @@ class UploadService
             return false;
         }
 
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        // Intentar usar finfo si está disponible
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
 
-        return in_array($mime, ['image/png', 'image/jpeg', 'image/jpg']);
+            return in_array($mime, ['image/png', 'image/jpeg', 'image/jpg']);
+        }
+
+        // Alternativa: validar por extensión y mime_content_type
+        if (isset($file['type'])) {
+            $mime = $file['type'];
+            if (in_array($mime, ['image/png', 'image/jpeg', 'image/jpg'])) {
+                return true;
+            }
+        }
+
+        // Última alternativa: validar solo por extensión
+        if (isset($file['name'])) {
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            return in_array($ext, ['png', 'jpg', 'jpeg']);
+        }
+
+        return false;
     }
 
     /**

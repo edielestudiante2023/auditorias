@@ -37,12 +37,53 @@ class TestEmailController extends BaseController
         $urlLogin = site_url('login');
         $urlAuditoria = site_url('proveedor/auditoria/1');
 
+        // Datos de ejemplo de ítems
+        $itemsEjemplo = [
+            [
+                'titulo' => 'Política de Seguridad y Salud en el Trabajo',
+                'descripcion' => 'Evidenciar la existencia de una política de SST firmada por el representante legal, actualizada y comunicada a todos los niveles de la organización.',
+                'alcance' => 'global'
+            ],
+            [
+                'titulo' => 'Matriz de Identificación de Peligros',
+                'descripcion' => 'Presentar matriz IPEVR actualizada con la identificación de peligros, evaluación y valoración de riesgos por procesos.',
+                'alcance' => 'por_cliente'
+            ],
+            [
+                'titulo' => 'Plan de Trabajo Anual',
+                'descripcion' => 'Presentar el plan de trabajo anual del SG-SST con objetivos, metas, responsables y recursos asignados.',
+                'alcance' => 'global'
+            ]
+        ];
+
+        // Datos de ejemplo de clientes
+        $clientesEjemplo = [
+            [
+                'id_cliente' => 1,
+                'razon_social' => 'Empresa Ejemplo S.A.S.',
+                'nit' => '900123456-1'
+            ],
+            [
+                'id_cliente' => 2,
+                'razon_social' => 'Corporación Demo Ltda.',
+                'nit' => '800987654-3'
+            ],
+            [
+                'id_cliente' => 3,
+                'razon_social' => 'Industrias Test S.A.',
+                'nit' => '700555444-9'
+            ]
+        ];
+
         $result = $this->emailService->sendInviteProveedor(
             $to,
             $usuario,
             $clave,
             $urlLogin,
-            $urlAuditoria
+            $urlAuditoria,
+            'Proveedor de Prueba',
+            $itemsEjemplo,
+            $clientesEjemplo
         );
 
         return $this->response->setJSON($result);
