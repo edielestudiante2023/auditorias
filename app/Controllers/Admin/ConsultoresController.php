@@ -155,32 +155,54 @@ class ConsultoresController extends BaseController
      */
     public function store()
     {
-        // PASO 1: Crear el usuario primero (si se proporciona email y password)
+        // Determinar si se está creando un nuevo usuario o usando uno existente
         $email = $this->request->getPost('email');
         $password = $this->request->getPost('password');
+        $idUsers = $this->request->getPost('id_users');
         $nombreCompleto = $this->request->getPost('nombre_completo');
 
-        if ($email && $password) {
+        // MODO 1: Crear usuario nuevo (si se proporciona email y password)
+        if (!empty($email) && !empty($password)) {
+            // Validar que el email no exista
+            $emailLimpio = strtolower(trim($email));
+            $existeEmail = $this->userModel->where('email', $emailLimpio)->first();
+
+            if ($existeEmail) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'El email <strong>' . htmlspecialchars($emailLimpio) . '</strong> ya está registrado en el sistema. Por favor usa otro email o selecciona "Usar Usuario Existente".');
+            }
+
             // Crear usuario nuevo
             $userData = [
                 'nombre'        => $nombreCompleto,
-                'email'         => strtolower(trim($email)),
+                'email'         => $emailLimpio,
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'id_roles'      => 2, // Rol Consultor
                 'estado'        => 'activo',
             ];
 
-            if (!$this->userModel->save($userData)) {
+            try {
+                if (!$this->userModel->save($userData)) {
+                    return redirect()
+                        ->back()
+                        ->withInput()
+                        ->with('errors', $this->userModel->errors());
+                }
+
+                $idUser = $this->userModel->getInsertID();
+            } catch (\Exception $e) {
+                log_message('error', 'Error creating user: ' . $e->getMessage());
                 return redirect()
                     ->back()
                     ->withInput()
-                    ->with('errors', $this->userModel->errors());
+                    ->with('error', 'Error al crear el usuario. El email podría estar duplicado.');
             }
-
-            $idUser = $this->userModel->getInsertID();
-        } else {
-            // Usar usuario existente (flujo antiguo)
-            $idUser = $this->request->getPost('id_users');
+        }
+        // MODO 2: Usar usuario existente
+        elseif (!empty($idUsers)) {
+            $idUser = $idUsers;
 
             // Validar que el usuario no tenga ya un registro de consultor
             if ($this->consultorModel->userHasConsultor($idUser)) {
@@ -189,6 +211,13 @@ class ConsultoresController extends BaseController
                     ->withInput()
                     ->with('error', 'Este usuario ya tiene un registro de consultor.');
             }
+        }
+        // ERROR: No se proporcionaron datos válidos
+        else {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Debes crear un nuevo usuario o seleccionar uno existente.');
         }
 
         // PASO 2: Crear el consultor

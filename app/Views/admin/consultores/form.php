@@ -67,42 +67,86 @@
                           enctype="multipart/form-data">
                         <?= csrf_field() ?>
 
-                        <!-- Sección de Datos de Acceso (solo al crear) -->
+                        <!-- Sección de Usuario (solo al crear) -->
                         <?php if (!$consultor): ?>
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> <strong>Datos de Acceso al Sistema</strong>
+                            <i class="bi bi-info-circle"></i> <strong>Selección de Usuario</strong>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">
-                                Email (para login) <span class="text-danger">*</span>
-                            </label>
-                            <input type="email"
-                                   class="form-control <?= $validation->hasError('email') ? 'is-invalid' : '' ?>"
-                                   id="email"
-                                   name="email"
-                                   value="<?= old('email') ?>"
-                                   required>
-                            <div class="form-text">Este email se usará para iniciar sesión</div>
-                            <?php if ($validation->hasError('email')): ?>
-                                <div class="invalid-feedback"><?= $validation->getError('email') ?></div>
-                            <?php endif; ?>
+                        <!-- Selector de modo -->
+                        <div class="mb-4">
+                            <label class="form-label">¿Cómo deseas crear el consultor? <span class="text-danger">*</span></label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="modo_usuario" id="modo_nuevo" value="nuevo" checked>
+                                <label class="btn btn-outline-primary" for="modo_nuevo">
+                                    <i class="bi bi-person-plus"></i> Crear Nuevo Usuario
+                                </label>
+
+                                <input type="radio" class="btn-check" name="modo_usuario" id="modo_existente" value="existente">
+                                <label class="btn btn-outline-primary" for="modo_existente">
+                                    <i class="bi bi-person-check"></i> Usar Usuario Existente
+                                </label>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">
-                                Contraseña <span class="text-danger">*</span>
-                            </label>
-                            <input type="password"
-                                   class="form-control <?= $validation->hasError('password') ? 'is-invalid' : '' ?>"
-                                   id="password"
-                                   name="password"
-                                   minlength="8"
-                                   required>
-                            <div class="form-text">Mínimo 8 caracteres</div>
-                            <?php if ($validation->hasError('password')): ?>
-                                <div class="invalid-feedback"><?= $validation->getError('password') ?></div>
-                            <?php endif; ?>
+                        <!-- Campos para CREAR NUEVO usuario -->
+                        <div id="campos_nuevo_usuario">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    Email (para login) <span class="text-danger">*</span>
+                                </label>
+                                <input type="email"
+                                       class="form-control <?= $validation->hasError('email') ? 'is-invalid' : '' ?>"
+                                       id="email"
+                                       name="email"
+                                       value="<?= old('email') ?>">
+                                <div id="email-loading" class="form-text text-muted" style="display: none;">
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                    Verificando email...
+                                </div>
+                                <div id="email-feedback" class="form-text"></div>
+                                <div class="form-text">Este email se usará para iniciar sesión</div>
+                                <?php if ($validation->hasError('email')): ?>
+                                    <div class="invalid-feedback"><?= $validation->getError('email') ?></div>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">
+                                    Contraseña <span class="text-danger">*</span>
+                                </label>
+                                <input type="password"
+                                       class="form-control <?= $validation->hasError('password') ? 'is-invalid' : '' ?>"
+                                       id="password"
+                                       name="password"
+                                       minlength="8">
+                                <div class="form-text">Mínimo 8 caracteres</div>
+                                <?php if ($validation->hasError('password')): ?>
+                                    <div class="invalid-feedback"><?= $validation->getError('password') ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Campos para USAR USUARIO EXISTENTE -->
+                        <div id="campos_usuario_existente" style="display: none;">
+                            <div class="mb-3">
+                                <label for="id_users_existente" class="form-label">
+                                    <i class="bi bi-person-circle"></i> Seleccionar Usuario Existente <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="id_users_existente" name="id_users">
+                                    <option value="">-- Seleccionar usuario --</option>
+                                    <?php if (!empty($usuarios)): ?>
+                                        <?php foreach ($usuarios as $user): ?>
+                                            <option value="<?= $user['id_users'] ?>">
+                                                <?= esc($user['nombre']) ?> (<?= esc($user['email']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> Solo se muestran usuarios con rol "Consultor" que no tengan registro de consultor aún.
+                                </div>
+                            </div>
                         </div>
 
                         <hr class="my-4">
@@ -279,6 +323,134 @@ function confirmarEliminarFirma(id) {
         form.submit();
     }
 }
+<?php else: ?>
+// Manejo del cambio de modo (Crear Nuevo vs Usar Existente)
+const modoNuevo = document.getElementById('modo_nuevo');
+const modoExistente = document.getElementById('modo_existente');
+const camposNuevoUsuario = document.getElementById('campos_nuevo_usuario');
+const camposUsuarioExistente = document.getElementById('campos_usuario_existente');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const idUsersExistente = document.getElementById('id_users_existente');
+const submitButton = document.querySelector('button[type="submit"]');
+
+// Validación de email en tiempo real
+const emailFeedback = document.getElementById('email-feedback');
+const emailLoading = document.getElementById('email-loading');
+let emailCheckTimeout;
+let emailIsValid = false;
+
+function toggleCampos() {
+    if (modoNuevo.checked) {
+        // Mostrar campos para crear nuevo usuario
+        camposNuevoUsuario.style.display = 'block';
+        camposUsuarioExistente.style.display = 'none';
+
+        // Hacer obligatorios los campos de nuevo usuario
+        emailInput.required = true;
+        passwordInput.required = true;
+        idUsersExistente.required = false;
+        idUsersExistente.value = ''; // Limpiar selección
+    } else {
+        // Mostrar dropdown de usuarios existentes
+        camposNuevoUsuario.style.display = 'none';
+        camposUsuarioExistente.style.display = 'block';
+
+        // Hacer obligatorio el dropdown, opcional los campos de nuevo usuario
+        emailInput.required = false;
+        passwordInput.required = false;
+        idUsersExistente.required = true;
+
+        // Limpiar campos de nuevo usuario
+        emailInput.value = '';
+        passwordInput.value = '';
+        emailFeedback.innerHTML = '';
+        emailFeedback.className = 'form-text';
+        emailIsValid = true; // No validar email en modo existente
+    }
+    updateSubmitButton();
+}
+
+function updateSubmitButton() {
+    if (modoNuevo.checked) {
+        // En modo nuevo: validar email
+        submitButton.disabled = !emailIsValid;
+    } else {
+        // En modo existente: siempre habilitado (el form validation de HTML validará el dropdown)
+        submitButton.disabled = false;
+    }
+}
+
+// Escuchar cambios en los radio buttons
+modoNuevo.addEventListener('change', toggleCampos);
+modoExistente.addEventListener('change', toggleCampos);
+
+// Validación en tiempo real del email (solo en modo nuevo usuario)
+if (emailInput) {
+    emailInput.addEventListener('input', function() {
+        const email = this.value.trim();
+
+        // Limpiar feedback anterior
+        clearTimeout(emailCheckTimeout);
+        emailFeedback.innerHTML = '';
+        emailFeedback.className = 'form-text';
+        emailLoading.style.display = 'none';
+
+        // Si está vacío, no validar
+        if (!email || !modoNuevo.checked) {
+            emailIsValid = false;
+            updateSubmitButton();
+            return;
+        }
+
+        // Validar formato básico primero
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            emailIsValid = false;
+            updateSubmitButton();
+            return;
+        }
+
+        // Mostrar loading
+        emailLoading.style.display = 'block';
+
+        // Debounce: esperar 500ms antes de hacer la petición
+        emailCheckTimeout = setTimeout(() => {
+            fetch('<?= site_url('admin/api/check-email') ?>?email=' + encodeURIComponent(email))
+                .then(response => response.json())
+                .then(data => {
+                    emailLoading.style.display = 'none';
+
+                    if (data.exists) {
+                        // Email ya existe - mostrar error
+                        emailFeedback.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-1"></i>' +
+                                                  '<span class="text-danger">' + data.message + '</span>';
+                        emailFeedback.className = 'form-text text-danger';
+                        emailInput.classList.add('is-invalid');
+                        emailIsValid = false;
+                    } else {
+                        // Email disponible - mostrar éxito
+                        emailFeedback.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
+                                                  '<span class="text-success">' + data.message + '</span>';
+                        emailFeedback.className = 'form-text text-success';
+                        emailInput.classList.remove('is-invalid');
+                        emailIsValid = true;
+                    }
+
+                    updateSubmitButton();
+                })
+                .catch(error => {
+                    emailLoading.style.display = 'none';
+                    console.error('Error validating email:', error);
+                    emailIsValid = false;
+                    updateSubmitButton();
+                });
+        }, 500);
+    });
+}
+
+// Inicializar estado por defecto
+toggleCampos();
 <?php endif; ?>
 
 // Preview firma al seleccionar archivo
