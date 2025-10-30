@@ -142,14 +142,32 @@ class ContratoModel extends Model
      */
     public function getClientesByProveedor(int $idProveedor): array
     {
-        return $this->select('clientes.*,
-                              contratos_proveedor_cliente.id_contrato,
-                              contratos_proveedor_cliente.tipo_auditoria')
+        return $this->select('clientes.id_cliente,
+                              clientes.razon_social,
+                              clientes.nit,
+                              clientes.email_contacto,
+                              clientes.telefono_contacto,
+                              clientes.direccion,
+                              clientes.logo_path,
+                              clientes.estado,
+                              clientes.created_at,
+                              clientes.updated_at,
+                              MAX(contratos_proveedor_cliente.id_contrato) as id_contrato,
+                              MAX(contratos_proveedor_cliente.tipo_auditoria) as tipo_auditoria')
                     ->join('clientes', 'clientes.id_cliente = contratos_proveedor_cliente.id_cliente')
                     ->where('contratos_proveedor_cliente.id_proveedor', $idProveedor)
                     ->where('contratos_proveedor_cliente.estado', 'activo')
                     ->where('clientes.estado', 'activo')
-                    ->groupBy('clientes.id_cliente')
+                    ->groupBy('clientes.id_cliente,
+                              clientes.razon_social,
+                              clientes.nit,
+                              clientes.email_contacto,
+                              clientes.telefono_contacto,
+                              clientes.direccion,
+                              clientes.logo_path,
+                              clientes.estado,
+                              clientes.created_at,
+                              clientes.updated_at')
                     ->findAll();
     }
 
