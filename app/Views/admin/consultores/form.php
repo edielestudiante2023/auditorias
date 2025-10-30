@@ -84,6 +84,13 @@
                                    value="<?= old('email') ?>"
                                    required>
                             <div class="form-text">Este email se usará para iniciar sesión</div>
+                            <div id="email-feedback" class="mt-2" style="display: none;"></div>
+                            <div id="email-loading" class="mt-2" style="display: none;">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Verificando...</span>
+                                </div>
+                                <span class="text-muted ms-2">Verificando email...</span>
+                            </div>
                             <?php if ($validation->hasError('email')): ?>
                                 <div class="invalid-feedback"><?= $validation->getError('email') ?></div>
                             <?php endif; ?>
@@ -305,6 +312,88 @@ document.getElementById('firma')?.addEventListener('change', function(e) {
         reader.readAsDataURL(file);
     }
 });
+
+// ===================================
+// Validación de email en tiempo real
+// ===================================
+const emailInput = document.getElementById('email');
+const emailFeedback = document.getElementById('email-feedback');
+const emailLoading = document.getElementById('email-loading');
+const submitButton = document.querySelector('button[type="submit"]');
+let emailCheckTimeout;
+let emailIsValid = false;
+
+if (emailInput) {
+    emailInput.addEventListener('input', function() {
+        const email = this.value.trim();
+
+        // Limpiar timeout anterior
+        clearTimeout(emailCheckTimeout);
+
+        // Ocultar mensajes
+        emailFeedback.style.display = 'none';
+        emailLoading.style.display = 'none';
+
+        // Validar formato básico
+        if (email.length < 3 || !email.includes('@')) {
+            emailIsValid = false;
+            updateSubmitButton();
+            return;
+        }
+
+        // Mostrar loading
+        emailLoading.style.display = 'block';
+
+        // Debounce: esperar 500ms después de que el usuario deje de escribir
+        emailCheckTimeout = setTimeout(() => {
+            fetch('<?= site_url('admin/api/check-email') ?>?email=' + encodeURIComponent(email))
+                .then(response => response.json())
+                .then(data => {
+                    emailLoading.style.display = 'none';
+
+                    if (data.exists) {
+                        // Email ya existe
+                        emailFeedback.innerHTML = `
+                            <div class="alert alert-danger py-2 mb-0">
+                                <i class="bi bi-x-circle-fill"></i>
+                                ${data.message}. Ya está registrado como: <strong>${data.user.nombre}</strong>
+                            </div>
+                        `;
+                        emailFeedback.style.display = 'block';
+                        emailInput.classList.add('is-invalid');
+                        emailInput.classList.remove('is-valid');
+                        emailIsValid = false;
+                    } else {
+                        // Email disponible
+                        emailFeedback.innerHTML = `
+                            <div class="alert alert-success py-2 mb-0">
+                                <i class="bi bi-check-circle-fill"></i>
+                                ${data.message}
+                            </div>
+                        `;
+                        emailFeedback.style.display = 'block';
+                        emailInput.classList.remove('is-invalid');
+                        emailInput.classList.add('is-valid');
+                        emailIsValid = true;
+                    }
+
+                    updateSubmitButton();
+                })
+                .catch(error => {
+                    console.error('Error al validar email:', error);
+                    emailLoading.style.display = 'none';
+                    emailIsValid = true; // Permitir envío si hay error en la validación
+                    updateSubmitButton();
+                });
+        }, 500);
+    });
+}
+
+function updateSubmitButton() {
+    if (submitButton && emailInput && emailInput.value.trim()) {
+        submitButton.disabled = !emailIsValid;
+    }
+}
 </script>
 </body>
 </html>

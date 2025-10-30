@@ -161,20 +161,50 @@ class ConsultoresController extends BaseController
         $nombreCompleto = $this->request->getPost('nombre_completo');
 
         if ($email && $password) {
+            // Validar que el email no exista
+            $emailLimpio = strtolower(trim($email));
+            $existeEmail = $this->userModel->where('email', $emailLimpio)->first();
+
+            if ($existeEmail) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'El email <strong>' . htmlspecialchars($emailLimpio) . '</strong> ya está registrado en el sistema. Por favor usa otro email.');
+            }
+
             // Crear usuario nuevo
             $userData = [
                 'nombre'        => $nombreCompleto,
-                'email'         => strtolower(trim($email)),
+                'email'         => $emailLimpio,
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'id_roles'      => 2, // Rol Consultor
                 'estado'        => 'activo',
             ];
 
-            if (!$this->userModel->save($userData)) {
+            try {
+                if (!$this->userModel->save($userData)) {
+                    $errors = $this->userModel->errors();
+                    log_message('error', 'Error al crear usuario para consultor: ' . json_encode($errors));
+                    return redirect()
+                        ->back()
+                        ->withInput()
+                        ->with('errors', $errors);
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'Excepción al crear usuario para consultor: ' . $e->getMessage());
+
+                // Verificar si es error de email duplicado
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false && strpos($e->getMessage(), 'email') !== false) {
+                    return redirect()
+                        ->back()
+                        ->withInput()
+                        ->with('error', 'El email <strong>' . htmlspecialchars($email) . '</strong> ya está registrado en el sistema. Por favor usa otro email.');
+                }
+
                 return redirect()
                     ->back()
                     ->withInput()
-                    ->with('errors', $this->userModel->errors());
+                    ->with('error', 'Error al crear usuario: ' . $e->getMessage());
             }
 
             $idUser = $this->userModel->getInsertID();

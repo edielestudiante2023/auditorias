@@ -85,8 +85,21 @@ class UsuariosController extends BaseController
             'estado'        => $estado,
         ];
 
-        if (!$this->userModel->save($data)) {
-            return redirect()->back()->withInput()->with('errors', $this->userModel->errors());
+        try {
+            if (!$this->userModel->save($data)) {
+                $errors = $this->userModel->errors();
+                log_message('error', 'Error al crear usuario: ' . json_encode($errors));
+                return redirect()->back()->withInput()->with('errors', $errors);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Excepción al crear usuario: ' . $e->getMessage());
+
+            // Verificar si es error de email duplicado
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false && strpos($e->getMessage(), 'email') !== false) {
+                return redirect()->back()->withInput()->with('error', 'El email ya está registrado en el sistema. Por favor usa otro email.');
+            }
+
+            return redirect()->back()->withInput()->with('error', 'Error al crear usuario: ' . $e->getMessage());
         }
 
         $userId = $this->userModel->getInsertID();
@@ -198,8 +211,21 @@ class UsuariosController extends BaseController
             $data['id_roles'] = (int) $this->request->getPost('id_roles');
         }
 
-        if (!$this->userModel->save($data)) {
-            return redirect()->back()->withInput()->with('errors', $this->userModel->errors());
+        try {
+            if (!$this->userModel->save($data)) {
+                $errors = $this->userModel->errors();
+                log_message('error', 'Error al actualizar usuario: ' . json_encode($errors));
+                return redirect()->back()->withInput()->with('errors', $errors);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Excepción al actualizar usuario: ' . $e->getMessage());
+
+            // Verificar si es error de email duplicado
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false && strpos($e->getMessage(), 'email') !== false) {
+                return redirect()->back()->withInput()->with('error', 'El email ya está registrado en el sistema. Por favor usa otro email.');
+            }
+
+            return redirect()->back()->withInput()->with('error', 'Error al actualizar usuario: ' . $e->getMessage());
         }
 
         // Si el rol es Proveedor, actualizar las vinculaciones en tabla intermedia
@@ -311,6 +337,51 @@ class UsuariosController extends BaseController
         }
 
         return redirect()->to('/admin/usuarios')->with('success', "Usuario {$usuario['nombre']} eliminado exitosamente.");
+    }
+
+    /**
+     * API: Verifica si un email ya existe en la base de datos
+     * Método: GET/POST
+     * Retorna: JSON con {exists: true/false, message: string}
+     */
+    public function checkEmail()
+    {
+        $email = $this->request->getGet('email') ?? $this->request->getPost('email');
+        $excludeId = $this->request->getGet('exclude_id') ?? $this->request->getPost('exclude_id');
+
+        if (empty($email)) {
+            return $this->response->setJSON([
+                'exists' => false,
+                'message' => 'Email no proporcionado'
+            ]);
+        }
+
+        $emailLimpio = strtolower(trim($email));
+
+        $builder = $this->userModel->where('email', $emailLimpio);
+
+        // Excluir un ID específico (útil para edición)
+        if ($excludeId) {
+            $builder->where('id_users !=', (int)$excludeId);
+        }
+
+        $usuario = $builder->first();
+
+        if ($usuario) {
+            return $this->response->setJSON([
+                'exists' => true,
+                'message' => 'El email ya está registrado en el sistema',
+                'user' => [
+                    'nombre' => $usuario['nombre'],
+                    'rol' => $usuario['id_roles']
+                ]
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'exists' => false,
+            'message' => 'Email disponible'
+        ]);
     }
 }
 

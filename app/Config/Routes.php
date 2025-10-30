@@ -142,6 +142,10 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->post('usuarios/(:num)', 'Admin\\UsuariosController::update/$1');
     $routes->post('usuarios/(:num)/reset-password', 'Admin\\UsuariosController::resetPassword/$1');
     $routes->post('usuarios/(:num)/delete', 'Admin\\UsuariosController::delete/$1');
+
+    // API: Validación de email
+    $routes->get('api/check-email', 'Admin\\UsuariosController::checkEmail');
+    $routes->post('api/check-email', 'Admin\\UsuariosController::checkEmail');
 });
 
 // ============================================================
