@@ -30,6 +30,7 @@ function getMimeType($filePath) {
             font-size: 11pt;
             color: #333;
             line-height: 1.4;
+            margin-bottom: 100px;
         }
         .header {
             width: 100%;
@@ -96,6 +97,7 @@ function getMimeType($filePath) {
             padding: 8px 12px;
             margin-top: 25px;
             margin-bottom: 15px;
+            page-break-after: avoid;
             font-size: 13pt;
             font-weight: bold;
         }
@@ -169,10 +171,12 @@ function getMimeType($filePath) {
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
+            height: 60px;
             border-top: 1px solid #ccc;
-            padding-top: 10px;
+            padding: 10px 20px;
             text-align: center;
+            background-color: white;
+            z-index: 1000;
         }
         .firma-consultor {
             margin-top: 40px;
@@ -370,7 +374,7 @@ function getMimeType($filePath) {
 <!-- ÍTEMS CORPORATIVOS (GLOBALES) -->
 <?php if (!empty($items_globales)): ?>
     <div class="section-title">ÍTEMS CORPORATIVOS DEL PROVEEDOR</div>
-    <p style="font-size: 9pt; color: #666; margin-top: -10px; margin-bottom: 15px;">
+    <p style="font-size: 9pt; color: #666; margin-top: 5px; margin-bottom: 15px;">
         Estos ítems aplican de manera general al proveedor y son comunes para todos sus clientes.
     </p>
 

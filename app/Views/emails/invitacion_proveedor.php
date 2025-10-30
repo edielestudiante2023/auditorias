@@ -212,7 +212,7 @@
       </div>
 
       <p style="text-align: center; margin: 30px 0;">
-        <a href="<?= $urlAuditoria ?>" class="button">📋 Ir a la Auditoría</a>
+        <a href="https://auditorias.cycloidtalent.com/" class="button">📋 Ir a la Auditoría</a>
       </p>
 
       <div class="alert">
