@@ -99,7 +99,25 @@ class FileController extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $mimeType = mime_content_type($filePath);
+        // Detectar MIME con fallback
+        if (function_exists('mime_content_type')) {
+            $mimeType = mime_content_type($filePath);
+        } else {
+            // Fallback: detectar por extensión
+            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $mimeType = match($ext) {
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                default => 'application/octet-stream'
+            };
+        }
 
         return $this->response
             ->setHeader('Content-Type', $mimeType)

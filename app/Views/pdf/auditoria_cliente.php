@@ -427,7 +427,22 @@
         log_message('debug', "Firma exists: " . (file_exists($firmaPath) ? 'YES' : 'NO'));
         if (file_exists($firmaPath)) {
             $firmaData = base64_encode(file_get_contents($firmaPath));
-            $firmaMime = mime_content_type($firmaPath);
+
+            // Detectar MIME con fallback si mime_content_type no está disponible
+            if (function_exists('mime_content_type')) {
+                $firmaMime = mime_content_type($firmaPath);
+            } else {
+                // Fallback: detectar por extensión
+                $ext = strtolower(pathinfo($firmaPath, PATHINFO_EXTENSION));
+                $firmaMime = match($ext) {
+                    'png' => 'image/png',
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    'gif' => 'image/gif',
+                    'webp' => 'image/webp',
+                    default => 'image/png'
+                };
+            }
+
             log_message('debug', "Firma MIME: {$firmaMime}");
             echo '<img src="data:' . $firmaMime . ';base64,' . $firmaData . '" class="firma-imagen" alt="Firma">';
         } else {
