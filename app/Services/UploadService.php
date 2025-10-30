@@ -530,21 +530,44 @@ class UploadService
     public function isImage(array $file): bool
     {
         if (!isset($file['tmp_name']) || empty($file['tmp_name'])) {
+            log_message('debug', 'isImage: tmp_name vacío o no existe');
+            return false;
+        }
+
+        // Verificar que el archivo temporal existe
+        if (!file_exists($file['tmp_name'])) {
+            log_message('debug', 'isImage: archivo temporal no existe: ' . $file['tmp_name']);
             return false;
         }
 
         // Intentar usar finfo si está disponible
         if (function_exists('finfo_open')) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime = finfo_file($finfo, $file['tmp_name']);
-            finfo_close($finfo);
+            try {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                if ($finfo === false) {
+                    log_message('debug', 'isImage: finfo_open falló');
+                } else {
+                    $mime = finfo_file($finfo, $file['tmp_name']);
+                    finfo_close($finfo);
 
-            return in_array($mime, ['image/png', 'image/jpeg', 'image/jpg']);
+                    log_message('debug', 'isImage: MIME detectado con finfo: ' . $mime);
+
+                    $isValid = in_array($mime, ['image/png', 'image/jpeg', 'image/jpg']);
+                    if ($isValid) {
+                        return true;
+                    }
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'isImage: excepción en finfo: ' . $e->getMessage());
+            }
+        } else {
+            log_message('debug', 'isImage: finfo_open no disponible');
         }
 
         // Alternativa: validar por extensión y mime_content_type
         if (isset($file['type'])) {
             $mime = $file['type'];
+            log_message('debug', 'isImage: MIME del tipo de archivo: ' . $mime);
             if (in_array($mime, ['image/png', 'image/jpeg', 'image/jpg'])) {
                 return true;
             }
@@ -553,9 +576,14 @@ class UploadService
         // Última alternativa: validar solo por extensión
         if (isset($file['name'])) {
             $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            return in_array($ext, ['png', 'jpg', 'jpeg']);
+            log_message('debug', 'isImage: extensión detectada: ' . $ext);
+            $isValid = in_array($ext, ['png', 'jpg', 'jpeg']);
+            if ($isValid) {
+                return true;
+            }
         }
 
+        log_message('debug', 'isImage: todas las validaciones fallaron');
         return false;
     }
 
