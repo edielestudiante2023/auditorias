@@ -48,7 +48,7 @@ class PdfService
         }
 
         // Crear nombre descriptivo del archivo según el servicio
-        $nombreProveedor = $data['proveedor']['razon_social'] ?? 'Proveedor';
+        $nombreProveedor = $data['auditoria']['proveedor_nombre'] ?? 'Proveedor';
         $nombreCliente = $data['cliente']['razon_social'] ?? 'Cliente';
 
         // Obtener el servicio del contrato
