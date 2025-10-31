@@ -867,7 +867,7 @@ class AuditoriasConsultorController extends BaseController
     }
 
     /**
-     * Enviar PDF por email a un cliente (bajo demanda)
+     * Enviar PDF por email al usuario responsable del proveedor (bajo demanda)
      */
     public function enviarPdfCliente(int $idAuditoria, int $idCliente)
     {
@@ -881,8 +881,24 @@ class AuditoriasConsultorController extends BaseController
         $db = \Config\Database::connect();
         $cliente = $db->table('clientes')->where('id_cliente', $idCliente)->get()->getRowArray();
 
-        if (!$cliente || empty($cliente['email_contacto'])) {
-            return redirect()->back()->with('error', 'Cliente no tiene email configurado');
+        if (!$cliente) {
+            return redirect()->back()->with('error', 'Cliente no encontrado');
+        }
+
+        // Obtener el contrato y el usuario responsable del proveedor
+        $contrato = $db->table('contratos_proveedor_cliente cpc')
+            ->select('cpc.id_contrato, cpc.id_usuario_responsable,
+                      users.email as usuario_responsable_email,
+                      users.nombre as usuario_responsable_nombre')
+            ->join('users', 'users.id_users = cpc.id_usuario_responsable')
+            ->where('cpc.id_proveedor', $auditoria['id_proveedor'])
+            ->where('cpc.id_cliente', $idCliente)
+            ->where('cpc.estado', 'activo')
+            ->get()
+            ->getRowArray();
+
+        if (!$contrato || empty($contrato['usuario_responsable_email'])) {
+            return redirect()->back()->with('error', 'No se encontró el usuario responsable del proveedor o no tiene email configurado');
         }
 
         try {
@@ -899,17 +915,17 @@ class AuditoriasConsultorController extends BaseController
                 return redirect()->back()->with('error', 'Error al generar el PDF');
             }
 
-            // Enviar email con PDF adjunto
+            // Enviar email con PDF adjunto al usuario responsable del proveedor
             $resultado = $this->emailService->enviarPdfCliente(
                 $idAuditoria,
                 $idCliente,
-                $cliente['email_contacto'],
+                $contrato['usuario_responsable_email'],
                 $cliente['razon_social'],
                 $fullPath
             );
 
             if ($resultado['ok']) {
-                return redirect()->back()->with('success', "✅ PDF enviado exitosamente a {$cliente['email_contacto']} (con copia al consultor y head consultant)");
+                return redirect()->back()->with('success', "✅ PDF enviado exitosamente a {$contrato['usuario_responsable_nombre']} ({$contrato['usuario_responsable_email']})");
             } else {
                 return redirect()->back()->with('error', 'Error al enviar email: ' . ($resultado['error'] ?? 'Desconocido'));
             }

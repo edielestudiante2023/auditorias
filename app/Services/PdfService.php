@@ -47,7 +47,12 @@ class PdfService
             mkdir($dirBase, 0755, true);
         }
 
-        $filename = "auditoria-proveedor-{$idAuditoria}-cliente-{$idCliente}.pdf";
+        // Crear nombre descriptivo del archivo con proveedor y cliente
+        $nombreProveedor = $this->sanitizarNombreArchivo($data['proveedor']['razon_social'] ?? 'Proveedor');
+        $nombreCliente = $this->sanitizarNombreArchivo($data['cliente']['razon_social'] ?? 'Cliente');
+        $fecha = date('Y-m-d');
+
+        $filename = "Auditoria-SST-{$nombreProveedor}-Cliente-{$nombreCliente}-{$fecha}.pdf";
         $fullPath = $dirBase . '/' . $filename;
 
         // Guardar archivo
@@ -55,6 +60,19 @@ class PdfService
 
         // Retornar ruta relativa
         return "reports/{$idAuditoria}/clientes/{$idCliente}/{$filename}";
+    }
+
+    /**
+     * Sanitiza un nombre para usar en archivo
+     */
+    private function sanitizarNombreArchivo(string $nombre): string
+    {
+        // Remover caracteres especiales y espacios
+        $nombre = preg_replace('/[^a-zA-Z0-9\s-]/', '', $nombre);
+        // Reemplazar espacios por guiones
+        $nombre = preg_replace('/\s+/', '-', trim($nombre));
+        // Limitar longitud
+        return substr($nombre, 0, 50);
     }
 
     /**

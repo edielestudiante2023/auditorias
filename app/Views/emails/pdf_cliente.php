@@ -78,25 +78,26 @@
         </div>
 
         <div class="content">
-            <h2>Estimado/a <?= esc($nombre_cliente) ?>,</h2>
+            <h2>Estimado/a equipo de <?= esc($nombre_proveedor) ?>,</h2>
 
-            <p>Se adjunta el <strong>informe de auditoría</strong> correspondiente a su empresa.</p>
+            <p>Se adjunta el <strong>informe de auditoría SST</strong> correspondiente al cliente <strong><?= esc($nombre_cliente) ?></strong>.</p>
 
             <div class="info-box">
-                <strong>📋 Auditoría:</strong> #<?= esc($id_auditoria) ?><br>
-                <strong>📅 Fecha de emisión:</strong> <?= esc($fecha_envio) ?><br>
-                <strong>🏢 Cliente:</strong> <?= esc($nombre_cliente) ?>
+                <strong>🏭 Proveedor:</strong> <?= esc($nombre_proveedor) ?><br>
+                <strong>🏢 Cliente evaluado:</strong> <?= esc($nombre_cliente) ?><br>
+                <strong>👤 Consultor:</strong> <?= esc($nombre_consultor) ?><br>
+                <strong>📅 Fecha de emisión:</strong> <?= esc($fecha_envio) ?>
             </div>
 
             <p>El informe adjunto contiene:</p>
             <ul>
-                <li>✅ Resultados de la evaluación</li>
-                <li>📊 Porcentaje de cumplimiento</li>
-                <li>📝 Observaciones y comentarios</li>
-                <li>📎 Evidencias documentales</li>
+                <li>✅ Resultados de la evaluación por ítem</li>
+                <li>📊 Porcentaje de cumplimiento general</li>
+                <li>📝 Observaciones y comentarios del consultor</li>
+                <li>📎 Evidencias documentales presentadas</li>
             </ul>
 
-            <p><strong>Nota importante:</strong> Este documento es confidencial y está destinado únicamente para uso interno de su organización.</p>
+            <p><strong>Nota importante:</strong> Este documento es confidencial y está destinado únicamente para uso interno de su organización. Por favor, revise el informe y tome las acciones necesarias según las recomendaciones.</p>
         </div>
 
         <div class="footer">

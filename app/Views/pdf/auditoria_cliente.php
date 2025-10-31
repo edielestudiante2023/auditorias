@@ -183,9 +183,10 @@ function getMimeType($filePath) {
             text-align: center;
         }
         .firma-imagen {
-            width: 150px;
+            max-width: 150px;
+            max-height: 150px;
+            width: auto;
             height: auto;
-            max-height: 60px;
             margin-bottom: 5px;
         }
         .firma-nombre {

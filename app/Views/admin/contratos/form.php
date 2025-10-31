@@ -136,6 +136,33 @@
                         </div>
 
                         <div class="row">
+                            <!-- Servicio -->
+                            <div class="col-md-6 mb-3">
+                                <label for="id_servicio" class="form-label">
+                                    Servicio <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select <?= isset($errors['id_servicio']) ? 'is-invalid' : '' ?>"
+                                        id="id_servicio"
+                                        name="id_servicio"
+                                        required>
+                                    <option value="">Seleccionar servicio...</option>
+                                    <?php foreach ($servicios as $servicio): ?>
+                                        <option value="<?= $servicio['id_servicio'] ?>"
+                                                <?= old('id_servicio', $contrato['id_servicio'] ?? '') == $servicio['id_servicio'] ? 'selected' : '' ?>>
+                                            <?= esc($servicio['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Tipo de servicio (Aseo, Vigilancia, etc.)</div>
+                                <?php if (isset($errors['id_servicio'])): ?>
+                                    <div class="invalid-feedback"><?= esc($errors['id_servicio']) ?></div>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="col-md-6 mb-3"></div>
+                        </div>
+
+                        <div class="row">
                             <!-- Consultor -->
                             <div class="col-md-6 mb-3">
                                 <label for="id_consultor" class="form-label">

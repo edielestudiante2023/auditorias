@@ -71,6 +71,7 @@ class ContratosController extends BaseController
             'proveedores'        => $this->proveedorModel->getProveedoresActivos(),
             'consultores'        => $this->getConsultoresActivos(),
             'usuarios_proveedores' => $this->getUsuariosProveedores(),
+            'servicios'          => $this->servicioModel->where('activo', 1)->findAll(),
             'validation'         => \Config\Services::validation(),
             'breadcrumbs'        => [
                 ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
@@ -90,6 +91,7 @@ class ContratosController extends BaseController
         $data = [
             'id_cliente'             => $this->request->getPost('id_cliente'),
             'id_proveedor'           => $this->request->getPost('id_proveedor'),
+            'id_servicio'            => $this->request->getPost('id_servicio'),
             'id_consultor'           => $this->request->getPost('id_consultor'),
             'id_usuario_responsable' => $this->request->getPost('id_usuario_responsable'),
             'tipo_auditoria'         => $this->request->getPost('tipo_auditoria'),
@@ -130,6 +132,7 @@ class ContratosController extends BaseController
             'proveedores'        => $this->proveedorModel->getProveedoresActivos(),
             'consultores'        => $this->getConsultoresActivos(),
             'usuarios_proveedores' => $this->getUsuariosProveedores(),
+            'servicios'          => $this->servicioModel->where('activo', 1)->findAll(),
             'validation'         => \Config\Services::validation(),
             'breadcrumbs'        => [
                 ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
@@ -158,6 +161,7 @@ class ContratosController extends BaseController
             'id_contrato'            => $id,
             'id_cliente'             => $this->request->getPost('id_cliente'),
             'id_proveedor'           => $this->request->getPost('id_proveedor'),
+            'id_servicio'            => $this->request->getPost('id_servicio'),
             'id_consultor'           => $this->request->getPost('id_consultor'),
             'id_usuario_responsable' => $this->request->getPost('id_usuario_responsable'),
             'tipo_auditoria'         => $this->request->getPost('tipo_auditoria'),

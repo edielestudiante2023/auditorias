@@ -934,32 +934,41 @@ class EmailService
     public function enviarPdfCliente(int $idAuditoria, int $idCliente, string $emailCliente, string $nombreCliente, string $rutaPdf): array
     {
         $tipo = 'pdf_cliente';
-        $asunto = "Informe de Auditoría #{$idAuditoria} - {$nombreCliente}";
-
-        $payload = [
-            'id_auditoria' => $idAuditoria,
-            'id_cliente' => $idCliente,
-            'nombre_cliente' => $nombreCliente
-        ];
 
         try {
-            // Obtener email del consultor de la auditoría
+            // Obtener datos completos de la auditoría, proveedor y consultor
             $db = \Config\Database::connect();
-            $auditoria = $db->table('auditorias a')
-                ->select('cons.nombre_completo as consultor_nombre, u.email as consultor_email')
+            $datos = $db->table('auditorias a')
+                ->select('a.id_auditoria,
+                         prov.razon_social as proveedor_nombre,
+                         cons.nombre_completo as consultor_nombre,
+                         u.email as consultor_email')
+                ->join('proveedores prov', 'prov.id_proveedor = a.id_proveedor')
                 ->join('consultores cons', 'cons.id_consultor = a.id_consultor')
                 ->join('users u', 'u.id_users = cons.id_users')
                 ->where('a.id_auditoria', $idAuditoria)
                 ->get()
                 ->getRowArray();
 
-            $emailConsultor = $auditoria['consultor_email'] ?? null;
-            $nombreConsultor = $auditoria['consultor_nombre'] ?? 'Consultor';
+            $nombreProveedor = $datos['proveedor_nombre'] ?? 'Proveedor';
+            $emailConsultor = $datos['consultor_email'] ?? null;
+            $nombreConsultor = $datos['consultor_nombre'] ?? 'Consultor';
+
+            // Asunto más descriptivo
+            $asunto = "Informe de Auditoría SST - {$nombreProveedor} - Cliente: {$nombreCliente}";
+
+            $payload = [
+                'id_auditoria' => $idAuditoria,
+                'id_cliente' => $idCliente,
+                'nombre_cliente' => $nombreCliente,
+                'nombre_proveedor' => $nombreProveedor
+            ];
 
             // Cargar plantilla HTML
             $htmlContent = view('emails/pdf_cliente', [
                 'nombre_cliente' => $nombreCliente,
-                'id_auditoria' => $idAuditoria,
+                'nombre_proveedor' => $nombreProveedor,
+                'nombre_consultor' => $nombreConsultor,
                 'fecha_envio' => date('d/m/Y H:i')
             ]);
 
