@@ -23,7 +23,7 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table id="tablaCompletadas" class="table table-hover align-middle" style="width:100%">
                     <thead class="table-light">
                         <tr>
                             <th>Código</th>
@@ -33,9 +33,19 @@
                             <th>Fecha Cierre</th>
                             <th>% Cumplimiento</th>
                             <th>Estado</th>
-                            <th>Acciones</th>
                         </tr>
                     </thead>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Proveedor</th>
+                            <th>Consultor</th>
+                            <th>Usuario Responsable</th>
+                            <th>Fecha Cierre</th>
+                            <th>% Cumplimiento</th>
+                            <th>Estado</th>
+                        </tr>
+                    </tfoot>
                     <tbody>
                         <?php foreach ($auditorias as $auditoria): ?>
                             <tr>
@@ -55,7 +65,7 @@
                                     <br>
                                     <small class="text-muted"><?= esc($auditoria['usuario_responsable_email'] ?? '') ?></small>
                                 </td>
-                                <td>
+                                <td data-order="<?= !empty($auditoria['updated_at']) ? strtotime($auditoria['updated_at']) : 0 ?>">
                                     <?php
                                     if (!empty($auditoria['updated_at'])) {
                                         $fecha = new DateTime($auditoria['updated_at']);
@@ -65,7 +75,7 @@
                                     }
                                     ?>
                                 </td>
-                                <td>
+                                <td data-order="<?= $auditoria['porcentaje_cumplimiento'] ?? 0 ?>">
                                     <?php
                                     $porcentaje = $auditoria['porcentaje_cumplimiento'] ?? 0;
                                     $badgeClass = 'secondary';
@@ -86,14 +96,6 @@
                                         <i class="bi bi-lock-fill"></i> Cerrada
                                     </span>
                                 </td>
-                                <td>
-                                    <a href="<?= site_url('consultor/auditoria/' . $auditoria['id_auditoria']) ?>"
-                                       class="btn btn-sm btn-outline-primary"
-                                       target="_blank"
-                                       title="Ver detalles">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </a>
-                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -108,6 +110,67 @@
             Total: <?= count($auditorias) ?> auditoría(s) completada(s) por proveedores
         </small>
     </div>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+
+    <!-- jQuery (requerido por DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- DataTables Buttons -->
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        var table = $('#tablaCompletadas').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+            },
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+            order: [[4, 'desc']], // Ordenar por fecha de cierre descendente
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                 '<"row"<"col-sm-12"B>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: '<i class="bi bi-file-earmark-excel"></i> Exportar a Excel',
+                    className: 'btn btn-success btn-sm',
+                    title: 'Auditorias_Completadas_Proveedores',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                }
+            ],
+            responsive: true,
+            initComplete: function() {
+                // Agregar filtros en cada columna del footer
+                this.api().columns().every(function() {
+                    var column = this;
+                    var title = $(column.header()).text();
+
+                    $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
+                        .appendTo($(column.footer()).empty())
+                        .on('keyup change clear', function() {
+                            if (column.search() !== this.value) {
+                                column.search(this.value).draw();
+                            }
+                        });
+                });
+            }
+        });
+    });
+    </script>
 <?php endif; ?>
 
 <?= $this->endSection() ?>

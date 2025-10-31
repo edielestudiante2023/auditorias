@@ -12,6 +12,7 @@ class AuditoriasController extends BaseController
     public function __construct()
     {
         $this->auditoriaModel = new AuditoriaModel();
+        helper(['auth', 'format']);
     }
 
     /**
@@ -93,7 +94,7 @@ class AuditoriasController extends BaseController
                    u.nombre as usuario_responsable_nombre,
                    u.email as usuario_responsable_email,
                    COUNT(DISTINCT ai.id_auditoria_item) as total_items,
-                   COUNT(DISTINCT CASE WHEN ai.calificacion IS NOT NULL THEN ai.id_auditoria_item END) as items_calificados
+                   COUNT(DISTINCT CASE WHEN ai.calificacion_consultor != 'sin_revision' THEN ai.id_auditoria_item END) as items_calificados
             FROM auditorias a
             JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             JOIN consultores c ON c.id_consultor = a.id_consultor
