@@ -936,10 +936,11 @@ class EmailService
         $tipo = 'pdf_cliente';
 
         try {
-            // Obtener datos completos de la auditoría, proveedor y consultor
+            // Obtener datos completos de la auditoría, proveedor, consultor y servicio
             $db = \Config\Database::connect();
             $datos = $db->table('auditorias a')
                 ->select('a.id_auditoria,
+                         a.id_proveedor,
                          prov.razon_social as proveedor_nombre,
                          cons.nombre_completo as consultor_nombre,
                          u.email as consultor_email')
@@ -954,8 +955,31 @@ class EmailService
             $emailConsultor = $datos['consultor_email'] ?? null;
             $nombreConsultor = $datos['consultor_nombre'] ?? 'Consultor';
 
-            // Asunto más descriptivo
-            $asunto = "Informe de Auditoría SST - {$nombreProveedor} - Cliente: {$nombreCliente}";
+            // Obtener el servicio del contrato
+            $contrato = $db->table('contratos_proveedor_cliente cpc')
+                ->select('s.id_servicio, s.nombre as servicio_nombre')
+                ->join('servicios s', 's.id_servicio = cpc.id_servicio', 'left')
+                ->where('cpc.id_proveedor', $datos['id_proveedor'])
+                ->where('cpc.id_cliente', $idCliente)
+                ->where('cpc.estado', 'activo')
+                ->get()
+                ->getRowArray();
+
+            $idServicio = $contrato['id_servicio'] ?? null;
+            $tipoAuditoria = '';
+
+            if ($idServicio == 1) {
+                $tipoAuditoria = 'AUDITORIA PROVEEDOR DE ASEO';
+            } elseif ($idServicio == 2) {
+                $tipoAuditoria = 'AUDITORIA PROVEEDOR DE VIGILANCIA';
+            } else {
+                $tipoAuditoria = 'AUDITORIA PROVEEDOR';
+            }
+
+            // Asunto con formato específico para N8N
+            $clienteUpper = strtoupper($nombreCliente);
+            $proveedorUpper = strtoupper($nombreProveedor);
+            $asunto = "{$tipoAuditoria}__{$clienteUpper}___{$proveedorUpper}";
 
             $payload = [
                 'id_auditoria' => $idAuditoria,

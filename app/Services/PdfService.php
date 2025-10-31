@@ -47,12 +47,37 @@ class PdfService
             mkdir($dirBase, 0755, true);
         }
 
-        // Crear nombre descriptivo del archivo con proveedor y cliente
-        $nombreProveedor = $this->sanitizarNombreArchivo($data['proveedor']['razon_social'] ?? 'Proveedor');
-        $nombreCliente = $this->sanitizarNombreArchivo($data['cliente']['razon_social'] ?? 'Cliente');
-        $fecha = date('Y-m-d');
+        // Crear nombre descriptivo del archivo según el servicio
+        $nombreProveedor = $data['proveedor']['razon_social'] ?? 'Proveedor';
+        $nombreCliente = $data['cliente']['razon_social'] ?? 'Cliente';
 
-        $filename = "Auditoria-SST-{$nombreProveedor}-Cliente-{$nombreCliente}-{$fecha}.pdf";
+        // Obtener el servicio del contrato
+        $db = \Config\Database::connect();
+        $contrato = $db->table('contratos_proveedor_cliente cpc')
+            ->select('s.id_servicio')
+            ->join('servicios s', 's.id_servicio = cpc.id_servicio', 'left')
+            ->where('cpc.id_proveedor', $data['auditoria']['id_proveedor'])
+            ->where('cpc.id_cliente', $idCliente)
+            ->where('cpc.estado', 'activo')
+            ->get()
+            ->getRowArray();
+
+        $idServicio = $contrato['id_servicio'] ?? null;
+        $tipoAuditoria = '';
+
+        if ($idServicio == 1) {
+            $tipoAuditoria = 'AUDITORIA PROVEEDOR DE ASEO';
+        } elseif ($idServicio == 2) {
+            $tipoAuditoria = 'AUDITORIA PROVEEDOR DE VIGILANCIA';
+        } else {
+            $tipoAuditoria = 'AUDITORIA PROVEEDOR';
+        }
+
+        // Formato para N8N: TIPO__CLIENTE___PROVEEDOR.pdf
+        $clienteUpper = strtoupper($nombreCliente);
+        $proveedorUpper = strtoupper($nombreProveedor);
+        $filename = "{$tipoAuditoria}__{$clienteUpper}___{$proveedorUpper}.pdf";
+
         $fullPath = $dirBase . '/' . $filename;
 
         // Guardar archivo

@@ -13,6 +13,7 @@ class ContratoModel extends Model
     protected $allowedFields    = [
         'id_cliente',
         'id_proveedor',
+        'id_servicio',
         'id_consultor',
         'id_usuario_responsable',
         'tipo_auditoria',
@@ -105,11 +106,13 @@ class ContratoModel extends Model
                               clientes.razon_social as cliente_nombre,
                               clientes.email_contacto as cliente_email,
                               proveedores.razon_social as proveedor_nombre,
+                              servicios.nombre as servicio_nombre,
                               consultores.nombre_completo as consultor_nombre,
                               users.nombre as usuario_responsable_nombre,
                               users.email as usuario_responsable_email')
                     ->join('clientes', 'clientes.id_cliente = contratos_proveedor_cliente.id_cliente')
                     ->join('proveedores', 'proveedores.id_proveedor = contratos_proveedor_cliente.id_proveedor')
+                    ->join('servicios', 'servicios.id_servicio = contratos_proveedor_cliente.id_servicio', 'left')
                     ->join('consultores', 'consultores.id_consultor = contratos_proveedor_cliente.id_consultor')
                     ->join('users', 'users.id_users = contratos_proveedor_cliente.id_usuario_responsable')
                     ->orderBy('clientes.razon_social', 'ASC')

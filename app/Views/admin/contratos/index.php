@@ -150,6 +150,7 @@
                             <tr>
                                 <th>Cliente</th>
                                 <th>Proveedor</th>
+                                <th>Servicio</th>
                                 <th>Consultor</th>
                                 <th>Responsable Proveedor</th>
                                 <th>Tipo de Auditoría</th>
@@ -170,6 +171,15 @@
                                     </td>
                                     <td>
                                         <strong><?= esc($contrato['proveedor_nombre']) ?></strong>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($contrato['servicio_nombre'])): ?>
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-briefcase"></i> <?= esc($contrato['servicio_nombre']) ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">Sin asignar</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <i class="bi bi-person-badge text-primary"></i>
