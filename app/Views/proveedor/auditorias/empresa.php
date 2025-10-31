@@ -111,13 +111,13 @@
                                 </td>
                                 <td><?= esc($cliente['nit']) ?></td>
                                 <td>
-                                    <?php if (!empty($cliente['email'])): ?>
-                                        <a href="mailto:<?= esc($cliente['email']) ?>"><?= esc($cliente['email']) ?></a>
+                                    <?php if (!empty($cliente['email_contacto'])): ?>
+                                        <a href="mailto:<?= esc($cliente['email_contacto']) ?>"><?= esc($cliente['email_contacto']) ?></a>
                                     <?php else: ?>
                                         <span class="text-muted">No registrado</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= esc($cliente['telefono'] ?? 'No registrado') ?></td>
+                                <td><?= esc($cliente['telefono_contacto'] ?? 'No registrado') ?></td>
                                 <td>
                                     <small class="text-muted"><?= esc($cliente['proveedor_nombre']) ?></small>
                                 </td>
