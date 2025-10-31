@@ -198,6 +198,74 @@
       </div>
     </div>
   </div>
+
+  <!-- Sección de Supervisión de Auditorías -->
+  <div class="mt-5 mb-3">
+    <h5><i class="bi bi-graph-up"></i> Supervisión de Auditorías</h5>
+    <p class="text-muted small">Monitoreo y seguimiento del proceso de auditorías</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Auditorías Completadas por Proveedores -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Completadas por Proveedores</h5>
+          <p class="card-text text-muted small">Auditorías cerradas esperando revisión</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/completadas-proveedores') ?>" class="btn btn-success" target="_blank">
+              <i class="bi bi-arrow-right-circle"></i> Ver Completadas
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Sin permisos">
+              <i class="bi bi-lock"></i> Sin permisos
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auditorías Pendientes de Proveedores -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-clipboard-check text-warning" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Pendientes - Proveedores</h5>
+          <p class="card-text text-muted small">Auditorías asignadas a proveedores</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/pendientes-proveedores') ?>" class="btn btn-warning text-dark" target="_blank">
+              <i class="bi bi-arrow-right-circle"></i> Ver Pendientes
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Sin permisos">
+              <i class="bi bi-lock"></i> Sin permisos
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auditorías en Revisión por Consultores -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-eye text-info" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Revisión - Consultores</h5>
+          <p class="card-text text-muted small">Todas las auditorías en el sistema</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/revision-consultores') ?>" class="btn btn-info text-white" target="_blank">
+              <i class="bi bi-arrow-right-circle"></i> Ver Todas
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Sin permisos">
+              <i class="bi bi-lock"></i> Sin permisos
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

@@ -196,6 +196,11 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     // API: Validación de email
     $routes->get('api/check-email', 'Admin\\UsuariosController::checkEmail');
     $routes->post('api/check-email', 'Admin\\UsuariosController::checkEmail');
+
+    // ========== Auditorías (vistas de supervisión) ==========
+    $routes->get('auditorias/completadas-proveedores', 'Admin\\AuditoriasController::completadasProveedores');
+    $routes->get('auditorias/pendientes-proveedores', 'Admin\\AuditoriasController::pendientesProveedores');
+    $routes->get('auditorias/revision-consultores', 'Admin\\AuditoriasController::revisionConsultores');
 });
 
 // ============================================================

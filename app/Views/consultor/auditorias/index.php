@@ -60,7 +60,7 @@
             <th width="30%">Proveedor</th>
             <th width="15%">Fecha Creación</th>
             <th width="15%">Estado</th>
-            <th width="20%">Progreso</th>
+            <th width="20%">Calificación</th>
             <th width="15%">Acciones</th>
           </tr>
         </thead>
