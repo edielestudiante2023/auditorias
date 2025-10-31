@@ -26,39 +26,20 @@
             <div class="row">
                 <div class="col-md-6">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">Razón Social:</dt>
-                        <dd class="col-sm-8"><?= esc($proveedor['razon_social']) ?></dd>
+                        <dt class="col-sm-5">Razón Social:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['razon_social']) ?></dd>
 
-                        <dt class="col-sm-4">NIT:</dt>
-                        <dd class="col-sm-8"><?= esc($proveedor['nit']) ?></dd>
+                        <dt class="col-sm-5">NIT:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['nit']) ?></dd>
 
-                        <dt class="col-sm-4">Teléfono:</dt>
-                        <dd class="col-sm-8"><?= esc($proveedor['telefono'] ?? 'No registrado') ?></dd>
+                        <dt class="col-sm-5">Teléfono:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['telefono_contacto'] ?? 'No registrado') ?></dd>
 
-                        <dt class="col-sm-4">Email:</dt>
-                        <dd class="col-sm-8"><?= esc($proveedor['email'] ?? 'No registrado') ?></dd>
-                    </dl>
-                </div>
+                        <dt class="col-sm-5">Email:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['email_contacto'] ?? 'No registrado') ?></dd>
 
-                <div class="col-md-6">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">Dirección:</dt>
-                        <dd class="col-sm-8"><?= esc($proveedor['direccion'] ?? 'No registrada') ?></dd>
-
-                        <dt class="col-sm-4">Ciudad:</dt>
-                        <dd class="col-sm-8"><?= esc($proveedor['ciudad'] ?? 'No registrada') ?></dd>
-
-                        <dt class="col-sm-4">Estado:</dt>
-                        <dd class="col-sm-8">
-                            <?php
-                            $estado = $proveedor['estado'] ?? 'activo';
-                            $badgeClass = $estado === 'activo' ? 'success' : 'secondary';
-                            ?>
-                            <span class="badge bg-<?= $badgeClass ?>"><?= ucfirst($estado) ?></span>
-                        </dd>
-
-                        <dt class="col-sm-4">Fecha Registro:</dt>
-                        <dd class="col-sm-8">
+                        <dt class="col-sm-5">Fecha Registro:</dt>
+                        <dd class="col-sm-7">
                             <?php
                             if (!empty($proveedor['created_at'])) {
                                 $fecha = new DateTime($proveedor['created_at']);
@@ -68,6 +49,22 @@
                             }
                             ?>
                         </dd>
+                    </dl>
+                </div>
+
+                <div class="col-md-6">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Responsable:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['responsable_nombre'] ?? 'No registrado') ?></dd>
+
+                        <dt class="col-sm-5">Cargo:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['responsable_cargo'] ?? 'No registrado') ?></dd>
+
+                        <dt class="col-sm-5">Email Responsable:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['responsable_email'] ?? 'No registrado') ?></dd>
+
+                        <dt class="col-sm-5">Teléfono Responsable:</dt>
+                        <dd class="col-sm-7"><?= esc($proveedor['responsable_telefono'] ?? 'No registrado') ?></dd>
                     </dl>
                 </div>
             </div>
