@@ -14,7 +14,15 @@
       "Bash(git push:*)",
       "Bash(git rm:*)",
       "Bash(curl:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(head:*)",
+      "Bash(done)",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then if ! grep -q \"favicon.ico\" \"$file\")",
+      "Bash(then echo \"Falta favicon en: $file\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
