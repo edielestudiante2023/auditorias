@@ -22,7 +22,9 @@
       "Bash(do if [ -f \"$file\" ])",
       "Bash(then if ! grep -q \"favicon.ico\" \"$file\")",
       "Bash(then echo \"Falta favicon en: $file\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(then echo \"=== $file ===\")",
+      "Bash(if ! grep -q \"favicon.ico\" \"$file\")"
     ],
     "deny": [],
     "ask": []
