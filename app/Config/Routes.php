@@ -201,6 +201,14 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->get('auditorias/completadas-proveedores', 'Admin\\AuditoriasController::completadasProveedores');
     $routes->get('auditorias/pendientes-proveedores', 'Admin\\AuditoriasController::pendientesProveedores');
     $routes->get('auditorias/revision-consultores', 'Admin\\AuditoriasController::revisionConsultores');
+
+    // ========== Auditorías Cerradas - Gestión y Reapertura ==========
+    $routes->get('auditorias/cerradas', 'Admin\\AuditoriasController::cerradas');
+    $routes->get('auditorias/historial-reaperturas', 'Admin\\AuditoriasController::historialReaperturas');
+    $routes->post('auditorias/(:num)/reabrir', 'Admin\\AuditoriasController::reabrir/$1');
+    $routes->get('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::adicionarClientes/$1');
+    $routes->post('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::procesarAdicionClientes/$1');
+    $routes->post('auditorias/(:num)/reenviar-credenciales', 'Admin\\AuditoriasController::reenviarCredenciales/$1');
 });
 
 // ============================================================
@@ -244,6 +252,11 @@ $routes->group('consultor', ['filter' => 'role:2'], function ($routes) {
     // Descargar y enviar PDFs bajo demanda
     $routes->get('auditoria/(:num)/cliente/(:num)/descargar-pdf', 'Consultor\AuditoriasConsultorController::descargarPdfCliente/$1/$2');
     $routes->post('auditoria/(:num)/cliente/(:num)/enviar-pdf', 'Consultor\AuditoriasConsultorController::enviarPdfCliente/$1/$2');
+
+    // Adicionar clientes a auditoría existente
+    $routes->get('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::adicionarClientes/$1');
+    $routes->post('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::procesarAdicionClientes/$1');
+    $routes->post('auditorias/(:num)/reenviar-credenciales', 'Admin\\AuditoriasController::reenviarCredenciales/$1');
 });
 
 // ============================================================
@@ -265,6 +278,14 @@ $routes->group('proveedor', ['filter' => 'role:3'], function ($routes) {
     $routes->post('auditoria/(:num)/evidencia/(:num)/eliminar', 'Proveedor\AuditoriasProveedorController::deleteEvidencia/$1/$2');
     $routes->post('auditoria/(:num)/evidencia-cliente/(:num)/eliminar', 'Proveedor\AuditoriasProveedorController::deleteEvidenciaCliente/$1/$2');
     $routes->post('auditoria/(:num)/finalizar', 'Proveedor\AuditoriasProveedorController::finalizar/$1');
+
+    // ========== Gestión de Personal Asignado ==========
+    $routes->get('personal', 'Proveedor\PersonalController::index');
+    $routes->get('personal/cliente/(:num)', 'Proveedor\PersonalController::gestionarCliente/$1');
+    $routes->post('personal/guardar/(:num)', 'Proveedor\PersonalController::guardar/$1');
+    $routes->get('personal/obtener/(:num)', 'Proveedor\PersonalController::obtener/$1');
+    $routes->post('personal/cambiar-estado/(:num)', 'Proveedor\PersonalController::cambiarEstado/$1');
+    $routes->post('personal/eliminar/(:num)', 'Proveedor\PersonalController::eliminar/$1');
 });
 
 

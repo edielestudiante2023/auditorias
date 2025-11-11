@@ -115,7 +115,6 @@ class AuditoriaModel extends Model
                                     proveedores.razon_social as proveedor_nombre,
                                     proveedores.nit as proveedor_nit,
                                     proveedores.email_contacto as proveedor_email,
-                                    proveedores.logo_path as proveedor_logo,
                                     consultores.nombre_completo as consultor_nombre,
                                     consultores.firma_path as consultor_firma,
                                     users.email as consultor_email')
@@ -140,8 +139,8 @@ class AuditoriaModel extends Model
 
         // Obtener items de la auditoria
         $auditoria['items'] = $db->table('auditoria_items ai')
-            ->select('ai.*, ib.codigo, ib.nombre, ib.descripcion, ib.es_por_cliente, ib.evidencia_requerida')
-            ->join('items_banco ib', 'ib.id_item_banco = ai.id_item_banco')
+            ->select('ai.*, ib.codigo_item, ib.titulo, ib.descripcion, ib.alcance')
+            ->join('items_banco ib', 'ib.id_item = ai.id_item')
             ->where('ai.id_auditoria', $idAuditoria)
             ->orderBy('ib.orden', 'ASC')
             ->get()
@@ -282,5 +281,142 @@ class AuditoriaModel extends Model
                 ->groupBy('estado');
 
         return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Reabre una auditoría cerrada (solo SuperAdmin)
+     * Cambia el estado de 'cerrada' a 'en_revision'
+     *
+     * @param int $idAuditoria
+     * @param int $idUsuarioReapertura ID del usuario que reabre (debe ser superadmin)
+     * @param string|null $motivo Motivo de la reapertura
+     * @return array ['success' => bool, 'message' => string, 'auditoria' => array|null]
+     */
+    public function reabrirAuditoria(int $idAuditoria, int $idUsuarioReapertura, ?string $motivo = null): array
+    {
+        $auditoria = $this->find($idAuditoria);
+
+        if (!$auditoria) {
+            return [
+                'success' => false,
+                'message' => 'Auditoría no encontrada',
+                'auditoria' => null
+            ];
+        }
+
+        if ($auditoria['estado'] !== 'cerrada') {
+            return [
+                'success' => false,
+                'message' => 'Solo se pueden reabrir auditorías cerradas. Estado actual: ' . $auditoria['estado'],
+                'auditoria' => null
+            ];
+        }
+
+        // Cambiar estado a en_revision
+        $updated = $this->update($idAuditoria, [
+            'estado' => 'en_revision',
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        if (!$updated) {
+            return [
+                'success' => false,
+                'message' => 'Error al actualizar el estado de la auditoría',
+                'auditoria' => null
+            ];
+        }
+
+        // Registrar en log de reaperturas
+        $db = \Config\Database::connect();
+        $detalle = "Reapertura: cerrada → en_revision";
+        if ($motivo) {
+            $detalle .= " | Motivo: " . $motivo;
+        }
+
+        $db->table('auditoria_log')->insert([
+            'id_auditoria' => $idAuditoria,
+            'id_users' => $idUsuarioReapertura,
+            'accion' => 'reapertura',
+            'detalle' => $detalle,
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Auditoría reabierta exitosamente',
+            'auditoria' => $this->find($idAuditoria)
+        ];
+    }
+
+    /**
+     * Adiciona clientes a una auditoría existente
+     *
+     * @param int $idAuditoria
+     * @param array $clientesIds Array de IDs de clientes a agregar
+     * @return array ['success' => bool, 'message' => string, 'clientes_agregados' => int]
+     */
+    public function adicionarClientes(int $idAuditoria, array $clientesIds): array
+    {
+        $auditoria = $this->find($idAuditoria);
+
+        if (!$auditoria) {
+            return [
+                'success' => false,
+                'message' => 'Auditoría no encontrada',
+                'clientes_agregados' => 0
+            ];
+        }
+
+        if ($auditoria['estado'] === 'anulada') {
+            return [
+                'success' => false,
+                'message' => 'No se pueden agregar clientes a una auditoría anulada',
+                'clientes_agregados' => 0
+            ];
+        }
+
+        $db = \Config\Database::connect();
+
+        // Obtener clientes ya asignados
+        $clientesExistentes = $db->table('auditoria_clientes')
+            ->where('id_auditoria', $idAuditoria)
+            ->select('id_cliente')
+            ->get()
+            ->getResultArray();
+
+        $idsExistentes = array_column($clientesExistentes, 'id_cliente');
+
+        // Filtrar solo clientes nuevos
+        $clientesNuevos = array_diff($clientesIds, $idsExistentes);
+
+        if (empty($clientesNuevos)) {
+            return [
+                'success' => false,
+                'message' => 'Todos los clientes ya están asignados a esta auditoría',
+                'clientes_agregados' => 0
+            ];
+        }
+
+        // Insertar nuevos clientes
+        $insertados = 0;
+        foreach ($clientesNuevos as $idCliente) {
+            $inserted = $db->table('auditoria_clientes')->insert([
+                'id_auditoria' => $idAuditoria,
+                'id_cliente' => $idCliente,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+
+            if ($inserted) {
+                $insertados++;
+            }
+        }
+
+        return [
+            'success' => $insertados > 0,
+            'message' => $insertados > 0
+                ? "Se agregaron {$insertados} cliente(s) exitosamente"
+                : 'No se pudo agregar ningún cliente',
+            'clientes_agregados' => $insertados
+        ];
     }
 }

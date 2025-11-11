@@ -58,6 +58,44 @@ class AuditoriasProveedorController extends BaseController
     {
         $db = \Config\Database::connect();
 
+        // Verificar si el usuario tiene personal asignado a todos sus clientes
+        $contrato = $db->table('contratos_proveedor_cliente')
+            ->select('id_proveedor')
+            ->where('id_usuario_responsable', userId())
+            ->where('estado', 'activo')
+            ->get()
+            ->getRowArray();
+
+        if ($contrato) {
+            $idProveedor = $contrato['id_proveedor'];
+
+            // Obtener clientes del proveedor
+            $clientes = $db->table('contratos_proveedor_cliente')
+                ->select('id_cliente')
+                ->where('id_proveedor', $idProveedor)
+                ->where('id_usuario_responsable', userId())
+                ->where('estado', 'activo')
+                ->get()
+                ->getResultArray();
+
+            // Verificar que cada cliente tenga al menos un personal asignado
+            $personalModel = new \App\Models\PersonalAsignadoModel();
+            $clientesSinPersonal = [];
+
+            foreach ($clientes as $cliente) {
+                if (!$personalModel->tienePersonalRegistrado($idProveedor, $cliente['id_cliente'])) {
+                    $clienteModel = new \App\Models\ClienteModel();
+                    $clienteInfo = $clienteModel->find($cliente['id_cliente']);
+                    $clientesSinPersonal[] = $clienteInfo['razon_social'];
+                }
+            }
+
+            // Si hay clientes sin personal, redirigir con alerta
+            if (!empty($clientesSinPersonal)) {
+                return redirect()->to('/proveedor/personal')->with('warning_personal', json_encode($clientesSinPersonal));
+            }
+        }
+
         // Buscar auditorías asignadas a este usuario responsable
         // El usuario responsable se determina por el contrato activo entre cliente y proveedor
         $auditorias = $db->query("
@@ -113,11 +151,26 @@ class AuditoriasProveedorController extends BaseController
             return redirect()->to('/proveedor/auditorias')->with('error', 'Auditoría no encontrada o no tiene acceso');
         }
 
-        // Obtener items con alcance y evidencias
-        $items = $this->getItemsConAlcance($idAuditoria);
-
         // Obtener clientes asignados
         $clientes = $this->auditoriaClienteModel->getClientesByAuditoria($idAuditoria);
+
+        // VALIDACIÓN: Verificar que hay personal registrado para todos los clientes
+        $personalModel = new \App\Models\PersonalAsignadoModel();
+        $clientesSinPersonal = [];
+
+        foreach ($clientes as $cliente) {
+            if (!$personalModel->tienePersonalRegistrado($auditoria['id_proveedor'], $cliente['id_cliente'])) {
+                $clientesSinPersonal[] = $cliente['razon_social'];
+            }
+        }
+
+        if (!empty($clientesSinPersonal)) {
+            $mensaje = 'Debes registrar el personal asignado antes de diligenciar la auditoría. Clientes sin personal: ' . implode(', ', $clientesSinPersonal);
+            return redirect()->to('/proveedor/personal')->with('error', $mensaje);
+        }
+
+        // Obtener items con alcance y evidencias
+        $items = $this->getItemsConAlcance($idAuditoria);
 
         return view('proveedor/auditorias/wizard', [
             'title' => 'Diligenciar Auditoría',

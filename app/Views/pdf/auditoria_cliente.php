@@ -303,6 +303,47 @@ function getMimeType($filePath) {
     PORCENTAJE DE CUMPLIMIENTO: <?= number_format($porcentaje_cliente, 2) ?>%
 </div>
 
+<!-- PERSONAL ASIGNADO -->
+<?php if (!empty($personal_asignado)): ?>
+    <div class="section-title">PERSONAL ASIGNADO AL CLIENTE</div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 9pt;">
+        <thead>
+            <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Documento</th>
+                <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Nombres y Apellidos</th>
+                <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Cargo</th>
+                <th style="border: 1px solid #dee2e6; padding: 8px; text-align: center;">Fecha Ingreso</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($personal_asignado as $persona): ?>
+                <tr>
+                    <td style="border: 1px solid #dee2e6; padding: 6px;">
+                        <strong><?= esc($persona['tipo_documento']) ?></strong> <?= esc($persona['numero_documento']) ?>
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 6px;">
+                        <?= esc($persona['nombres'] . ' ' . $persona['apellidos']) ?>
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 6px;">
+                        <?= esc($persona['cargo']) ?>
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center;">
+                        <?php
+                        if (!empty($persona['fecha_ingreso'])) {
+                            $fecha = new DateTime($persona['fecha_ingreso']);
+                            echo $fecha->format('d/m/Y');
+                        } else {
+                            echo 'N/A';
+                        }
+                        ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+<?php endif; ?>
+
 <!-- ÍTEMS ESPECÍFICOS DEL CLIENTE -->
 <?php if (!empty($items_por_cliente)): ?>
     <div class="section-title">ÍTEMS ESPECÍFICOS DEL CLIENTE</div>

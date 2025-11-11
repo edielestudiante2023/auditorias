@@ -91,8 +91,9 @@
 
             <p>El informe adjunto contiene:</p>
             <ul>
-                <li>✅ Resultados de la evaluación por ítem</li>
+                <li>👥 Listado de personal asignado al cliente</li>
                 <li>📊 Porcentaje de cumplimiento general</li>
+                <li>✅ Resultados de la evaluación por ítem</li>
                 <li>📝 Observaciones y comentarios del consultor</li>
                 <li>📎 Evidencias documentales presentadas</li>
             </ul>

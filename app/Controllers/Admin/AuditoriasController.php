@@ -111,4 +111,344 @@ class AuditoriasController extends BaseController
             'auditorias' => $auditorias,
         ]);
     }
+
+    /**
+     * Vista del historial completo de reaperturas
+     */
+    public function historialReaperturas()
+    {
+        if (!isSuperAdmin()) {
+            return redirect()->to('/')->with('error', 'Acceso denegado');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Obtener historial completo de reaperturas con información detallada
+        $historial = $db->query("
+            SELECT al.*,
+                   u.nombre as usuario_nombre,
+                   u.email as usuario_email,
+                   a.id_auditoria,
+                   a.codigo_formato,
+                   a.fecha_programada,
+                   a.estado as estado_actual,
+                   p.razon_social as proveedor_nombre,
+                   p.nit as proveedor_nit,
+                   c.nombre_completo as consultor_nombre
+            FROM auditoria_log al
+            JOIN users u ON u.id_users = al.id_users
+            JOIN auditorias a ON a.id_auditoria = al.id_auditoria
+            JOIN proveedores p ON p.id_proveedor = a.id_proveedor
+            JOIN consultores c ON c.id_consultor = a.id_consultor
+            WHERE al.accion = 'reapertura'
+            ORDER BY al.created_at DESC
+        ")->getResultArray();
+
+        return view('admin/auditorias/historial_reaperturas', [
+            'title' => 'Auditoría de Cambios - Historial de Reaperturas',
+            'historial' => $historial,
+        ]);
+    }
+
+    /**
+     * Vista de gestión de auditorías cerradas (para reabrir)
+     */
+    public function cerradas()
+    {
+        if (!isSuperAdmin()) {
+            return redirect()->to('/')->with('error', 'Acceso denegado');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Obtener todas las auditorías cerradas con información completa
+        $auditorias = $db->query("
+            SELECT a.*,
+                   p.razon_social as proveedor_nombre,
+                   p.nit as proveedor_nit,
+                   c.nombre_completo as consultor_nombre,
+                   u.email as consultor_email,
+                   COUNT(DISTINCT ac.id_cliente) as total_clientes
+            FROM auditorias a
+            JOIN proveedores p ON p.id_proveedor = a.id_proveedor
+            JOIN consultores c ON c.id_consultor = a.id_consultor
+            LEFT JOIN users u ON u.id_users = c.id_users
+            LEFT JOIN auditoria_clientes ac ON ac.id_auditoria = a.id_auditoria
+            WHERE a.estado = 'cerrada'
+            GROUP BY a.id_auditoria
+            ORDER BY a.updated_at DESC
+        ")->getResultArray();
+
+        // Obtener historial de reaperturas
+        $historial = $db->query("
+            SELECT al.*,
+                   u.nombre as usuario_nombre,
+                   u.email as usuario_email,
+                   a.codigo_formato
+            FROM auditoria_log al
+            JOIN users u ON u.id_users = al.id_users
+            JOIN auditorias a ON a.id_auditoria = al.id_auditoria
+            WHERE al.accion = 'reapertura'
+            ORDER BY al.created_at DESC
+            LIMIT 50
+        ")->getResultArray();
+
+        return view('admin/auditorias/cerradas', [
+            'title' => 'Auditorías Cerradas - Gestión',
+            'auditorias' => $auditorias,
+            'historial' => $historial,
+        ]);
+    }
+
+    /**
+     * Reabre una auditoría cerrada
+     */
+    public function reabrir($idAuditoria = null)
+    {
+        if (!isSuperAdmin()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado. Solo SuperAdmin puede reabrir auditorías.'
+            ]);
+        }
+
+        if (!$idAuditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID de auditoría no proporcionado'
+            ]);
+        }
+
+        $motivo = $this->request->getPost('motivo');
+
+        $resultado = $this->auditoriaModel->reabrirAuditoria(
+            $idAuditoria,
+            userId(),
+            $motivo
+        );
+
+        return $this->response->setJSON($resultado);
+    }
+
+    /**
+     * Muestra vista para adicionar clientes a auditoría existente
+     */
+    public function adicionarClientes($idAuditoria = null)
+    {
+        if (!isSuperAdmin() && !isConsultor()) {
+            return redirect()->to('/')->with('error', 'Acceso denegado');
+        }
+
+        if (!$idAuditoria) {
+            return redirect()->back()->with('error', 'ID de auditoría no proporcionado');
+        }
+
+        $auditoria = $this->auditoriaModel->getAuditoriaCompleta($idAuditoria);
+
+        if (!$auditoria) {
+            return redirect()->back()->with('error', 'Auditoría no encontrada');
+        }
+
+        // Verificar permisos: consultor solo puede editar sus auditorías
+        if (isConsultor() && $auditoria['id_consultor'] != session()->get('id_consultor')) {
+            return redirect()->back()->with('error', 'No tienes permiso para editar esta auditoría');
+        }
+
+        $db = \Config\Database::connect();
+
+        // Obtener clientes del proveedor que NO están en esta auditoría
+        $clientesDisponibles = $db->query("
+            SELECT DISTINCT c.*
+            FROM clientes c
+            JOIN contratos_proveedor_cliente cpc ON cpc.id_cliente = c.id_cliente
+            WHERE cpc.id_proveedor = ?
+            AND c.id_cliente NOT IN (
+                SELECT id_cliente
+                FROM auditoria_clientes
+                WHERE id_auditoria = ?
+            )
+            ORDER BY c.razon_social ASC
+        ", [$auditoria['id_proveedor'], $idAuditoria])->getResultArray();
+
+        return view('admin/auditorias/adicionar_clientes', [
+            'title' => 'Adicionar Clientes a Auditoría',
+            'auditoria' => $auditoria,
+            'clientesDisponibles' => $clientesDisponibles,
+        ]);
+    }
+
+    /**
+     * Procesa la adición de clientes a auditoría
+     */
+    public function procesarAdicionClientes($idAuditoria = null)
+    {
+        if (!isSuperAdmin() && !isConsultor()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado'
+            ]);
+        }
+
+        if (!$idAuditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID de auditoría no proporcionado'
+            ]);
+        }
+
+        $clientesIds = $this->request->getPost('clientes');
+
+        if (empty($clientesIds) || !is_array($clientesIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Debes seleccionar al menos un cliente'
+            ]);
+        }
+
+        $resultado = $this->auditoriaModel->adicionarClientes($idAuditoria, $clientesIds);
+
+        // Guardar los IDs de los clientes recién agregados en sesión
+        // para que el reenvío de credenciales los use
+        if ($resultado['success']) {
+            session()->set('ultimos_clientes_agregados_' . $idAuditoria, $clientesIds);
+        }
+
+        return $this->response->setJSON($resultado);
+    }
+
+    /**
+     * Reenvía credenciales al proveedor después de adicionar clientes
+     */
+    public function reenviarCredenciales($idAuditoria = null)
+    {
+        if (!isSuperAdmin() && !isConsultor()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado'
+            ]);
+        }
+
+        if (!$idAuditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID de auditoría no proporcionado'
+            ]);
+        }
+
+        $auditoria = $this->auditoriaModel->getAuditoriaCompleta($idAuditoria);
+
+        if (!$auditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Auditoría no encontrada'
+            ]);
+        }
+
+        // Obtener el primer cliente para buscar el contrato y usuario responsable
+        if (empty($auditoria['clientes'])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No hay clientes asignados a esta auditoría'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+
+        // Obtener el contrato para acceder al usuario responsable
+        $contrato = $db->table('contratos_proveedor_cliente')
+            ->select('contratos_proveedor_cliente.*,
+                      users.email as usuario_responsable_email,
+                      users.nombre as usuario_responsable_nombre,
+                      users.id_users as usuario_responsable_id')
+            ->join('users', 'users.id_users = contratos_proveedor_cliente.id_usuario_responsable')
+            ->where('contratos_proveedor_cliente.id_proveedor', $auditoria['id_proveedor'])
+            ->where('contratos_proveedor_cliente.id_cliente', $auditoria['clientes'][0]['id_cliente'])
+            ->where('contratos_proveedor_cliente.estado', 'activo')
+            ->get()
+            ->getRowArray();
+
+        if (!$contrato) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No se encontró un contrato activo con usuario responsable'
+            ]);
+        }
+
+        try {
+            // Generar nueva contraseña
+            helper('auth');
+            $claveTemporal = generateSecurePassword(12);
+            $hash = password_hash($claveTemporal, PASSWORD_DEFAULT);
+
+            // Actualizar contraseña del usuario
+            $db->table('users')
+                ->where('id_users', $contrato['usuario_responsable_id'])
+                ->update(['password_hash' => $hash]);
+
+            // Obtener los IDs de clientes recién agregados desde la sesión
+            $clientesIdsAgregados = session()->get('ultimos_clientes_agregados_' . $idAuditoria);
+
+            $clientesNuevos = [];
+
+            if (!empty($clientesIdsAgregados) && is_array($clientesIdsAgregados)) {
+                // Obtener datos completos solo de los clientes recién agregados
+                $clientesNuevos = $db->table('clientes')
+                    ->whereIn('id_cliente', $clientesIdsAgregados)
+                    ->orderBy('razon_social', 'ASC')
+                    ->get()
+                    ->getResultArray();
+
+                // Limpiar la sesión después de usarla
+                session()->remove('ultimos_clientes_agregados_' . $idAuditoria);
+            } else {
+                // Si no hay datos en sesión (reenvío manual), usar todos los clientes
+                $clientesNuevos = $auditoria['clientes'];
+            }
+
+            // Obtener solo items POR CLIENTE (individuales)
+            $itemsPorCliente = $db->table('auditoria_items ai')
+                ->select('ai.*, ib.alcance, ib.titulo, ib.descripcion, ib.orden')
+                ->join('items_banco ib', 'ib.id_item = ai.id_item')
+                ->where('ai.id_auditoria', $idAuditoria)
+                ->where('ib.alcance', 'por_cliente')
+                ->orderBy('ib.orden', 'ASC')
+                ->get()
+                ->getResultArray();
+
+            // Enviar email específico para adición de clientes
+            $emailService = new \App\Services\EmailService();
+            $urlLogin = site_url('login');
+            $urlAuditoria = site_url('proveedor/auditoria/' . $idAuditoria);
+
+            $resultado = $emailService->sendAdicionClientesProveedor(
+                $contrato['usuario_responsable_email'],
+                $contrato['usuario_responsable_email'],
+                $claveTemporal,
+                $urlLogin,
+                $urlAuditoria,
+                $contrato['usuario_responsable_nombre'],
+                $clientesNuevos, // Solo clientes nuevos (últimos 10 min)
+                $itemsPorCliente // Solo items individuales
+            );
+
+            if ($resultado['ok']) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Credenciales reenviadas exitosamente a ' . $contrato['usuario_responsable_nombre']
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al enviar el email: ' . $resultado['error']
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al reenviar credenciales: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al procesar el reenvío: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

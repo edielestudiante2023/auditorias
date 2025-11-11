@@ -118,9 +118,6 @@
       </div>
       <?php endif; ?>
 
-      <?php
-      $tutorialUrl = env('tutorial.videoUrl', 'https://www.youtube.com/');
-      ?>
       <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 20px; margin: 30px 0; border-radius: 4px;">
         <h3 style="margin-top: 0; color: #004085; font-size: 16px;">🎥 Tutorial en Video</h3>
         <p style="margin: 10px 0; font-size: 14px; color: #004085;">
@@ -128,7 +125,7 @@
         </p>
 
         <div style="text-align: center; margin: 20px 0;">
-          <a href="<?= esc($tutorialUrl) ?>" target="_blank" style="display: inline-block; padding: 15px 30px; background: #FF0000; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
+          <a href="https://www.youtube.com/watch?v=XgU_5wdEaCU" target="_blank" style="display: inline-block; padding: 15px 30px; background: #FF0000; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
             ▶️ Ver Tutorial en YouTube
           </a>
         </div>

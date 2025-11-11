@@ -265,6 +265,46 @@
         </div>
       </div>
     </div>
+
+    <!-- Auditorías Cerradas - Gestión y Reapertura -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-danger">
+        <div class="card-body text-center">
+          <i class="bi bi-lock-fill text-danger" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Auditorías Cerradas</h5>
+          <p class="card-text text-muted small">Gestión y reapertura de auditorías finalizadas</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/cerradas') ?>" class="btn btn-danger text-white" target="_blank">
+              <i class="bi bi-unlock"></i> Gestionar
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Solo SuperAdmin">
+              <i class="bi bi-lock"></i> Solo SuperAdmin
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auditoría de Cambios (Historial de Reaperturas) -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-secondary">
+        <div class="card-body text-center">
+          <i class="bi bi-clock-history text-secondary" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Auditoría de Cambios</h5>
+          <p class="card-text text-muted small">Historial completo de reaperturas y modificaciones</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/historial-reaperturas') ?>" class="btn btn-secondary text-white" target="_blank">
+              <i class="bi bi-list-ul"></i> Ver Historial
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Solo SuperAdmin">
+              <i class="bi bi-lock"></i> Solo SuperAdmin
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

@@ -291,12 +291,23 @@ class PdfService
                 ->getResultArray();
         }
 
+        // Obtener personal asignado del proveedor para este cliente
+        $personalAsignado = $db->table('personal_asignado pa')
+            ->select('pa.*, pa.nombres, pa.apellidos, pa.tipo_documento, pa.numero_documento, pa.cargo, pa.fecha_ingreso')
+            ->where('pa.id_proveedor', $auditoria['id_proveedor'])
+            ->where('pa.id_cliente', $idCliente)
+            ->where('pa.estado', 'activo')
+            ->orderBy('pa.apellidos', 'ASC')
+            ->get()
+            ->getResultArray();
+
         return [
             'auditoria' => $auditoria,
             'cliente' => $cliente,
             'porcentaje_cliente' => $porcentajeCliente ? $porcentajeCliente->porcentaje_cumplimiento : 0,
             'items_globales' => $itemsGlobales,
             'items_por_cliente' => $itemsPorCliente,
+            'personal_asignado' => $personalAsignado,
             'fecha_generacion' => date('Y-m-d H:i:s')
         ];
     }

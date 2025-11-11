@@ -131,6 +131,101 @@ class EmailService
     }
 
     /**
+     * Envía notificación de clientes adicionales a auditoría existente
+     *
+     * @param string $to Email del destinatario
+     * @param string $usuario Usuario para login
+     * @param string $clave Contraseña temporal (nueva)
+     * @param string $urlLogin URL de login
+     * @param string $urlAuditoria URL directa a la auditoría
+     * @param string $nombreDestinatario Nombre del destinatario
+     * @param array $clientesNuevos Lista de nuevos clientes agregados
+     * @param array $itemsPorCliente Items que debe completar por cliente
+     * @return array ['ok' => bool, 'message' => string, 'error' => string|null]
+     */
+    public function sendAdicionClientesProveedor(
+        string $to,
+        string $usuario,
+        string $clave,
+        string $urlLogin,
+        string $urlAuditoria,
+        string $nombreDestinatario,
+        array $clientesNuevos = [],
+        array $itemsPorCliente = []
+    ): array {
+        $tipo = 'adicion_clientes_proveedor';
+        $asunto = 'Nuevos clientes agregados a auditoría - Cycloid Talent';
+        $payload = [
+            'usuario' => $usuario,
+            'urlLogin' => $urlLogin,
+            'urlAuditoria' => $urlAuditoria,
+            'clientes_nuevos_count' => count($clientesNuevos),
+            'items_por_cliente_count' => count($itemsPorCliente)
+        ];
+
+        try {
+            // Cargar plantilla HTML específica
+            $htmlContent = view('emails/adicion_clientes_proveedor', [
+                'usuario' => $usuario,
+                'clave' => $clave,
+                'urlLogin' => $urlLogin,
+                'urlAuditoria' => $urlAuditoria,
+                'nombreProveedor' => $nombreDestinatario,
+                'clientesNuevos' => $clientesNuevos,
+                'itemsPorCliente' => $itemsPorCliente,
+            ]);
+
+            // Modo log-only si no hay API key
+            if (empty($this->apiKey)) {
+                $this->guardarEmailEnLog($to, $asunto, $htmlContent);
+                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'log_only', 'Sin API key, guardado en logs');
+
+                return [
+                    'ok' => true,
+                    'message' => 'Email guardado en logs (modo log-only)',
+                    'error' => null,
+                ];
+            }
+
+            // Crear email con SendGrid
+            $email = new Mail();
+            $email->setFrom($this->fromEmail, $this->fromName);
+            $email->setReplyTo($this->fromEmail, $this->fromName);
+            $email->setSubject($asunto);
+            $email->addTo($to);
+            $email->addContent('text/html', $htmlContent);
+
+            // Enviar email
+            $sendgrid = new SendGrid($this->apiKey);
+            $response = $sendgrid->send($email);
+
+            // Verificar respuesta
+            if ($response->statusCode() >= 200 && $response->statusCode() < 300) {
+                log_message('info', "Email de adición de clientes enviado exitosamente a {$to}");
+                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'enviado');
+
+                return [
+                    'ok' => true,
+                    'message' => 'Email enviado exitosamente',
+                    'error' => null,
+                ];
+            } else {
+                throw new \Exception('Error al enviar email. Status: ' . $response->statusCode());
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error al enviar email de adición de clientes: ' . $e->getMessage());
+            $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'fallido', $e->getMessage());
+
+            return [
+                'ok' => false,
+                'message' => 'No se pudo enviar el email',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Envía notificación general
      *
      * @param string $toEmail
@@ -947,7 +1042,10 @@ class EmailService
     public function enviarPdfCliente(int $idAuditoria, int $idCliente, string $emailCliente, string $nombreCliente, string $rutaPdf): array
     {
         $tipo = 'pdf_cliente';
-        $asunto = "Informe de Auditoría #{$idAuditoria} - {$nombreCliente}";
+
+        // Obtener el nombre del archivo PDF sin extensión para usarlo como asunto
+        $nombreArchivoPdf = pathinfo($rutaPdf, PATHINFO_FILENAME);
+        $asunto = $nombreArchivoPdf;
 
         $payload = [
             'id_auditoria' => $idAuditoria,
@@ -956,22 +1054,35 @@ class EmailService
         ];
 
         try {
-            // Obtener email del consultor de la auditoría
+            // Obtener email del consultor, datos del proveedor y cliente de la auditoría
             $db = \Config\Database::connect();
             $auditoria = $db->table('auditorias a')
-                ->select('cons.nombre_completo as consultor_nombre, u.email as consultor_email')
+                ->select('cons.nombre_completo as consultor_nombre, u.email as consultor_email, p.razon_social as proveedor_nombre')
                 ->join('consultores cons', 'cons.id_consultor = a.id_consultor')
                 ->join('users u', 'u.id_users = cons.id_users')
+                ->join('proveedores p', 'p.id_proveedor = a.id_proveedor')
                 ->where('a.id_auditoria', $idAuditoria)
                 ->get()
                 ->getRowArray();
 
             $emailConsultor = $auditoria['consultor_email'] ?? null;
             $nombreConsultor = $auditoria['consultor_nombre'] ?? 'Consultor';
+            $nombreProveedor = $auditoria['proveedor_nombre'] ?? 'Proveedor';
+
+            // Obtener email del cliente
+            $cliente = $db->table('clientes')
+                ->select('email_contacto, razon_social')
+                ->where('id_cliente', $idCliente)
+                ->get()
+                ->getRowArray();
+
+            $emailClienteContacto = $cliente['email_contacto'] ?? null;
 
             // Cargar plantilla HTML
             $htmlContent = view('emails/pdf_cliente', [
                 'nombre_cliente' => $nombreCliente,
+                'nombre_proveedor' => $nombreProveedor,
+                'nombre_consultor' => $nombreConsultor,
                 'id_auditoria' => $idAuditoria,
                 'fecha_envio' => date('d/m/Y H:i')
             ]);
@@ -991,15 +1102,22 @@ class EmailService
             $email = new Mail();
             $email->setFrom($this->fromEmail, $this->fromName);
             $email->setSubject($asunto);
+
+            // Destinatario principal: Proveedor (usuario responsable)
             $email->addTo($emailCliente, $nombreCliente);
 
-            // Agregar copia al consultor
+            // Copia: Cliente (si tiene email)
+            if ($emailClienteContacto) {
+                $email->addCc($emailClienteContacto, $cliente['razon_social']);
+            }
+
+            // Copia: Consultor
             if ($emailConsultor) {
                 $email->addCc($emailConsultor, $nombreConsultor);
             }
 
-            // Agregar copia al head consultant
-            $email->addCc('head.consultant.cycloidtalent@gmail.com', 'Head Consultant - Cycloid Talent');
+            // Copia: Head consultant
+            $email->addCc('head.consultant.cycloidtalent@gmail.com', 'Head Consultant');
 
             $email->addContent('text/html', $htmlContent);
 

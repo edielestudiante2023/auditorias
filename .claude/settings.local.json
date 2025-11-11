@@ -23,8 +23,8 @@
       "Bash(then if ! grep -q \"favicon.ico\" \"$file\")",
       "Bash(then echo \"Falta favicon en: $file\")",
       "Bash(fi)",
-      "Bash(then echo \"=== $file ===\")",
-      "Bash(if ! grep -q \"favicon.ico\" \"$file\")"
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

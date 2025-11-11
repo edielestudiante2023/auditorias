@@ -90,6 +90,17 @@
     </div>
 
     <div class="col-md-6">
+      <div class="card h-100 shadow-sm border-danger">
+        <div class="card-body text-center">
+          <i class="bi bi-people-fill text-danger" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Personal Asignado</h5>
+          <p class="card-text text-muted">Registro de trabajadores por cliente</p>
+          <a href="<?= site_url('proveedor/personal') ?>" class="btn btn-danger" target="_blank">Gestionar Personal</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
       <div class="card h-100 shadow-sm">
         <div class="card-body text-center">
           <i class="bi bi-file-earmark-text text-info" style="font-size: 3rem;"></i>
