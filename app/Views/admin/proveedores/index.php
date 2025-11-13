@@ -358,6 +358,14 @@ $(document).ready(function() {
                     columns: [0, 1, 2, 3, 4, 5, 6], // Exportar: Razón Social, NIT, Email, Teléfono, Observaciones, Usuarios, Estado
                     orthogonal: 'export',
                     format: {
+                        // Encabezados: tomar solo la primera fila del thead
+                        header: function (data, columnIdx) {
+                            return $('#tablaProveedores thead tr:eq(0) th')
+                                .eq(columnIdx)
+                                .text()
+                                .trim();
+                        },
+                        // Celdas: usar data-order o texto limpio
                         body: function(data, row, column, node) {
                             // Si tiene atributo data-order, usar ese valor
                             var orderData = $(node).attr('data-order');
