@@ -60,8 +60,9 @@
   <?php endif; ?>
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Panel de Consultor</h4>
+  <div class="mb-4">
+    <h3 class="mb-2">Bienvenido, <?= esc($nombre) ?></h3>
+    <h5 class="text-muted"><i class="bi bi-clipboard-data"></i> Panel de Consultor</h5>
   </div>
 
   <!-- Cards de acceso rápido -->
