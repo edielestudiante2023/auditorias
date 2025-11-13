@@ -81,11 +81,11 @@ class ProveedorModel extends Model
 
     /**
      * Obtiene todos los proveedores con información del usuario si existe
+     * Los proveedores se vinculan con usuarios a través de la tabla intermedia usuarios_proveedores
      */
     public function getProveedoresWithUsers(): array
     {
-        return $this->select('proveedores.*, users.email, users.nombre as nombre_usuario, users.estado as estado_usuario')
-                    ->join('users', 'users.id_users = proveedores.id_users', 'left')
+        return $this->select('proveedores.*')
                     ->orderBy('proveedores.created_at', 'DESC')
                     ->findAll();
     }

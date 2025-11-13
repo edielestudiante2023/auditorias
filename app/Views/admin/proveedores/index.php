@@ -177,6 +177,21 @@
                                 <th class="text-center">Acciones</th>
                                 <th style="display:none;">Fecha Creación</th>
                             </tr>
+                            <tr class="filters">
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar razón social"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar NIT"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar contacto"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar usuario"></th>
+                                <th>
+                                    <select class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="Activo">Activo</option>
+                                        <option value="Inactivo">Inactivo</option>
+                                    </select>
+                                </th>
+                                <th></th>
+                                <th style="display:none;"></th>
+                            </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($proveedores as $proveedor): ?>
@@ -301,7 +316,7 @@ function confirmarEliminar(id, nombre) {
 // Inicializar DataTables
 <?php if (!empty($proveedores)): ?>
 $(document).ready(function() {
-    $('#tablaProveedores').DataTable({
+    var table = $('#tablaProveedores').DataTable({
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
         },
@@ -310,8 +325,29 @@ $(document).ready(function() {
         columnDefs: [
             { orderable: false, targets: [5] }, // Columna Acciones no ordenable
             { visible: false, targets: [6] } // Columna Fecha Creación oculta
-        ]
+        ],
+        orderCellsTop: true,
+        fixedHeader: true
     });
+
+    // Aplicar filtros por columna
+    $('#tablaProveedores thead tr.filters th').each(function(i) {
+        var title = $(this).text();
+
+        // Filtro de input text
+        $('input', this).on('keyup change', function() {
+            if (table.column(i).search() !== this.value) {
+                table.column(i).search(this.value).draw();
+            }
+        });
+
+        // Filtro de select
+        $('select', this).on('change', function() {
+            var val = $.fn.dataTable.util.escapeRegex($(this).val());
+            table.column(i).search(val ? '^' + val + '$' : '', true, false).draw();
+        });
+    });
+
     // Ocultar paginación del servidor
     $('#paginacionServidor').hide();
 });
