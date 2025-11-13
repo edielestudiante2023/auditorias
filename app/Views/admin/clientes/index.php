@@ -61,12 +61,8 @@
     <!-- Flash Messages -->
     <?= view('partials/flash') ?>
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0"><i class="bi bi-building"></i> <?= esc($title) ?></h4>
-        <form class="d-flex" role="search" method="get" action="<?= current_url() ?>">
-            <input type="search" name="q" class="form-control me-2" placeholder="Buscar por Razón Social o NIT" value="<?= esc($q ?? '') ?>">
-            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
-        </form>
         <a href="<?= site_url('admin/clientes/crear') ?>" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Nuevo
         </a>
@@ -252,8 +248,8 @@
         modalLogo.show();
     }
 
-    // Inicializar DataTables solo si hay menos de 500 registros
-    <?php if (!empty($clientes) && count($clientes) <= 500): ?>
+    // Inicializar DataTables
+    <?php if (!empty($clientes)): ?>
     $(document).ready(function() {
         $('#tablaClientes').DataTable({
             language: {
@@ -265,9 +261,8 @@
                 { orderable: false, targets: [0, 5] } // Logo y Acciones no ordenables
             ]
         });
-        // Ocultar paginación del servidor y búsqueda manual
+        // Ocultar paginación del servidor
         $('#paginacionServidor').hide();
-        $('form[role="search"]').hide();
     });
     <?php endif; ?>
 </script>

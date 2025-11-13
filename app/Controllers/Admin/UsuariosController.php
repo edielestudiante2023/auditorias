@@ -117,7 +117,7 @@ class UsuariosController extends BaseController
 
         if ($idRol == 3) {
             // Rol Proveedor: NO enviar email ahora
-            $mensaje .= " <span class='text-info'>ℹ️ El usuario recibirá sus credenciales cuando se le asigne su primera auditoría.</span>";
+            $mensaje .= " <span class='text-info'>ℹ️ El proveedor recibirá sus credenciales cuando se le asigne su primera auditoría.</span>";
         } else {
             // Roles Admin y Consultor: Enviar email con credenciales
             $rolesNombres = [
@@ -317,15 +317,16 @@ class UsuariosController extends BaseController
         }
 
         // Verificar si está vinculado a un consultor
-        $db = \Config\Database::connect();
-        $consultor = $db->table('consultores')->where('id_users', $id)->get()->getRowArray();
+        $consultorModel = model('App\Models\ConsultorModel');
+        $consultor = $consultorModel->where('id_users', $id)->first();
         if ($consultor) {
             return redirect()->to('/admin/usuarios')
                 ->with('error', 'No se puede eliminar. Este usuario está vinculado al Consultor #' . $consultor['id_consultor'] . '. Elimina primero el consultor.');
         }
 
         // Verificar si está vinculado a un proveedor
-        $proveedor = $db->table('proveedores')->where('id_users', $id)->get()->getRowArray();
+        $proveedorModel = model('App\Models\ProveedorModel');
+        $proveedor = $proveedorModel->where('id_users', $id)->first();
         if ($proveedor) {
             return redirect()->to('/admin/usuarios')
                 ->with('error', 'No se puede eliminar. Este usuario está vinculado al Proveedor #' . $proveedor['id_proveedor'] . '. Elimina primero el proveedor.');
