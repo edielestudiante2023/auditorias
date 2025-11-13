@@ -12,10 +12,6 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <!-- DataTables Buttons CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 </head>
 <body class="bg-light">
 
@@ -178,37 +174,28 @@
                     </a>
                 </div>
             <?php else: ?>
+                <!-- DEBUG: Total de proveedores recibidos = <?= count($proveedores) ?> -->
+                <div class="alert alert-info">
+                    <strong>DEBUG:</strong> La vista recibió <?= count($proveedores) ?> proveedores del controlador.
+                </div>
+
                 <div class="table-responsive">
-                    <table id="tablaProveedores" class="table table-hover align-middle">
+                    <table class="table table-hover align-middle table-striped">
                         <thead class="table-primary">
                             <tr>
+                                <th>#</th>
                                 <th>Razón Social</th>
                                 <th>NIT</th>
                                 <th>Contacto</th>
                                 <th>Usuarios Vinculados</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">Acciones</th>
-                                <th style="display:none;">Fecha Creación</th>
-                            </tr>
-                            <tr class="filters">
-                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar razón social"></th>
-                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar NIT"></th>
-                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar contacto"></th>
-                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar usuario"></th>
-                                <th>
-                                    <select class="form-select form-select-sm">
-                                        <option value="">Todos</option>
-                                        <option value="Activo">Activo</option>
-                                        <option value="Inactivo">Inactivo</option>
-                                    </select>
-                                </th>
-                                <th></th>
-                                <th style="display:none;"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($proveedores as $proveedor): ?>
-                                <tr data-fecha="<?= esc($proveedor['created_at'] ?? '') ?>">
+                            <?php foreach ($proveedores as $index => $proveedor): ?>
+                                <tr>
+                                    <td><strong><?= $index + 1 ?></strong></td>
                                     <td>
                                         <?php if (!empty($proveedor['logo_path'])): ?>
                                             <img src="<?= base_url('writable/' . $proveedor['logo_path']) ?>" alt="Logo" class="me-2" style="width:32px;height:32px;object-fit:contain;border:1px solid #eee;">
@@ -289,7 +276,6 @@
                                             </button>
                                         </div>
                                     </td>
-                                    <td style="display:none;"><?= esc($proveedor['created_at'] ?? '') ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -310,16 +296,7 @@
     <?= csrf_field() ?>
 </form>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<!-- DataTables Buttons JS -->
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script>
 function confirmarEliminar(id, nombre) {
     const mensaje = `¿Está seguro de ELIMINAR al proveedor "${nombre}"?\n\nNOTA: No se puede eliminar si tiene contratos asociados.`;
@@ -330,64 +307,6 @@ function confirmarEliminar(id, nombre) {
         form.submit();
     }
 }
-
-// Inicializar DataTables
-<?php if (!empty($proveedores)): ?>
-$(document).ready(function() {
-    var table = $('#tablaProveedores').DataTable({
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-        },
-        pageLength: 25,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-        order: [[6, 'desc']], // Ordenar por columna oculta de fecha (índice 6) descendente para mostrar más recientes primero
-        columnDefs: [
-            { orderable: false, targets: [5] }, // Columna Acciones no ordenable
-            { visible: false, targets: [6] } // Columna Fecha Creación oculta
-        ],
-        orderCellsTop: true,
-        fixedHeader: true,
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"B>>' +
-             '<"row"<"col-sm-12"tr>>' +
-             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-        buttons: [
-            {
-                extend: 'excelHtml5',
-                text: '<i class="bi bi-file-earmark-excel"></i> Exportar a Excel',
-                className: 'btn btn-success btn-sm',
-                title: 'Proveedores',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4] // Exportar solo columnas visibles (sin Acciones ni Fecha oculta)
-                }
-            }
-        ],
-        retrieve: true,
-        processing: false,
-        serverSide: false
-    });
-
-    // Aplicar filtros por columna
-    $('#tablaProveedores thead tr.filters th').each(function(i) {
-        var title = $(this).text();
-
-        // Filtro de input text
-        $('input', this).on('keyup change', function() {
-            if (table.column(i).search() !== this.value) {
-                table.column(i).search(this.value).draw();
-            }
-        });
-
-        // Filtro de select
-        $('select', this).on('change', function() {
-            var val = $.fn.dataTable.util.escapeRegex($(this).val());
-            table.column(i).search(val ? '^' + val + '$' : '', true, false).draw();
-        });
-    });
-
-    // Ocultar paginación del servidor
-    $('#paginacionServidor').hide();
-});
-<?php endif; ?>
 </script>
 
 </body>
