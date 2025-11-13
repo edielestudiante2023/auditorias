@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <!-- DataTables Buttons CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 </head>
 <body class="bg-light">
 
@@ -302,6 +304,11 @@
 <!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<!-- DataTables Buttons JS -->
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script>
 function confirmarEliminar(id, nombre) {
     const mensaje = `¿Está seguro de ELIMINAR al proveedor "${nombre}"?\n\nNOTA: No se puede eliminar si tiene contratos asociados.`;
@@ -320,14 +327,27 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
         },
-        pageLength: 10,
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
         order: [[6, 'desc']], // Ordenar por columna oculta de fecha (índice 6) descendente para mostrar más recientes primero
         columnDefs: [
             { orderable: false, targets: [5] }, // Columna Acciones no ordenable
             { visible: false, targets: [6] } // Columna Fecha Creación oculta
         ],
         orderCellsTop: true,
-        fixedHeader: true
+        fixedHeader: true,
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Exportar a Excel',
+                className: 'btn btn-success btn-sm',
+                title: 'Proveedores',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4] // Exportar solo columnas visibles (sin Acciones ni Fecha oculta)
+                }
+            }
+        ]
     });
 
     // Aplicar filtros por columna

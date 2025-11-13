@@ -25,9 +25,14 @@ class ProveedoresController extends BaseController
      */
     public function index()
     {
+        // Obtener TODOS los proveedores sin límite de paginación
+        $proveedores = $this->proveedorModel
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
         $data = [
             'title'       => 'Gestión de Proveedores',
-            'proveedores' => $this->proveedorModel->getProveedoresWithUsers(),
+            'proveedores' => $proveedores,
             'breadcrumbs' => [
                 ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
                 ['title' => 'Proveedores', 'url' => ''],
