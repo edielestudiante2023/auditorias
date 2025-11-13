@@ -324,12 +324,12 @@ class UsuariosController extends BaseController
                 ->with('error', 'No se puede eliminar. Este usuario está vinculado al Consultor #' . $consultor['id_consultor'] . '. Elimina primero el consultor.');
         }
 
-        // Verificar si está vinculado a un proveedor
-        $proveedorModel = model('App\Models\ProveedorModel');
-        $proveedor = $proveedorModel->where('id_users', $id)->first();
-        if ($proveedor) {
+        // Verificar si está vinculado a un proveedor (a través de tabla intermedia)
+        $usuariosProveedoresModel = model('App\Models\UsuariosProveedoresModel');
+        $vinculacion = $usuariosProveedoresModel->where('id_users', $id)->first();
+        if ($vinculacion) {
             return redirect()->to('/admin/usuarios')
-                ->with('error', 'No se puede eliminar. Este usuario está vinculado al Proveedor #' . $proveedor['id_proveedor'] . '. Elimina primero el proveedor.');
+                ->with('error', 'No se puede eliminar. Este usuario está vinculado a uno o más proveedores. Elimina primero las vinculaciones.');
         }
 
         // Eliminar usuario
