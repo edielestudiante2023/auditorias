@@ -190,7 +190,6 @@
                                 <th>Usuarios Vinculados</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">Acciones</th>
-                                <th style="display:none;">Fecha Creación</th>
                             </tr>
                             <tr class="filters">
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar razón social"></th>
@@ -207,7 +206,6 @@
                                     </select>
                                 </th>
                                 <th></th>
-                                <th style="display:none;"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -247,8 +245,7 @@
                                             <span class="text-muted">-</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
-                                        <?php
+                                    <td data-order="<?php
                                         // Obtener usuarios vinculados desde usuarios_proveedores
                                         $db = \Config\Database::connect();
                                         $usuarios = $db->table('usuarios_proveedores')
@@ -258,7 +255,17 @@
                                             ->where('usuarios_proveedores.activo', 1)
                                             ->get()
                                             ->getResultArray();
-                                        ?>
+
+                                        // Crear texto simple para exportar
+                                        if (!empty($usuarios)) {
+                                            $nombres = array_map(function($u) {
+                                                return $u['nombre'] . ' (' . $u['email'] . ')';
+                                            }, $usuarios);
+                                            echo esc(implode(', ', $nombres));
+                                        } else {
+                                            echo 'Sin usuarios';
+                                        }
+                                        ?>">
                                         <?php if (!empty($usuarios)): ?>
                                             <?php foreach ($usuarios as $usuario): ?>
                                                 <div class="mb-1">
@@ -294,7 +301,6 @@
                                             </button>
                                         </div>
                                     </td>
-                                    <td style="display:none;"><?= esc($proveedor['created_at'] ?? '') ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -338,7 +344,7 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
         },
-        order: [[8, 'desc']], // Ordenar por columna de fecha (índice 8) descendente
+        order: [[0, 'asc']], // Ordenar por razón social
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"B>>rtip',
@@ -349,10 +355,16 @@ $(document).ready(function() {
                 className: 'btn btn-success btn-sm',
                 title: 'Proveedores',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6], // Exportar: Razón Social, NIT, Email, Teléfono, Observaciones, Usuarios, Estado (sin Acciones ni fecha oculta)
+                    columns: [0, 1, 2, 3, 4, 5, 6], // Exportar: Razón Social, NIT, Email, Teléfono, Observaciones, Usuarios, Estado
+                    orthogonal: 'export',
                     format: {
                         body: function(data, row, column, node) {
-                            // Extraer solo el texto limpio sin HTML
+                            // Si tiene atributo data-order, usar ese valor
+                            var orderData = $(node).attr('data-order');
+                            if (orderData) {
+                                return orderData;
+                            }
+                            // Sino, extraer texto limpio
                             var temp = $('<div>').html(data);
                             return temp.text().trim();
                         }

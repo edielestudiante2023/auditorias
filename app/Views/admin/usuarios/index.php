@@ -199,7 +199,7 @@
                                 }
                             ?>
                             <tr>
-                                <td>
+                                <td data-order="<?= esc($u['nombre'] ?? '-') ?>">
                                     <div class="d-flex align-items-center">
                                         <div class="avatar bg-<?= $badge ?> bg-opacity-10 rounded-circle p-2 me-2">
                                             <i class="bi bi-<?= $icon ?> text-<?= $badge ?>"></i>
@@ -211,15 +211,15 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-order="<?= esc($u['email']) ?>">
                                     <small><?= esc($u['email']) ?></small>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-order="<?= $label ?>">
                                     <span class="badge bg-<?= $badge ?>"><?= $label ?></span>
                                 </td>
-                                <td class="text-center">
-                                    <?php
+                                <td class="text-center" data-order="<?php
                                     // Verificar vinculación
+                                    $vinculadoTexto = '-';
                                     $vinculado = '<span class="text-muted">-</span>';
                                     if ($rid == 2) {
                                         // Buscar si es consultor
@@ -230,6 +230,7 @@
                                             ->getRowArray();
                                         if ($consultor) {
                                             $nombreConsultor = esc($consultor['nombre_completo'] ?? 'Consultor #' . $consultor['id_consultor']);
+                                            $vinculadoTexto = $nombreConsultor;
                                             $vinculado = '<a href="' . site_url('admin/consultores/editar/' . $consultor['id_consultor']) . '" class="badge bg-info text-decoration-none" title="Ver consultor"><i class="bi bi-person-badge"></i> ' . $nombreConsultor . '</a>';
                                         }
                                     } elseif ($rid == 3) {
@@ -245,18 +246,22 @@
 
                                         if (!empty($proveedores)) {
                                             $badges = [];
+                                            $razones = [];
                                             foreach ($proveedores as $prov) {
                                                 $razonSocial = esc($prov['razon_social']);
+                                                $razones[] = $razonSocial;
                                                 // Cambio de ícono: usando bi-shop para representar proveedor comercial
                                                 $badges[] = '<a href="' . site_url('admin/proveedores/' . $prov['id_proveedor'] . '/edit') . '" class="badge bg-warning text-decoration-none" title="Ver proveedor"><i class="bi bi-shop"></i> ' . $razonSocial . '</a>';
                                             }
+                                            $vinculadoTexto = implode(', ', $razones);
                                             $vinculado = implode(' ', $badges);
                                         }
                                     }
-                                    echo $vinculado;
-                                    ?>
+                                    echo $vinculadoTexto;
+                                    ?>">
+                                    <?php echo $vinculado; ?>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-order="<?= ($u['estado'] ?? 'inactivo') === 'activo' ? 'Activo' : 'Inactivo' ?>">
                                     <?php if (($u['estado'] ?? 'inactivo') === 'activo'): ?>
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle"></i> Activo
@@ -360,9 +365,15 @@ $(document).ready(function() {
                 title: 'Usuarios',
                 exportOptions: {
                     columns: [0, 1, 2, 3, 4], // Exportar sin columna de Acciones
+                    orthogonal: 'export',
                     format: {
                         body: function(data, row, column, node) {
-                            // Extraer solo el texto limpio sin HTML
+                            // Si tiene atributo data-order, usar ese valor
+                            var orderData = $(node).attr('data-order');
+                            if (orderData) {
+                                return orderData;
+                            }
+                            // Sino, extraer texto limpio
                             var temp = $('<div>').html(data);
                             return temp.text().trim();
                         }
