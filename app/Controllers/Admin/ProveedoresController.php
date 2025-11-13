@@ -21,16 +21,45 @@ class ProveedoresController extends BaseController
     }
 
     /**
+     * DEBUG: Endpoint para verificar cuántos proveedores hay en BD
+     */
+    public function debug()
+    {
+        $db = \Config\Database::connect();
+
+        // Método 1: Query directo
+        $query1 = $db->query("SELECT COUNT(*) as total FROM proveedores");
+        $total = $query1->getRow()->total;
+
+        // Método 2: Query builder sin límites
+        $query2 = $db->table('proveedores')->get();
+        $proveedores = $query2->getResultArray();
+
+        // Método 3: Usando el modelo
+        $proveedoresModelo = $this->proveedorModel->findAll(0);
+
+        $debug = [
+            'total_en_bd' => $total,
+            'query_directo' => count($proveedores),
+            'modelo_findAll' => count($proveedoresModelo),
+            'primeros_5_ids' => array_column(array_slice($proveedores, 0, 5), 'id_proveedor'),
+            'ultimos_5_ids' => array_column(array_slice($proveedores, -5), 'id_proveedor'),
+        ];
+
+        return $this->response->setJSON($debug);
+    }
+
+    /**
      * Lista todos los proveedores
      */
     public function index()
     {
-        // Obtener TODOS los proveedores directamente de la base de datos
+        // Obtener TODOS los proveedores directamente de la base de datos SIN LÍMITES
         $db = \Config\Database::connect();
-        $proveedores = $db->table('proveedores')
-            ->orderBy('created_at', 'DESC')
-            ->get()
-            ->getResultArray();
+
+        // Query RAW para asegurar que no hay límites
+        $query = $db->query("SELECT * FROM proveedores ORDER BY created_at DESC");
+        $proveedores = $query->getResultArray();
 
         // DEBUG: Log para verificar cuántos proveedores se obtuvieron
         log_message('info', 'Proveedores obtenidos en index: ' . count($proveedores));
