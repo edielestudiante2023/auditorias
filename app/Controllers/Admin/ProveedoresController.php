@@ -80,22 +80,29 @@ class ProveedoresController extends BaseController
     public function index2()
     {
         $q = trim((string) $this->request->getGet('q'));
-        $model = model(ProveedoresModel::class);
+
+        // Obtener TODOS los proveedores sin paginación (DataTables manejará la paginación)
+        $db = \Config\Database::connect();
 
         if ($q !== '') {
-            $model = $model->groupStart()
-                           ->like('razon_social', $q)
-                           ->orLike('nit', $q)
-                           ->groupEnd();
+            $proveedores = $db->table('proveedores')
+                ->groupStart()
+                ->like('razon_social', $q)
+                ->orLike('nit', $q)
+                ->groupEnd()
+                ->orderBy('created_at', 'DESC')
+                ->get()
+                ->getResultArray();
+        } else {
+            // Query RAW para asegurar que trae TODOS los registros
+            $query = $db->query("SELECT * FROM proveedores ORDER BY created_at DESC");
+            $proveedores = $query->getResultArray();
         }
-
-        $proveedores = $model->orderBy('razon_social', 'ASC')->paginate(10, 'proveedores');
 
         $data = [
             'title'       => 'Gestión de Proveedores',
             'proveedores' => $proveedores,
             'q'           => $q,
-            'pager'       => $model->pager,
             'breadcrumbs' => [
                 ['title' => 'Inicio', 'url' => site_url('admin/dashboard')],
                 ['title' => 'Proveedores', 'url' => ''],

@@ -161,6 +161,9 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->get('clientes/eliminar-logo/(:num)', 'Admin\ClientesController::eliminarLogo/$1');
 
     // ========== Proveedores ==========
+    // DEBUG: Ruta temporal para diagnóstico
+    $routes->get('proveedores/debug', 'Admin\\ProveedoresController::debug');
+
     // Rutas REST-like solicitadas (patrón Clientes)
     $routes->get('proveedores', 'Admin\\ProveedoresController::index2');
     $routes->get('proveedores/create', 'Admin\\ProveedoresController::create');
