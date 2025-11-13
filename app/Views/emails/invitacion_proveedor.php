@@ -224,6 +224,44 @@
         </ul>
       </div>
 
+      <?php if (!empty($consultorNombre) || !empty($consultorEmail) || !empty($consultorTelefono)): ?>
+      <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 20px; margin: 30px 0; border-radius: 4px;">
+        <h3 style="margin-top: 0; color: #004085; font-size: 16px;">
+          👨‍💼 Consultor Asignado
+        </h3>
+        <p style="margin: 10px 0; font-size: 14px; color: #004085;">
+          El profesional que calificará esta auditoría es:
+        </p>
+        <div style="background: #fff; padding: 15px; border-radius: 4px; margin: 15px 0;">
+          <?php if (!empty($consultorNombre)): ?>
+          <p style="margin: 5px 0; font-size: 14px; color: #333;">
+            <strong style="color: #0066cc;">👤 Nombre:</strong> <?= esc($consultorNombre) ?>
+          </p>
+          <?php endif; ?>
+          <?php if (!empty($consultorEmail)): ?>
+          <p style="margin: 5px 0; font-size: 14px; color: #333;">
+            <strong style="color: #0066cc;">📧 Email:</strong>
+            <a href="mailto:<?= esc($consultorEmail) ?>" style="color: #0066cc; text-decoration: none;">
+              <?= esc($consultorEmail) ?>
+            </a>
+          </p>
+          <?php endif; ?>
+          <?php if (!empty($consultorTelefono)): ?>
+          <p style="margin: 5px 0; font-size: 14px; color: #333;">
+            <strong style="color: #0066cc;">📱 Teléfono:</strong>
+            <a href="tel:<?= esc($consultorTelefono) ?>" style="color: #0066cc; text-decoration: none;">
+              <?= esc($consultorTelefono) ?>
+            </a>
+          </p>
+          <?php endif; ?>
+        </div>
+        <p style="margin: 10px 0 0 0; font-size: 13px; color: #004085;">
+          <strong>💡 Importante:</strong> Si tienes dudas sobre la documentación requerida o cualquier aspecto de la auditoría,
+          puedes contactar directamente al consultor usando los datos anteriores.
+        </p>
+      </div>
+      <?php endif; ?>
+
       <p style="margin-top: 30px;">Saludos,<br>
       <strong>Equipo de Cycloid Talent</strong></p>
     </div>

@@ -248,6 +248,46 @@
                             <?php endif; ?>
                         </div>
 
+                        <!-- Email de Contacto -->
+                        <div class="mb-3">
+                            <label for="email_consultor" class="form-label">
+                                <i class="bi bi-envelope"></i> Email de Contacto
+                            </label>
+                            <input type="email"
+                                   class="form-control <?= $validation->hasError('email') ? 'is-invalid' : '' ?>"
+                                   id="email_consultor"
+                                   name="email"
+                                   value="<?= old('email', $consultor['email'] ?? '') ?>"
+                                   maxlength="150"
+                                   placeholder="email@ejemplo.com">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Este email se incluirá en las notificaciones enviadas al proveedor para que pueda contactar al consultor.
+                            </div>
+                            <?php if ($validation->hasError('email')): ?>
+                                <div class="invalid-feedback"><?= $validation->getError('email') ?></div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Teléfono de Contacto -->
+                        <div class="mb-3">
+                            <label for="telefono" class="form-label">
+                                <i class="bi bi-telephone"></i> Teléfono de Contacto
+                            </label>
+                            <input type="text"
+                                   class="form-control <?= $validation->hasError('telefono') ? 'is-invalid' : '' ?>"
+                                   id="telefono"
+                                   name="telefono"
+                                   value="<?= old('telefono', $consultor['telefono'] ?? '') ?>"
+                                   maxlength="20"
+                                   placeholder="+57 300 1234567">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Este teléfono se incluirá en las notificaciones enviadas al proveedor para facilitar el contacto.
+                            </div>
+                            <?php if ($validation->hasError('telefono')): ?>
+                                <div class="invalid-feedback"><?= $validation->getError('telefono') ?></div>
+                            <?php endif; ?>
+                        </div>
+
                         <!-- Firma Digital -->
                         <div class="mb-3">
                             <label for="firma" class="form-label">

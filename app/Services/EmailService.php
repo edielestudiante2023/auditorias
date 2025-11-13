@@ -46,6 +46,7 @@ class EmailService
      * @param string|null $nombreDestinatario Nombre del destinatario
      * @param array $items Ítems seleccionados por el consultor
      * @param array $clientes Clientes asignados a la auditoría
+     * @param array|null $consultorData Datos del consultor (nombre_completo, email, telefono)
      * @return array ['ok' => bool, 'message' => string, 'error' => string|null]
      */
     public function sendInviteProveedor(
@@ -56,7 +57,8 @@ class EmailService
         ?string $urlAuditoria = null,
         ?string $nombreDestinatario = null,
         array $items = [],
-        array $clientes = []
+        array $clientes = [],
+        ?array $consultorData = null
     ): array {
         $tipo = 'invitacion_proveedor';
         $asunto = 'Invitación a completar auditoría - Cycloid Talent';
@@ -69,6 +71,15 @@ class EmailService
         ];
 
         try {
+            // Extraer datos del consultor para el template
+            $consultorNombre = $consultorData['nombre_completo'] ?? null;
+            $consultorEmail = $consultorData['email'] ?? null;
+            $consultorTelefono = $consultorData['telefono'] ?? null;
+
+            log_message('info', 'EmailService - Datos consultor para template: Nombre=' . ($consultorNombre ?? 'NULL') .
+                               ', Email=' . ($consultorEmail ?? 'NULL') .
+                               ', Telefono=' . ($consultorTelefono ?? 'NULL'));
+
             // Cargar plantilla HTML
             $htmlContent = view('emails/invitacion_proveedor', [
                 'usuario' => $usuario,
@@ -78,6 +89,9 @@ class EmailService
                 'nombreProveedor' => $nombreDestinatario ?? 'Usuario',
                 'items' => $items,
                 'clientes' => $clientes,
+                'consultorNombre' => $consultorNombre,
+                'consultorEmail' => $consultorEmail,
+                'consultorTelefono' => $consultorTelefono,
             ]);
 
             // Modo log-only si no hay API key
@@ -141,6 +155,7 @@ class EmailService
      * @param string $nombreDestinatario Nombre del destinatario
      * @param array $clientesNuevos Lista de nuevos clientes agregados
      * @param array $itemsPorCliente Items que debe completar por cliente
+     * @param array|null $consultorData Datos del consultor (nombre_completo, email, telefono)
      * @return array ['ok' => bool, 'message' => string, 'error' => string|null]
      */
     public function sendAdicionClientesProveedor(
@@ -151,7 +166,8 @@ class EmailService
         string $urlAuditoria,
         string $nombreDestinatario,
         array $clientesNuevos = [],
-        array $itemsPorCliente = []
+        array $itemsPorCliente = [],
+        ?array $consultorData = null
     ): array {
         $tipo = 'adicion_clientes_proveedor';
         $asunto = 'Nuevos clientes agregados a auditoría - Cycloid Talent';
@@ -164,6 +180,11 @@ class EmailService
         ];
 
         try {
+            // Extraer datos del consultor para el template
+            $consultorNombre = $consultorData['nombre_completo'] ?? null;
+            $consultorEmail = $consultorData['email'] ?? null;
+            $consultorTelefono = $consultorData['telefono'] ?? null;
+
             // Cargar plantilla HTML específica
             $htmlContent = view('emails/adicion_clientes_proveedor', [
                 'usuario' => $usuario,
@@ -173,6 +194,9 @@ class EmailService
                 'nombreProveedor' => $nombreDestinatario,
                 'clientesNuevos' => $clientesNuevos,
                 'itemsPorCliente' => $itemsPorCliente,
+                'consultorNombre' => $consultorNombre,
+                'consultorEmail' => $consultorEmail,
+                'consultorTelefono' => $consultorTelefono,
             ]);
 
             // Modo log-only si no hay API key

@@ -227,6 +227,8 @@ class ConsultoresController extends BaseController
             'tipo_documento'   => $this->request->getPost('tipo_documento'),
             'numero_documento' => $this->request->getPost('numero_documento'),
             'licencia_sst'     => $this->request->getPost('licencia_sst'),
+            'email'            => $this->request->getPost('email'),
+            'telefono'         => $this->request->getPost('telefono'),
         ];
 
         // Procesar firma si se subió
@@ -337,6 +339,8 @@ class ConsultoresController extends BaseController
             'tipo_documento'   => $this->request->getPost('tipo_documento'),
             'numero_documento' => $this->request->getPost('numero_documento'),
             'licencia_sst'     => $this->request->getPost('licencia_sst'),
+            'email'            => $this->request->getPost('email'),
+            'telefono'         => $this->request->getPost('telefono'),
         ];
 
         // Validar que el usuario no esté asignado a otro consultor

@@ -415,6 +415,10 @@ class AuditoriasController extends BaseController
                 ->get()
                 ->getResultArray();
 
+            // Obtener datos del consultor asignado
+            $consultorModel = new \App\Models\ConsultorModel();
+            $consultorData = $consultorModel->find($auditoria['id_consultor']);
+
             // Enviar email específico para adición de clientes
             $emailService = new \App\Services\EmailService();
             $urlLogin = site_url('login');
@@ -428,7 +432,8 @@ class AuditoriasController extends BaseController
                 $urlAuditoria,
                 $contrato['usuario_responsable_nombre'],
                 $clientesNuevos, // Solo clientes nuevos (últimos 10 min)
-                $itemsPorCliente // Solo items individuales
+                $itemsPorCliente, // Solo items individuales
+                $consultorData // Datos del consultor
             );
 
             if ($resultado['ok']) {

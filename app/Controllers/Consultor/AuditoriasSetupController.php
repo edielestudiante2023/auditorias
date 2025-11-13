@@ -319,6 +319,12 @@ class AuditoriasSetupController extends BaseController
                 ->with('error', 'No se encontró un contrato activo con usuario responsable asignado.');
         }
 
+        // Obtener datos del consultor asignado (nombre, email, teléfono)
+        $consultorModel = new \App\Models\ConsultorModel();
+        $consultorData = $consultorModel->find($auditoria['id_consultor']);
+
+        log_message('info', 'Datos del consultor obtenidos: ' . json_encode($consultorData));
+
         // Verificar que el usuario responsable tenga email
         if (empty($contrato['usuario_responsable_email'])) {
             return redirect()
@@ -424,7 +430,8 @@ class AuditoriasSetupController extends BaseController
                 $urlAuditoria,
                 $contrato['usuario_responsable_nombre'],  // Nombre del usuario responsable para el saludo
                 $itemsSeleccionados,  // Ítems seleccionados con información completa
-                $clientes  // Clientes asignados a la auditoría
+                $clientes,  // Clientes asignados a la auditoría
+                $consultorData  // Datos del consultor (nombre, email, teléfono)
             );
 
             if ($resultado['ok']) {
@@ -653,6 +660,10 @@ class AuditoriasSetupController extends BaseController
             $urlAuditoria = site_url('proveedor/auditoria/' . $idAuditoria . '/wizard');
             $nombreUsuario = $contrato['usuario_responsable_email'];
 
+            // Obtener datos del consultor asignado
+            $consultorModel = new \App\Models\ConsultorModel();
+            $consultorData = $consultorModel->find($auditoria['id_consultor']);
+
             // Enviar email
             $resultado = $this->emailService->sendInviteProveedor(
                 $contrato['usuario_responsable_email'],
@@ -662,7 +673,8 @@ class AuditoriasSetupController extends BaseController
                 $urlAuditoria,
                 $contrato['usuario_responsable_nombre'],
                 $itemsSeleccionados,
-                $clientes
+                $clientes,
+                $consultorData
             );
 
             if ($resultado['ok']) {

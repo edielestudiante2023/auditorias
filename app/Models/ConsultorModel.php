@@ -18,6 +18,8 @@ class ConsultorModel extends Model
         'tipo_documento',
         'numero_documento',
         'licencia_sst',
+        'email',
+        'telefono',
         'firma_path',
         'created_at',
         'updated_at',
@@ -75,6 +77,21 @@ class ConsultorModel extends Model
             'rules'  => 'permit_empty|max_length[100]',
             'errors' => [
                 'max_length' => 'La licencia SST no puede exceder 100 caracteres.',
+            ],
+        ],
+        'email' => [
+            'label'  => 'Email',
+            'rules'  => 'permit_empty|max_length[150]|valid_email',
+            'errors' => [
+                'max_length' => 'El email no puede exceder 150 caracteres.',
+                'valid_email' => 'Debe ingresar un email válido.',
+            ],
+        ],
+        'telefono' => [
+            'label'  => 'Teléfono',
+            'rules'  => 'permit_empty|max_length[20]',
+            'errors' => [
+                'max_length' => 'El teléfono no puede exceder 20 caracteres.',
             ],
         ],
         'firma_path' => [
