@@ -12,6 +12,10 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <!-- DataTables Buttons CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 </head>
 <body class="bg-light">
 
@@ -51,28 +55,15 @@
     <!-- Flash Messages -->
     <?= view('partials/flash') ?>
 
-    <!-- Header con filtros -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-0"><i class="bi bi-people"></i> <?= esc($title ?? 'Usuarios') ?></h4>
             <small class="text-muted">Gestiona los usuarios del sistema</small>
         </div>
-        <form class="d-flex align-items-center gap-2" method="get" action="<?= current_url() ?>">
-            <select name="rol" class="form-select" onchange="this.form.submit()">
-                <option value="">Todos los roles</option>
-                <option value="1" <?= ($f_rol ?? '')==='1'?'selected':'' ?>>Super Admin</option>
-                <option value="2" <?= ($f_rol ?? '')==='2'?'selected':'' ?>>Consultor</option>
-                <option value="3" <?= ($f_rol ?? '')==='3'?'selected':'' ?>>Proveedor</option>
-            </select>
-            <select name="estado" class="form-select" onchange="this.form.submit()">
-                <option value="">Todos</option>
-                <option value="activo" <?= ($f_estado ?? '')==='activo'?'selected':'' ?>>Activo</option>
-                <option value="inactivo" <?= ($f_estado ?? '')==='inactivo'?'selected':'' ?>>Inactivo</option>
-            </select>
-            <a href="<?= site_url('admin/usuarios/create') ?>" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Nuevo Usuario
-            </a>
-        </form>
+        <a href="<?= site_url('admin/usuarios/create') ?>" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Usuario
+        </a>
     </div>
 
     <!-- Estadísticas -->
@@ -151,8 +142,8 @@
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                    <table id="tablaUsuarios" class="table table-hover align-middle">
+                        <thead class="table-primary">
                             <tr>
                                 <th>Usuario</th>
                                 <th>Email</th>
@@ -160,6 +151,27 @@
                                 <th class="text-center">Vinculado a</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">Acciones</th>
+                            </tr>
+                            <tr class="filters">
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar usuario"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar email"></th>
+                                <th>
+                                    <select class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="Super Admin">Super Admin</option>
+                                        <option value="Consultor">Consultor</option>
+                                        <option value="Proveedor">Proveedor</option>
+                                    </select>
+                                </th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar vinculado"></th>
+                                <th>
+                                    <select class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="Activo">Activo</option>
+                                        <option value="Inactivo">Inactivo</option>
+                                    </select>
+                                </th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -299,6 +311,17 @@
 </form>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- DataTables -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<!-- DataTables Buttons -->
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
 <script>
 function resetearPassword(id, nombre) {
     const mensaje = `¿Está seguro de resetear la contraseña del usuario "${nombre}"?\n\nSe generará una nueva contraseña temporal que se mostrará en pantalla.`;
@@ -319,6 +342,46 @@ function confirmarEliminar(id, nombre) {
         form.submit();
     }
 }
+
+$(document).ready(function() {
+    var table = $('#tablaUsuarios').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+        },
+        order: [[0, 'asc']], // Ordenar por nombre de usuario
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"B>>rtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Exportar a Excel',
+                className: 'btn btn-success btn-sm',
+                title: 'Usuarios',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4] // Exportar sin columna de Acciones
+                }
+            }
+        ]
+    });
+
+    // Filtros en thead
+    $('#tablaUsuarios thead tr.filters th').each(function(i) {
+        if (i < 5) { // Solo para las primeras 5 columnas (que tienen filtros)
+            if (i === 2 || i === 4) { // Columnas Rol y Estado (select)
+                $('select', this).on('change', function() {
+                    table.column(i).search($(this).val()).draw();
+                });
+            } else { // Columnas con input text
+                $('input', this).on('keyup change', function() {
+                    if (table.column(i).search() !== this.value) {
+                        table.column(i).search(this.value).draw();
+                    }
+                });
+            }
+        }
+    });
+});
 </script>
 </body>
 </html>
