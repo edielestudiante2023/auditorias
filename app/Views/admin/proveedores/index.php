@@ -12,6 +12,8 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 </head>
 <body class="bg-light">
 
@@ -66,16 +68,12 @@
     <?= view('partials/flash') ?>
 
     <!-- Header -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <!-- Cambio de ícono: reemplazado bi-truck por bi-shop para representar alianza con proveedores -->
             <h4 class="mb-0"><i class="bi bi-shop"></i> <?= esc($title) ?></h4>
             <small class="text-muted">Administra los proveedores del sistema</small>
         </div>
-        <form class="d-flex" role="search" method="get" action="<?= current_url() ?>">
-            <input type="search" name="q" class="form-control me-2" placeholder="Buscar por Razón Social o NIT" value="<?= esc($q ?? '') ?>">
-            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
-        </form>
         <a href="<?= site_url('admin/proveedores/create') ?>" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Nuevo Proveedor
         </a>
@@ -168,7 +166,7 @@
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table id="tablaProveedores" class="table table-hover align-middle">
                         <thead class="table-primary">
                             <tr>
                                 <th>Razón Social</th>
@@ -177,11 +175,12 @@
                                 <th>Usuarios Vinculados</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">Acciones</th>
+                                <th style="display:none;">Fecha Creación</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($proveedores as $proveedor): ?>
-                                <tr>
+                                <tr data-fecha="<?= esc($proveedor['created_at'] ?? '') ?>">
                                     <td>
                                         <?php if (!empty($proveedor['logo_path'])): ?>
                                             <img src="<?= base_url('writable/' . $proveedor['logo_path']) ?>" alt="Logo" class="me-2" style="width:32px;height:32px;object-fit:contain;border:1px solid #eee;">
@@ -262,13 +261,14 @@
                                             </button>
                                         </div>
                                     </td>
+                                    <td style="display:none;"><?= esc($proveedor['created_at'] ?? '') ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
                 <?php if (isset($pager)) : ?>
-                    <div class="mt-3">
+                    <div class="mt-3" id="paginacionServidor">
                         <?= $pager->links('proveedores', 'default_full') ?>
                     </div>
                 <?php endif; ?>
@@ -282,7 +282,11 @@
     <?= csrf_field() ?>
 </form>
 
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
 function confirmarEliminar(id, nombre) {
     const mensaje = `¿Está seguro de ELIMINAR al proveedor "${nombre}"?\n\nNOTA: No se puede eliminar si tiene contratos asociados.`;
@@ -293,6 +297,25 @@ function confirmarEliminar(id, nombre) {
         form.submit();
     }
 }
+
+// Inicializar DataTables
+<?php if (!empty($proveedores)): ?>
+$(document).ready(function() {
+    $('#tablaProveedores').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+        },
+        pageLength: 10,
+        order: [[6, 'desc']], // Ordenar por columna oculta de fecha (índice 6) descendente para mostrar más recientes primero
+        columnDefs: [
+            { orderable: false, targets: [5] }, // Columna Acciones no ordenable
+            { visible: false, targets: [6] } // Columna Fecha Creación oculta
+        ]
+    });
+    // Ocultar paginación del servidor
+    $('#paginacionServidor').hide();
+});
+<?php endif; ?>
 </script>
 
 </body>
