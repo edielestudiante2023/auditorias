@@ -1130,18 +1130,26 @@ class EmailService
             // Destinatario principal: Proveedor (usuario responsable)
             $email->addTo($emailCliente, $nombreCliente);
 
-            // Copia: Cliente (si tiene email)
-            if ($emailClienteContacto) {
+            // Array para rastrear emails ya agregados y evitar duplicados
+            $emailsAgregados = [strtolower($emailCliente)];
+
+            // Copia: Cliente (si tiene email y no está duplicado)
+            if ($emailClienteContacto && !in_array(strtolower($emailClienteContacto), $emailsAgregados)) {
                 $email->addCc($emailClienteContacto, $cliente['razon_social']);
+                $emailsAgregados[] = strtolower($emailClienteContacto);
             }
 
-            // Copia: Consultor
-            if ($emailConsultor) {
+            // Copia: Consultor (si no está duplicado)
+            if ($emailConsultor && !in_array(strtolower($emailConsultor), $emailsAgregados)) {
                 $email->addCc($emailConsultor, $nombreConsultor);
+                $emailsAgregados[] = strtolower($emailConsultor);
             }
 
-            // Copia: Head consultant
-            $email->addCc('head.consultant.cycloidtalent@gmail.com', 'Head Consultant');
+            // Copia: Head consultant (si no está duplicado)
+            $headConsultantEmail = 'head.consultant.cycloidtalent@gmail.com';
+            if (!in_array(strtolower($headConsultantEmail), $emailsAgregados)) {
+                $email->addCc($headConsultantEmail, 'Head Consultant');
+            }
 
             $email->addContent('text/html', $htmlContent);
 
