@@ -84,7 +84,18 @@
     <!-- Statistics -->
     <?php
     $total = count($proveedores);
-    $conUsuario = count(array_filter($proveedores, fn($p) => !empty($p['id_users'])));
+
+    // Contar proveedores con usuarios vinculados a través de tabla intermedia
+    $db = \Config\Database::connect();
+    $conUsuario = 0;
+    foreach ($proveedores as $p) {
+        $tieneUsuario = $db->table('usuarios_proveedores')
+            ->where('id_proveedor', $p['id_proveedor'])
+            ->where('activo', 1)
+            ->countAllResults() > 0;
+        if ($tieneUsuario) $conUsuario++;
+    }
+
     $conEmail = count(array_filter($proveedores, fn($p) => !empty($p['email_contacto'])));
     $conTelefono = count(array_filter($proveedores, fn($p) => !empty($p['telefono_contacto'])));
     ?>
@@ -336,7 +347,9 @@ $(document).ready(function() {
         ],
         orderCellsTop: true,
         fixedHeader: true,
-        dom: 'Bfrtip',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"B>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
         buttons: [
             {
                 extend: 'excelHtml5',
@@ -347,7 +360,10 @@ $(document).ready(function() {
                     columns: [0, 1, 2, 3, 4] // Exportar solo columnas visibles (sin Acciones ni Fecha oculta)
                 }
             }
-        ]
+        ],
+        retrieve: true,
+        processing: false,
+        serverSide: false
     });
 
     // Aplicar filtros por columna
