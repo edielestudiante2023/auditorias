@@ -24,7 +24,10 @@
       "Bash(then echo \"Falta favicon en: $file\")",
       "Bash(fi)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(while read f)",
+      "Bash(do grep -q \"favicon.ico\" \"$f\")",
+      "Bash(echo \"$f\")"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,11 @@
 <?= $this->extend('layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <div class="mb-4">
@@ -151,4 +157,30 @@
         </div>
     </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<!-- jQuery (requerido por Select2) -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Inicializar Select2 en el campo de proveedor
+    $('#id_proveedor').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Seleccionar proveedor...',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron proveedores";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+});
+</script>
 <?= $this->endSection() ?>
