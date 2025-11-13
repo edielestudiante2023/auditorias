@@ -26,9 +26,13 @@ class ProveedoresController extends BaseController
     public function index()
     {
         // Obtener TODOS los proveedores sin límite de paginación
+        // Usamos findAll(0) para asegurar que traiga TODOS los registros (0 = sin límite)
         $proveedores = $this->proveedorModel
             ->orderBy('created_at', 'DESC')
-            ->findAll();
+            ->findAll(0);
+
+        // DEBUG: Log para verificar cuántos proveedores se obtuvieron
+        log_message('info', 'Proveedores obtenidos en index: ' . count($proveedores));
 
         $data = [
             'title'       => 'Gestión de Proveedores',
