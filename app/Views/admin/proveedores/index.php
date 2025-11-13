@@ -184,7 +184,9 @@
                             <tr>
                                 <th>Razón Social</th>
                                 <th>NIT</th>
-                                <th>Contacto</th>
+                                <th>Email Contacto</th>
+                                <th>Teléfono Contacto</th>
+                                <th>Observaciones</th>
                                 <th>Usuarios Vinculados</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">Acciones</th>
@@ -193,7 +195,9 @@
                             <tr class="filters">
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar razón social"></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar NIT"></th>
-                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar contacto"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar email"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar teléfono"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar observaciones"></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar usuario"></th>
                                 <th>
                                     <select class="form-select form-select-sm">
@@ -214,31 +218,32 @@
                                             <img src="<?= base_url('writable/' . $proveedor['logo_path']) ?>" alt="Logo" class="me-2" style="width:32px;height:32px;object-fit:contain;border:1px solid #eee;">
                                         <?php endif; ?>
                                         <strong><?= esc($proveedor['razon_social']) ?></strong>
-                                        <?php if (!empty($proveedor['observaciones'])): ?>
-                                            <br>
-                                            <small class="text-muted" title="<?= esc($proveedor['observaciones']) ?>">
-                                                <i class="bi bi-info-circle"></i>
-                                                <?= esc(strlen($proveedor['observaciones']) > 50 ? substr($proveedor['observaciones'], 0, 50) . '...' : $proveedor['observaciones']) ?>
-                                            </small>
-                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary"><?= esc($proveedor['nit']) ?></span>
                                     </td>
                                     <td>
                                         <?php if (!empty($proveedor['email_contacto'])): ?>
-                                            <div class="mb-1">
-                                                <i class="bi bi-envelope text-muted"></i>
-                                                <small><?= esc($proveedor['email_contacto']) ?></small>
-                                            </div>
+                                            <i class="bi bi-envelope text-muted"></i>
+                                            <small><?= esc($proveedor['email_contacto']) ?></small>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
                                         <?php endif; ?>
+                                    </td>
+                                    <td>
                                         <?php if (!empty($proveedor['telefono_contacto'])): ?>
-                                            <div>
-                                                <i class="bi bi-telephone text-muted"></i>
-                                                <small><?= esc($proveedor['telefono_contacto']) ?></small>
-                                            </div>
+                                            <i class="bi bi-telephone text-muted"></i>
+                                            <small><?= esc($proveedor['telefono_contacto']) ?></small>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
                                         <?php endif; ?>
-                                        <?php if (empty($proveedor['email_contacto']) && empty($proveedor['telefono_contacto'])): ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($proveedor['observaciones'])): ?>
+                                            <small class="text-muted" title="<?= esc($proveedor['observaciones']) ?>">
+                                                <?= esc(strlen($proveedor['observaciones']) > 50 ? substr($proveedor['observaciones'], 0, 50) . '...' : $proveedor['observaciones']) ?>
+                                            </small>
+                                        <?php else: ?>
                                             <span class="text-muted">-</span>
                                         <?php endif; ?>
                                     </td>
@@ -333,7 +338,7 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
         },
-        order: [[6, 'desc']], // Ordenar por columna de fecha (índice 6) descendente
+        order: [[8, 'desc']], // Ordenar por columna de fecha (índice 8) descendente
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"B>>rtip',
@@ -344,7 +349,14 @@ $(document).ready(function() {
                 className: 'btn btn-success btn-sm',
                 title: 'Proveedores',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4] // Exportar solo columnas visibles (sin Acciones ni fecha oculta)
+                    columns: [0, 1, 2, 3, 4, 5, 6], // Exportar: Razón Social, NIT, Email, Teléfono, Observaciones, Usuarios, Estado (sin Acciones ni fecha oculta)
+                    format: {
+                        body: function(data, row, column, node) {
+                            // Extraer solo el texto limpio sin HTML
+                            var temp = $('<div>').html(data);
+                            return temp.text().trim();
+                        }
+                    }
                 }
             }
         ]
@@ -354,8 +366,8 @@ $(document).ready(function() {
     $('#tablaProveedores thead tr.filters th').each(function(i) {
         var title = $(this).text();
 
-        if (i < 5) { // Solo para las primeras 5 columnas (que tienen filtros)
-            if (i === 4) { // Columna Estado (select)
+        if (i < 7) { // Filtros para las primeras 7 columnas
+            if (i === 6) { // Columna Estado (select)
                 $('select', this).on('change', function() {
                     table.column(i).search($(this).val()).draw();
                 });

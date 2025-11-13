@@ -359,7 +359,14 @@ $(document).ready(function() {
                 className: 'btn btn-success btn-sm',
                 title: 'Usuarios',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4] // Exportar sin columna de Acciones
+                    columns: [0, 1, 2, 3, 4], // Exportar sin columna de Acciones
+                    format: {
+                        body: function(data, row, column, node) {
+                            // Extraer solo el texto limpio sin HTML
+                            var temp = $('<div>').html(data);
+                            return temp.text().trim();
+                        }
+                    }
                 }
             }
         ]
