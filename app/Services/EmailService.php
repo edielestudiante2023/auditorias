@@ -419,7 +419,7 @@ class EmailService
         }
 
         $tipo = 'proveedor_finalizo';
-        $asunto = "El proveedor {$auditoria['proveedor_nombre']} completó la auditoría #{$idAuditoria}";
+        $asunto = "El proveedor {$auditoria['proveedor_nombre']} completó la auditoría";
         $toEmail = $auditoria['consultor_email'];
         $consultorNombre = $auditoria['consultor_nombre'];
         $payload = [
