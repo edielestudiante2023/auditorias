@@ -56,30 +56,41 @@ class AuditoriasController extends BaseController
 
         // Todas las auditorías asignadas a proveedores, sin filtro de usuario
         $auditorias = $db->query("
-            SELECT a.*,
+            SELECT DISTINCT a.*,
                    p.razon_social as proveedor_nombre,
                    p.nit as proveedor_nit,
                    c.nombre_completo as consultor_nombre,
-                   MAX(u.nombre) as usuario_responsable_nombre,
-                   MAX(u.email) as usuario_responsable_email,
-                   COUNT(DISTINCT ac.id_cliente) as clientes_asignados,
-                   (SELECT COUNT(DISTINCT cpc2.id_cliente)
-                    FROM contratos_proveedor_cliente cpc2
-                    WHERE cpc2.id_proveedor = a.id_proveedor
-                    AND cpc2.estado = 'activo') as total_clientes_proveedor
+                   u.nombre as usuario_responsable_nombre,
+                   u.email as usuario_responsable_email
             FROM auditorias a
             JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             JOIN consultores c ON c.id_consultor = a.id_consultor
             LEFT JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
             LEFT JOIN users u ON u.id_users = cpc.id_usuario_responsable
-            LEFT JOIN auditoria_clientes ac ON ac.id_auditoria = a.id_auditoria
             WHERE a.estado IN ('borrador', 'asignada', 'en_progreso')
-            GROUP BY a.id_auditoria, p.razon_social, p.nit, c.nombre_completo
             ORDER BY a.created_at DESC
         ")->getResultArray();
 
-        // Para cada auditoría, obtener la lista de clientes asignados
+        // Para cada auditoría, obtener información de clientes
         foreach ($auditorias as &$auditoria) {
+            // Contar clientes asignados
+            $clientesAsignados = $db->query("
+                SELECT COUNT(*) as total
+                FROM auditoria_clientes
+                WHERE id_auditoria = ?
+            ", [$auditoria['id_auditoria']])->getRow()->total ?? 0;
+            $auditoria['clientes_asignados'] = $clientesAsignados;
+
+            // Contar total de clientes del proveedor
+            $totalClientes = $db->query("
+                SELECT COUNT(DISTINCT id_cliente) as total
+                FROM contratos_proveedor_cliente
+                WHERE id_proveedor = ?
+                AND estado = 'activo'
+            ", [$auditoria['id_proveedor']])->getRow()->total ?? 0;
+            $auditoria['total_clientes_proveedor'] = $totalClientes;
+
+            // Obtener lista de clientes asignados
             $clientes = $db->query("
                 SELECT cl.razon_social, cl.nit
                 FROM auditoria_clientes ac
@@ -87,7 +98,6 @@ class AuditoriasController extends BaseController
                 WHERE ac.id_auditoria = ?
                 ORDER BY cl.razon_social ASC
             ", [$auditoria['id_auditoria']])->getResultArray();
-
             $auditoria['clientes'] = $clientes;
 
             // Obtener clientes del proveedor que NO están en la auditoría
@@ -98,13 +108,12 @@ class AuditoriasController extends BaseController
                 WHERE cpc.id_proveedor = ?
                 AND cpc.estado = 'activo'
                 AND cpc.id_cliente NOT IN (
-                    SELECT id_cliente
+                    SELECT COALESCE(id_cliente, 0)
                     FROM auditoria_clientes
                     WHERE id_auditoria = ?
                 )
                 ORDER BY cl.razon_social ASC
             ", [$auditoria['id_proveedor'], $auditoria['id_auditoria']])->getResultArray();
-
             $auditoria['clientes_faltantes'] = $clientesFaltantes;
         }
 
