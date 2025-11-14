@@ -60,22 +60,53 @@ class AuditoriasController extends BaseController
                    p.razon_social as proveedor_nombre,
                    p.nit as proveedor_nit,
                    c.nombre_completo as consultor_nombre,
-                   (SELECT u.nombre
-                    FROM contratos_proveedor_cliente cpc
-                    JOIN users u ON u.id_users = cpc.id_usuario_responsable
-                    WHERE cpc.id_proveedor = a.id_proveedor
-                    LIMIT 1) as usuario_responsable_nombre,
-                   (SELECT u.email
-                    FROM contratos_proveedor_cliente cpc
-                    JOIN users u ON u.id_users = cpc.id_usuario_responsable
-                    WHERE cpc.id_proveedor = a.id_proveedor
-                    LIMIT 1) as usuario_responsable_email
+                   MAX(u.nombre) as usuario_responsable_nombre,
+                   MAX(u.email) as usuario_responsable_email,
+                   COUNT(DISTINCT ac.id_cliente) as clientes_asignados,
+                   (SELECT COUNT(DISTINCT cpc2.id_cliente)
+                    FROM contratos_proveedor_cliente cpc2
+                    WHERE cpc2.id_proveedor = a.id_proveedor
+                    AND cpc2.estado = 'activo') as total_clientes_proveedor
             FROM auditorias a
             JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             JOIN consultores c ON c.id_consultor = a.id_consultor
+            LEFT JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
+            LEFT JOIN users u ON u.id_users = cpc.id_usuario_responsable
+            LEFT JOIN auditoria_clientes ac ON ac.id_auditoria = a.id_auditoria
             WHERE a.estado IN ('borrador', 'asignada', 'en_progreso')
+            GROUP BY a.id_auditoria, p.razon_social, p.nit, c.nombre_completo
             ORDER BY a.created_at DESC
         ")->getResultArray();
+
+        // Para cada auditoría, obtener la lista de clientes asignados
+        foreach ($auditorias as &$auditoria) {
+            $clientes = $db->query("
+                SELECT cl.razon_social, cl.nit
+                FROM auditoria_clientes ac
+                JOIN clientes cl ON cl.id_cliente = ac.id_cliente
+                WHERE ac.id_auditoria = ?
+                ORDER BY cl.razon_social ASC
+            ", [$auditoria['id_auditoria']])->getResultArray();
+
+            $auditoria['clientes'] = $clientes;
+
+            // Obtener clientes del proveedor que NO están en la auditoría
+            $clientesFaltantes = $db->query("
+                SELECT cl.razon_social, cl.nit
+                FROM contratos_proveedor_cliente cpc
+                JOIN clientes cl ON cl.id_cliente = cpc.id_cliente
+                WHERE cpc.id_proveedor = ?
+                AND cpc.estado = 'activo'
+                AND cpc.id_cliente NOT IN (
+                    SELECT id_cliente
+                    FROM auditoria_clientes
+                    WHERE id_auditoria = ?
+                )
+                ORDER BY cl.razon_social ASC
+            ", [$auditoria['id_proveedor'], $auditoria['id_auditoria']])->getResultArray();
+
+            $auditoria['clientes_faltantes'] = $clientesFaltantes;
+        }
 
         return view('admin/auditorias/pendientes_proveedores', [
             'title' => 'Auditorías Pendientes - Proveedores',
