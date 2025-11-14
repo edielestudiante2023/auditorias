@@ -9,6 +9,7 @@ use App\Models\ProveedorModel;
 use App\Models\ConsultorModel;
 use App\Models\ContratoModel;
 use App\Models\UserModel;
+use App\Models\ServicioModel;
 
 class DashboardController extends BaseController
 {
@@ -23,6 +24,7 @@ class DashboardController extends BaseController
         $consultorModel = new ConsultorModel();
         $contratoModel = new ContratoModel();
         $userModel = new UserModel();
+        $servicioModel = new ServicioModel();
 
         $data = [
             'title' => 'Panel de Administración',
@@ -37,6 +39,7 @@ class DashboardController extends BaseController
             'total_consultores' => $consultorModel->countAll(),
             'total_contratos' => $contratoModel->countAll(),
             'total_usuarios' => $userModel->countAll(),
+            'total_servicios' => $servicioModel->countAll(),
         ];
 
         return view('admin/dashboard', $data);

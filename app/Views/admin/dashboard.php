@@ -197,6 +197,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Servicios -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm <?= $currentSegment === 'servicios' ? 'border-primary border-2' : '' ?>">
+        <div class="card-body text-center position-relative">
+          <span class="badge bg-primary position-absolute top-0 end-0 m-2"><?= $total_servicios ?></span>
+          <i class="bi bi-gear text-primary" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Servicios</h5>
+          <p class="card-text text-muted small">Total: <?= $total_servicios ?></p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/servicios') ?>" class="btn btn-primary" target="_blank">
+              <i class="bi bi-arrow-right-circle"></i> Ir a Servicios
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Sin permisos">
+              <i class="bi bi-lock"></i> Sin permisos
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Sección de Supervisión de Auditorías -->

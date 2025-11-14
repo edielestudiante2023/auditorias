@@ -11,6 +11,9 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.bootstrap5.min.css">
 </head>
 <body class="bg-light">
 
@@ -27,7 +30,7 @@
   </div>
 </nav>
 
-<div class="container py-4">
+<div class="container-fluid py-4">
   <!-- Breadcrumbs -->
   <?= view('partials/breadcrumbs', [
       'breadcrumbs' => [
@@ -52,40 +55,50 @@
       <p class="text-muted mt-3">No tienes auditorías asignadas</p>
     </div>
   <?php else: ?>
-    <div class="table-responsive">
-      <table class="table table-hover table-striped align-middle">
-        <thead class="table-success">
-          <tr>
-            <th width="5%">#</th>
-            <th width="30%">Proveedor</th>
-            <th width="15%">Fecha Creación</th>
-            <th width="15%">Estado</th>
-            <th width="20%">Calificación</th>
-            <th width="15%">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($auditorias as $aud): ?>
-            <tr>
-              <td><strong>#<?= esc($aud['id_auditoria']) ?></strong></td>
-              <td>
-                <strong><?= esc($aud['proveedor_nombre']) ?></strong>
-                <?php if (!empty($aud['proveedor_nit'])): ?>
-                  <br><small class="text-muted">NIT: <?= esc($aud['proveedor_nit']) ?></small>
-                <?php endif; ?>
-              </td>
-              <td>
-                <?= formatoFechaSolo($aud['created_at']) ?>
-                <br><small class="text-muted"><?= tiempoRelativo($aud['created_at']) ?></small>
-              </td>
-              <td><?= estadoBadge($aud['estado']) ?></td>
-              <td>
-                <?php
-                $porcentaje = $aud['porcentaje_cumplimiento'] ?? 0;
-                ?>
-                <?= progressBar($porcentaje, true, '25px') ?>
-              </td>
-              <td>
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="tablaAuditorias" class="table table-hover table-striped align-middle">
+            <thead class="table-success">
+              <tr>
+                <th>#</th>
+                <th>Proveedor</th>
+                <th>Fecha Creación</th>
+                <th>Estado</th>
+                <th>Calificación</th>
+                <th>Acciones</th>
+              </tr>
+              <tr class="filters">
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($auditorias as $aud): ?>
+                <tr>
+                  <td><strong>#<?= esc($aud['id_auditoria']) ?></strong></td>
+                  <td>
+                    <strong><?= esc($aud['proveedor_nombre']) ?></strong>
+                    <?php if (!empty($aud['proveedor_nit'])): ?>
+                      <br><small class="text-muted">NIT: <?= esc($aud['proveedor_nit']) ?></small>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?= formatoFechaSolo($aud['created_at']) ?>
+                    <br><small class="text-muted"><?= tiempoRelativo($aud['created_at']) ?></small>
+                  </td>
+                  <td><?= estadoBadge($aud['estado']) ?></td>
+                  <td>
+                    <?php
+                    $porcentaje = $aud['porcentaje_cumplimiento'] ?? 0;
+                    ?>
+                    <?= progressBar($porcentaje, true, '25px') ?>
+                  </td>
+                  <td>
                 <div class="btn-group btn-group-sm" role="group">
                   <?php if ($aud['estado'] === 'en_revision_consultor' || $aud['estado'] === 'cerrada'): ?>
                     <!-- Auditoría lista para revisar o ya cerrada -->
@@ -136,12 +149,14 @@
                       <i class="bi bi-trash"></i>
                     </button>
                   <?php endif; ?>
-                </div>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Resumen de Estadísticas -->
@@ -190,7 +205,52 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
 <script>
+$(document).ready(function() {
+    var table = $('#tablaAuditorias').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        },
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Exportar a Excel',
+                className: 'btn btn-success btn-sm',
+                title: 'Mis Auditorías',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4]
+                }
+            }
+        ],
+        orderCellsTop: true,
+        fixedHeader: true,
+        pageLength: 25,
+        order: [[0, 'desc']],
+        responsive: true,
+        initComplete: function() {
+            var api = this.api();
+
+            api.columns().eq(0).each(function(colIdx) {
+                var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
+                var input = $('input', cell);
+
+                input.off('keyup change').on('keyup change', function() {
+                    api.column(colIdx).search(this.value).draw();
+                });
+            });
+        }
+    });
+});
+
 function reenviarEmail(idAuditoria) {
     if (confirm('¿Estás seguro de reenviar la invitación por email al proveedor?')) {
         // Mostrar loading en el botón

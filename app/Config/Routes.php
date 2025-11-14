@@ -196,6 +196,14 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->post('usuarios/(:num)/reset-password', 'Admin\\UsuariosController::resetPassword/$1');
     $routes->post('usuarios/(:num)/delete', 'Admin\\UsuariosController::delete/$1');
 
+    // ========== Servicios ==========
+    $routes->get('servicios', 'Admin\\ServiciosController::index');
+    $routes->get('servicios/create', 'Admin\\ServiciosController::create');
+    $routes->post('servicios/store', 'Admin\\ServiciosController::store');
+    $routes->get('servicios/edit/(:num)', 'Admin\\ServiciosController::edit/$1');
+    $routes->post('servicios/update/(:num)', 'Admin\\ServiciosController::update/$1');
+    $routes->post('servicios/delete/(:num)', 'Admin\\ServiciosController::delete/$1');
+
     // API: Validación de email
     $routes->get('api/check-email', 'Admin\\UsuariosController::checkEmail');
     $routes->post('api/check-email', 'Admin\\UsuariosController::checkEmail');
