@@ -66,10 +66,21 @@
                 </a>
             </div>
         <?php else: ?>
-            <p class="text-muted mb-4">
+            <p class="text-muted mb-3">
                 Seleccione los clientes que recibirán el informe de auditoría.
                 Solo se muestran clientes con contratos activos.
             </p>
+
+            <div class="mb-4">
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="selectAll">
+                    <label class="form-check-label fw-bold" for="selectAll">
+                        <i class="bi bi-check-square"></i> Seleccionar todos los clientes
+                    </label>
+                </div>
+            </div>
 
             <form method="post" action="<?= site_url('consultor/auditorias/' . $auditoria['id_auditoria'] . '/asignar-clientes-setup') ?>" id="formAsignarClientes">
                 <?= csrf_field() ?>
@@ -173,6 +184,46 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('formAsignarClientes');
     if (!form) return;
+
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const clienteCheckboxes = form.querySelectorAll('input[name="clientes[]"]');
+
+    // Función para actualizar el estado del checkbox "Seleccionar todos"
+    function updateSelectAllState() {
+        if (clienteCheckboxes.length === 0) return;
+
+        const checkedCount = form.querySelectorAll('input[name="clientes[]"]:checked').length;
+        const totalCount = clienteCheckboxes.length;
+
+        if (checkedCount === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === totalCount) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    // Manejar clic en "Seleccionar todos"
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            clienteCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        });
+    }
+
+    // Manejar clic en checkboxes individuales
+    clienteCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectAllState);
+    });
+
+    // Inicializar el estado del checkbox "Seleccionar todos"
+    updateSelectAllState();
 
     form.addEventListener('submit', function(e) {
         // Recopilar datos de contratos y servicios de los clientes seleccionados

@@ -238,16 +238,17 @@ function eliminarAuditoria(idAuditoria, nombreProveedor) {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
+        // Crear FormData para enviar el token CSRF correctamente
+        const formData = new FormData();
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
         // Hacer petición AJAX
         fetch('<?= site_url('consultor/auditorias/') ?>' + idAuditoria + '/eliminar', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
-            })
+            body: formData
         })
         .then(response => response.json())
         .then(data => {

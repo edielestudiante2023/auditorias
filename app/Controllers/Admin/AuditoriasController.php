@@ -71,52 +71,6 @@ class AuditoriasController extends BaseController
             ORDER BY a.created_at DESC
         ")->getResultArray();
 
-        // Para cada auditoría, obtener información de clientes
-        foreach ($auditorias as &$auditoria) {
-            // Contar clientes asignados
-            $clientesAsignados = $db->query("
-                SELECT COUNT(*) as total
-                FROM auditoria_clientes
-                WHERE id_auditoria = ?
-            ", [$auditoria['id_auditoria']])->getRow()->total ?? 0;
-            $auditoria['clientes_asignados'] = $clientesAsignados;
-
-            // Contar total de clientes del proveedor
-            $totalClientes = $db->query("
-                SELECT COUNT(DISTINCT id_cliente) as total
-                FROM contratos_proveedor_cliente
-                WHERE id_proveedor = ?
-                AND estado = 'activo'
-            ", [$auditoria['id_proveedor']])->getRow()->total ?? 0;
-            $auditoria['total_clientes_proveedor'] = $totalClientes;
-
-            // Obtener lista de clientes asignados
-            $clientes = $db->query("
-                SELECT cl.razon_social, cl.nit
-                FROM auditoria_clientes ac
-                JOIN clientes cl ON cl.id_cliente = ac.id_cliente
-                WHERE ac.id_auditoria = ?
-                ORDER BY cl.razon_social ASC
-            ", [$auditoria['id_auditoria']])->getResultArray();
-            $auditoria['clientes'] = $clientes;
-
-            // Obtener clientes del proveedor que NO están en la auditoría
-            $clientesFaltantes = $db->query("
-                SELECT cl.razon_social, cl.nit
-                FROM contratos_proveedor_cliente cpc
-                JOIN clientes cl ON cl.id_cliente = cpc.id_cliente
-                WHERE cpc.id_proveedor = ?
-                AND cpc.estado = 'activo'
-                AND cpc.id_cliente NOT IN (
-                    SELECT COALESCE(id_cliente, 0)
-                    FROM auditoria_clientes
-                    WHERE id_auditoria = ?
-                )
-                ORDER BY cl.razon_social ASC
-            ", [$auditoria['id_proveedor'], $auditoria['id_auditoria']])->getResultArray();
-            $auditoria['clientes_faltantes'] = $clientesFaltantes;
-        }
-
         return view('admin/auditorias/pendientes_proveedores', [
             'title' => 'Auditorías Pendientes - Proveedores',
             'auditorias' => $auditorias,
@@ -360,6 +314,60 @@ class AuditoriasController extends BaseController
         }
 
         return $this->response->setJSON($resultado);
+    }
+
+    /**
+     * Obtiene la lista de clientes asignados a una auditoría
+     */
+    public function getClientes($idAuditoria = null)
+    {
+        if (!isSuperAdmin()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado'
+            ]);
+        }
+
+        if (!$idAuditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID de auditoría no proporcionado'
+            ]);
+        }
+
+        $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+        if (!$auditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Auditoría no encontrada'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+
+        // Obtener clientes asignados
+        $clientes = $db->query("
+            SELECT cl.razon_social, cl.nit
+            FROM auditoria_clientes ac
+            JOIN clientes cl ON cl.id_cliente = ac.id_cliente
+            WHERE ac.id_auditoria = ?
+            ORDER BY cl.razon_social ASC
+        ", [$idAuditoria])->getResultArray();
+
+        // Contar total de clientes del proveedor
+        $totalProveedor = $db->query("
+            SELECT COUNT(DISTINCT id_cliente) as total
+            FROM contratos_proveedor_cliente
+            WHERE id_proveedor = ?
+            AND estado = 'activo'
+        ", [$auditoria['id_proveedor']])->getRow()->total ?? 0;
+
+        return $this->response->setJSON([
+            'success' => true,
+            'clientes' => $clientes,
+            'total_proveedor' => $totalProveedor
+        ]);
     }
 
     /**

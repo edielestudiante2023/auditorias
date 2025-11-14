@@ -29,10 +29,10 @@
                             <th>Código</th>
                             <th>Proveedor</th>
                             <th>Consultor</th>
-                            <th>Clientes Asignados</th>
                             <th>Usuario Responsable</th>
                             <th>Fecha Creación</th>
                             <th>Estado</th>
+                            <th class="text-center">Clientes</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -41,10 +41,10 @@
                             <th>Código</th>
                             <th>Proveedor</th>
                             <th>Consultor</th>
-                            <th>Clientes Asignados</th>
                             <th>Usuario Responsable</th>
                             <th>Fecha Creación</th>
                             <th>Estado</th>
+                            <th></th>
                             <th></th>
                         </tr>
                     </tfoot>
@@ -71,40 +71,6 @@
                                 </td>
                                 <td><?= esc($auditoria['consultor_nombre']) ?></td>
                                 <td>
-                                    <?php
-                                    $totalClientes = (int)$auditoria['total_clientes_proveedor'];
-                                    $clientesAsignados = (int)$auditoria['clientes_asignados'];
-                                    $clientesFaltantes = count($auditoria['clientes_faltantes'] ?? []);
-
-                                    // Determinar el color del badge
-                                    if ($clientesAsignados == 0) {
-                                        $badgeClass = 'bg-secondary';
-                                        $iconClass = 'exclamation-circle';
-                                    } elseif ($clientesFaltantes > 0) {
-                                        $badgeClass = 'bg-warning text-dark';
-                                        $iconClass = 'exclamation-triangle';
-                                    } else {
-                                        $badgeClass = 'bg-success';
-                                        $iconClass = 'check-circle';
-                                    }
-                                    ?>
-                                    <div class="mb-1">
-                                        <span class="badge <?= $badgeClass ?>">
-                                            <i class="bi bi-<?= $iconClass ?>"></i>
-                                            <?= $clientesAsignados ?> / <?= $totalClientes ?>
-                                        </span>
-                                    </div>
-
-                                    <?php if (!empty($auditoria['clientes'])): ?>
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-primary"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalClientes<?= $auditoria['id_auditoria'] ?>">
-                                            <i class="bi bi-eye"></i> Ver detalles
-                                        </button>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
                                     <?= esc($auditoria['usuario_responsable_nombre'] ?? 'N/A') ?>
                                     <br>
                                     <small class="text-muted"><?= esc($auditoria['usuario_responsable_email'] ?? '') ?></small>
@@ -126,6 +92,14 @@
                                 </td>
                                 <td class="text-center">
                                     <button type="button"
+                                            class="btn btn-info btn-sm btn-ver-clientes"
+                                            data-id="<?= $auditoria['id_auditoria'] ?>"
+                                            title="Ver clientes asignados">
+                                        <i class="bi bi-building"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button"
                                             class="btn btn-danger btn-sm btn-eliminar"
                                             data-id="<?= $auditoria['id_auditoria'] ?>"
                                             data-codigo="<?= esc($auditoria['codigo_formato']) ?>"
@@ -141,66 +115,29 @@
         </div>
     </div>
 
-    <!-- Modales para mostrar clientes -->
-    <?php foreach ($auditorias as $auditoria): ?>
-        <div class="modal fade" id="modalClientes<?= $auditoria['id_auditoria'] ?>" tabindex="-1" aria-labelledby="modalClientesLabel<?= $auditoria['id_auditoria'] ?>" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalClientesLabel<?= $auditoria['id_auditoria'] ?>">
-                            <i class="bi bi-building"></i> Clientes - <?= esc($auditoria['codigo_formato']) ?>
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-success">
-                                    <i class="bi bi-check-circle"></i> Clientes Asignados (<?= count($auditoria['clientes']) ?>)
-                                </h6>
-                                <?php if (!empty($auditoria['clientes'])): ?>
-                                    <ul class="list-group mb-3">
-                                        <?php foreach ($auditoria['clientes'] as $cliente): ?>
-                                            <li class="list-group-item">
-                                                <strong><?= esc($cliente['razon_social']) ?></strong>
-                                                <br>
-                                                <small class="text-muted">NIT: <?= esc($cliente['nit']) ?></small>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php else: ?>
-                                    <p class="text-muted fst-italic">No hay clientes asignados</p>
-                                <?php endif; ?>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-warning">
-                                    <i class="bi bi-exclamation-triangle"></i> Clientes Faltantes (<?= count($auditoria['clientes_faltantes']) ?>)
-                                </h6>
-                                <?php if (!empty($auditoria['clientes_faltantes'])): ?>
-                                    <ul class="list-group mb-3">
-                                        <?php foreach ($auditoria['clientes_faltantes'] as $cliente): ?>
-                                            <li class="list-group-item list-group-item-warning">
-                                                <strong><?= esc($cliente['razon_social']) ?></strong>
-                                                <br>
-                                                <small class="text-muted">NIT: <?= esc($cliente['nit']) ?></small>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php else: ?>
-                                    <div class="alert alert-success">
-                                        <i class="bi bi-check-circle"></i> Todos los clientes del proveedor están asignados
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+    <!-- Modal para ver clientes -->
+    <div class="modal fade" id="modalClientes" tabindex="-1" aria-labelledby="modalClientesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalClientesLabel">
+                        <i class="bi bi-building"></i> Clientes Asignados
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalClientesBody">
+                    <div class="text-center py-3">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Cargando...</span>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
-    <?php endforeach; ?>
+    </div>
 
     <div class="mt-3 text-muted">
         <small>
@@ -234,7 +171,7 @@
             },
             pageLength: 10,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-            order: [[5, 'desc']], // Ordenar por fecha de creación descendente (columna 5)
+            order: [[4, 'desc']], // Ordenar por fecha de creación descendente
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
                  '<"row"<"col-sm-12"B>>' +
                  '<"row"<"col-sm-12"tr>>' +
@@ -252,7 +189,7 @@
             ],
             responsive: true,
             columnDefs: [
-                { orderable: false, targets: -1 } // Deshabilitar orden en columna de Acciones
+                { orderable: false, targets: [-1, -2] } // Deshabilitar orden en columnas de Clientes y Acciones
             ],
             initComplete: function() {
                 // Agregar filtros en cada columna del footer excepto la última
@@ -260,7 +197,7 @@
                     var column = this;
                     var title = $(column.header()).text();
 
-                    if (index < this.api().columns().count() - 1) {
+                    if (index < this.api().columns().count() - 2) { // Excluir las últimas 2 columnas
                         $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
                             .appendTo($(column.footer()).empty())
                             .on('keyup change clear', function() {
@@ -271,6 +208,51 @@
                     }
                 });
             }
+        });
+
+        // Manejar visualización de clientes
+        $(document).on('click', '.btn-ver-clientes', function() {
+            const idAuditoria = $(this).data('id');
+            const modalBody = $('#modalClientesBody');
+            const modal = new bootstrap.Modal(document.getElementById('modalClientes'));
+
+            // Mostrar loading
+            modalBody.html('<div class="text-center py-3"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>');
+            modal.show();
+
+            // Cargar clientes vía AJAX
+            $.ajax({
+                url: `<?= site_url('admin/auditorias/') ?>${idAuditoria}/clientes`,
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    if (data.success) {
+                        let html = '<div class="row"><div class="col-md-12">';
+                        html += `<h6 class="text-primary mb-3"><i class="bi bi-check-circle"></i> Clientes Asignados (${data.clientes.length} / ${data.total_proveedor})</h6>`;
+
+                        if (data.clientes.length > 0) {
+                            html += '<ul class="list-group mb-3">';
+                            data.clientes.forEach(function(cliente) {
+                                html += '<li class="list-group-item">';
+                                html += `<strong>${cliente.razon_social}</strong><br>`;
+                                html += `<small class="text-muted">NIT: ${cliente.nit}</small>`;
+                                html += '</li>';
+                            });
+                            html += '</ul>';
+                        } else {
+                            html += '<p class="text-muted fst-italic">No hay clientes asignados a esta auditoría</p>';
+                        }
+
+                        html += '</div></div>';
+                        modalBody.html(html);
+                    } else {
+                        modalBody.html('<div class="alert alert-danger">Error al cargar clientes</div>');
+                    }
+                },
+                error: function() {
+                    modalBody.html('<div class="alert alert-danger">Error de conexión</div>');
+                }
+            });
         });
 
         // Manejar eliminación de auditoría

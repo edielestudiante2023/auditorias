@@ -33,6 +33,7 @@
                             <th>Fecha Cierre</th>
                             <th>% Cumplimiento</th>
                             <th>Estado</th>
+                            <th class="text-center">Clientes</th>
                         </tr>
                     </thead>
                     <tfoot class="table-light">
@@ -44,6 +45,7 @@
                             <th>Fecha Cierre</th>
                             <th>% Cumplimiento</th>
                             <th>Estado</th>
+                            <th></th>
                         </tr>
                     </tfoot>
                     <tbody>
@@ -96,10 +98,42 @@
                                         <i class="bi bi-lock-fill"></i> Cerrada
                                     </span>
                                 </td>
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="btn btn-info btn-sm btn-ver-clientes"
+                                            data-id="<?= $auditoria['id_auditoria'] ?>"
+                                            title="Ver clientes asignados">
+                                        <i class="bi bi-building"></i>
+                                    </button>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver clientes -->
+    <div class="modal fade" id="modalClientes" tabindex="-1" aria-labelledby="modalClientesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalClientesLabel">
+                        <i class="bi bi-building"></i> Clientes Asignados
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalClientesBody">
+                    <div class="text-center py-3">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -153,21 +187,71 @@
                 }
             ],
             responsive: true,
+            columnDefs: [
+                { orderable: false, targets: -1 } // Deshabilitar orden en columna de Clientes
+            ],
             initComplete: function() {
-                // Agregar filtros en cada columna del footer
-                this.api().columns().every(function() {
+                // Agregar filtros en cada columna del footer excepto la última
+                this.api().columns().every(function(index) {
                     var column = this;
                     var title = $(column.header()).text();
 
-                    $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
-                        .appendTo($(column.footer()).empty())
-                        .on('keyup change clear', function() {
-                            if (column.search() !== this.value) {
-                                column.search(this.value).draw();
-                            }
-                        });
+                    if (index < this.api().columns().count() - 1) {
+                        $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
+                            .appendTo($(column.footer()).empty())
+                            .on('keyup change clear', function() {
+                                if (column.search() !== this.value) {
+                                    column.search(this.value).draw();
+                                }
+                            });
+                    }
                 });
             }
+        });
+
+        // Manejar visualización de clientes
+        $(document).on('click', '.btn-ver-clientes', function() {
+            const idAuditoria = $(this).data('id');
+            const modalBody = $('#modalClientesBody');
+            const modal = new bootstrap.Modal(document.getElementById('modalClientes'));
+
+            // Mostrar loading
+            modalBody.html('<div class="text-center py-3"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>');
+            modal.show();
+
+            // Cargar clientes vía AJAX
+            $.ajax({
+                url: `<?= site_url('admin/auditorias/') ?>${idAuditoria}/clientes`,
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    if (data.success) {
+                        let html = '<div class="row"><div class="col-md-12">';
+                        html += `<h6 class="text-primary mb-3"><i class="bi bi-check-circle"></i> Clientes Asignados (${data.clientes.length} / ${data.total_proveedor})</h6>`;
+
+                        if (data.clientes.length > 0) {
+                            html += '<ul class="list-group mb-3">';
+                            data.clientes.forEach(function(cliente) {
+                                html += '<li class="list-group-item">';
+                                html += `<strong>${cliente.razon_social}</strong><br>`;
+                                html += `<small class="text-muted">NIT: ${cliente.nit}</small>`;
+                                html += '</li>';
+                            });
+                            html += '</ul>';
+                        } else {
+                            html += '<p class="text-muted fst-italic">No hay clientes asignados a esta auditoría</p>';
+                        }
+
+                        html += '</div></div>';
+                        modalBody.html(html);
+                    } else {
+                        modalBody.html('<div class="alert alert-danger">Error al cargar clientes</div>');
+                    }
+                },
+                error: function() {
+                    modalBody.html('<div class="alert alert-danger">Error de conexión</div>');
+                }
+            });
         });
     });
     </script>
