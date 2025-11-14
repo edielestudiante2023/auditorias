@@ -35,19 +35,17 @@
                             <th class="text-center">Clientes</th>
                             <th class="text-center">Acciones</th>
                         </tr>
-                    </thead>
-                    <tfoot class="table-light">
-                        <tr>
-                            <th>Código</th>
-                            <th>Proveedor</th>
-                            <th>Consultor</th>
-                            <th>Usuario Responsable</th>
-                            <th>Fecha Creación</th>
-                            <th>Estado</th>
+                        <tr class="filters">
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                             <th></th>
                             <th></th>
                         </tr>
-                    </tfoot>
+                    </thead>
                     <tbody>
                         <?php foreach ($auditorias as $auditoria): ?>
                             <?php
@@ -193,21 +191,21 @@
             columnDefs: [
                 { orderable: false, targets: [-1, -2] } // Deshabilitar orden en columnas de Clientes y Acciones
             ],
+            orderCellsTop: true,
+            fixedHeader: true,
             initComplete: function() {
-                // Agregar filtros en cada columna del footer excepto la última
-                this.api().columns().every(function(index) {
-                    var column = this;
-                    var title = $(column.header()).text();
+                var api = this.api();
 
-                    if (index < this.api().columns().count() - 2) { // Excluir las últimas 2 columnas
-                        $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
-                            .appendTo($(column.footer()).empty())
-                            .on('keyup change clear', function() {
-                                if (column.search() !== this.value) {
-                                    column.search(this.value).draw();
-                                }
-                            });
-                    }
+                // Configurar filtros en la segunda fila del thead
+                api.columns().eq(0).each(function(colIdx) {
+                    // Obtener el input de la fila de filtros
+                    var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
+                    var input = $('input', cell);
+
+                    // Evento de búsqueda
+                    input.on('keyup change', function() {
+                        api.column(colIdx).search(this.value).draw();
+                    });
                 });
             }
         });
