@@ -31,11 +31,13 @@
                             <th>Consultor</th>
                             <th>Usuario Responsable</th>
                             <th>Fecha Creación</th>
+                            <th>Fecha Vencimiento</th>
                             <th>Estado</th>
                             <th class="text-center">Clientes</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                         <tr class="filters">
+                            <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                             <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                             <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                             <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
@@ -82,6 +84,29 @@
                                         echo $fecha->format('d/m/Y H:i');
                                     } else {
                                         echo 'N/A';
+                                    }
+                                    ?>
+                                </td>
+                                <td data-order="<?= !empty($auditoria['fecha_programada']) ? strtotime($auditoria['fecha_programada']) : 0 ?>">
+                                    <?php
+                                    if (!empty($auditoria['fecha_programada'])) {
+                                        $fechaVencimiento = new DateTime($auditoria['fecha_programada']);
+                                        $hoy = new DateTime();
+                                        $diasRestantes = $hoy->diff($fechaVencimiento)->days;
+                                        $vencida = $fechaVencimiento < $hoy;
+
+                                        echo $fechaVencimiento->format('d/m/Y H:i');
+                                        echo '<br>';
+
+                                        if ($vencida) {
+                                            echo '<small class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> Vencida</small>';
+                                        } elseif ($diasRestantes <= 2) {
+                                            echo '<small class="badge bg-warning text-dark"><i class="bi bi-clock"></i> ' . $diasRestantes . ' día(s)</small>';
+                                        } else {
+                                            echo '<small class="badge bg-info"><i class="bi bi-calendar"></i> ' . $diasRestantes . ' día(s)</small>';
+                                        }
+                                    } else {
+                                        echo '<span class="text-muted">No establecida</span>';
                                     }
                                     ?>
                                 </td>
@@ -171,7 +196,7 @@
             },
             pageLength: 10,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-            order: [[4, 'desc']], // Ordenar por fecha de creación descendente
+            order: [[5, 'desc']], // Ordenar por fecha de vencimiento descendente
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
                  '<"row"<"col-sm-12"B>>' +
                  '<"row"<"col-sm-12"tr>>' +

@@ -134,26 +134,48 @@
     <script>
         (function() {
             const TIEMPO_INACTIVIDAD = 5 * 60 * 1000; // 5 minutos en milisegundos
-            let tiempoInactivo = 0;
+            let ultimaActividad = Date.now();
             let intervalo;
             let alertaMostrada = false;
+            let timerInterval;
+
+            console.log('[INACTIVIDAD] Sistema de inactividad iniciado para proveedor');
+            console.log('[INACTIVIDAD] ⚠️ La sesión se cerrará después de 5 minutos SIN interacción en esta pestaña');
 
             function reiniciarTemporizador() {
-                tiempoInactivo = 0;
-                alertaMostrada = false;
+                if (alertaMostrada) return; // No reiniciar si ya se mostró la alerta
+
+                // SOLO reiniciar si la pestaña está visible (usuario está activamente en la pestaña)
+                if (document.hidden) {
+                    return; // Si está en otra pestaña/ventana, NO reiniciar (sigue contando inactividad)
+                }
+
+                ultimaActividad = Date.now();
             }
 
             function verificarInactividad() {
-                tiempoInactivo += 1000; // Incrementar cada segundo
+                const tiempoTranscurrido = Date.now() - ultimaActividad;
+                const minutosInactivo = Math.floor(tiempoTranscurrido / 60000);
+                const segundosInactivo = Math.floor((tiempoTranscurrido % 60000) / 1000);
 
-                // Si han pasado 5 minutos
-                if (tiempoInactivo >= TIEMPO_INACTIVIDAD && !alertaMostrada) {
+                // Log cada minuto
+                if (segundosInactivo === 0 && minutosInactivo > 0) {
+                    console.log(`[INACTIVIDAD] Tiempo sin interacción en pestaña: ${minutosInactivo} minuto(s)`);
+                }
+
+                // Si han pasado 5 minutos SIN INTERACCIÓN en la pestaña
+                if (tiempoTranscurrido >= TIEMPO_INACTIVIDAD && !alertaMostrada) {
                     alertaMostrada = true;
+                    console.log('[INACTIVIDAD] ⚠️ 5 minutos sin interacción en la pestaña. Mostrando alerta...');
 
+                    // Detener el intervalo de verificación
+                    clearInterval(intervalo);
+
+                    // Mostrar alerta (incluso si la pestaña no está visible)
                     Swal.fire({
                         icon: 'warning',
                         title: 'Sesión Inactiva',
-                        html: '<p>Llevas <strong>5 minutos sin actividad</strong>.</p><p>Por seguridad, tu sesión será cerrada.</p>',
+                        html: '<p>Llevas <strong>5 minutos sin actividad</strong>.</p><p>Por seguridad, tu sesión será cerrada en <b>5</b> segundos.</p>',
                         showConfirmButton: true,
                         confirmButtonText: 'Entendido',
                         allowOutsideClick: false,
@@ -162,43 +184,62 @@
                         timer: 5000,
                         timerProgressBar: true,
                         didOpen: () => {
-                            // Auto-cerrar después de 5 segundos
-                            const timer = Swal.getPopup().querySelector('b');
-                            if (timer) {
-                                timerInterval = setInterval(() => {
-                                    const content = Swal.getHtmlContainer();
-                                    if (content) {
-                                        const tiempo = Math.ceil(Swal.getTimerLeft() / 1000);
-                                        if (tiempo > 0) {
-                                            timer.textContent = tiempo;
-                                        }
-                                    }
-                                }, 100);
-                            }
+                            const b = Swal.getHtmlContainer().querySelector('b');
+                            timerInterval = setInterval(() => {
+                                const tiempoRestante = Math.ceil(Swal.getTimerLeft() / 1000);
+                                if (b && tiempoRestante > 0) {
+                                    b.textContent = tiempoRestante;
+                                }
+                            }, 100);
                         },
                         willClose: () => {
-                            clearInterval(timerInterval);
+                            if (timerInterval) {
+                                clearInterval(timerInterval);
+                            }
                         }
                     }).then(() => {
-                        // Redirigir al login
+                        console.log('[INACTIVIDAD] Redirigiendo al logout...');
                         window.location.href = '<?= site_url('logout') ?>';
                     });
                 }
             }
 
-            // Eventos que detectan actividad del usuario
-            const eventos = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+            // Detectar cuando la pestaña se muestra (para logging)
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    console.log('[INACTIVIDAD] 🔴 Pestaña oculta - el temporizador SIGUE corriendo');
+                } else {
+                    const tiempoTranscurrido = Date.now() - ultimaActividad;
+                    const minutosInactivo = Math.floor(tiempoTranscurrido / 60000);
+                    console.log(`[INACTIVIDAD] 🟢 Pestaña visible - tiempo sin interacción: ${minutosInactivo} minuto(s)`);
+                }
+            });
 
-            eventos.forEach(evento => {
+            // Eventos que detectan actividad del usuario
+            // SOLO cuenta como actividad si está ACTIVAMENTE en la pestaña visible
+            let mouseMoveTimeout;
+            document.addEventListener('mousemove', function() {
+                if (document.hidden) return; // Ignorar si la pestaña no está visible
+                clearTimeout(mouseMoveTimeout);
+                mouseMoveTimeout = setTimeout(reiniciarTemporizador, 1000);
+            }, true);
+
+            // Otros eventos reinician inmediatamente (solo si pestaña visible)
+            const eventosInmediatos = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+            eventosInmediatos.forEach(evento => {
                 document.addEventListener(evento, reiniciarTemporizador, true);
             });
 
-            // Iniciar el temporizador de inactividad
+            // Iniciar el temporizador de inactividad (verificar cada segundo)
+            // SIEMPRE corre, incluso si la pestaña está oculta
             intervalo = setInterval(verificarInactividad, 1000);
 
             // Limpiar al cerrar la página
             window.addEventListener('beforeunload', function() {
                 clearInterval(intervalo);
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
             });
         })();
     </script>
