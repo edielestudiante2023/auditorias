@@ -56,17 +56,23 @@ class AuditoriasController extends BaseController
 
         // Todas las auditorías asignadas a proveedores, sin filtro de usuario
         $auditorias = $db->query("
-            SELECT DISTINCT a.*,
+            SELECT a.*,
                    p.razon_social as proveedor_nombre,
                    p.nit as proveedor_nit,
                    c.nombre_completo as consultor_nombre,
-                   u.nombre as usuario_responsable_nombre,
-                   u.email as usuario_responsable_email
+                   (SELECT u.nombre
+                    FROM contratos_proveedor_cliente cpc
+                    JOIN users u ON u.id_users = cpc.id_usuario_responsable
+                    WHERE cpc.id_proveedor = a.id_proveedor
+                    LIMIT 1) as usuario_responsable_nombre,
+                   (SELECT u.email
+                    FROM contratos_proveedor_cliente cpc
+                    JOIN users u ON u.id_users = cpc.id_usuario_responsable
+                    WHERE cpc.id_proveedor = a.id_proveedor
+                    LIMIT 1) as usuario_responsable_email
             FROM auditorias a
             JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             JOIN consultores c ON c.id_consultor = a.id_consultor
-            LEFT JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
-            LEFT JOIN users u ON u.id_users = cpc.id_usuario_responsable
             WHERE a.estado IN ('borrador', 'asignada', 'en_progreso')
             ORDER BY a.created_at DESC
         ")->getResultArray();
@@ -314,6 +320,78 @@ class AuditoriasController extends BaseController
         }
 
         return $this->response->setJSON($resultado);
+    }
+
+    /**
+     * Elimina una auditoría (solo SuperAdmin)
+     */
+    public function eliminar($idAuditoria = null)
+    {
+        if (!isSuperAdmin()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Acceso denegado. Solo SuperAdmin puede eliminar auditorías.'
+            ]);
+        }
+
+        if (!$idAuditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID de auditoría no proporcionado'
+            ]);
+        }
+
+        $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+        if (!$auditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Auditoría no encontrada'
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // Eliminar registros relacionados en orden
+            // 1. Evidencias de items por cliente
+            $db->query("DELETE FROM auditoria_items_clientes WHERE id_auditoria_item IN (SELECT id_auditoria_item FROM auditoria_items WHERE id_auditoria = ?)", [$idAuditoria]);
+
+            // 2. Items de auditoría
+            $db->query("DELETE FROM auditoria_items WHERE id_auditoria = ?", [$idAuditoria]);
+
+            // 3. Clientes de auditoría
+            $db->query("DELETE FROM auditoria_clientes WHERE id_auditoria = ?", [$idAuditoria]);
+
+            // 4. Log de auditoría
+            $db->query("DELETE FROM auditoria_log WHERE id_auditoria = ?", [$idAuditoria]);
+
+            // 5. Finalmente, eliminar la auditoría
+            $this->auditoriaModel->delete($idAuditoria);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al eliminar la auditoría. Transacción fallida.'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Auditoría eliminada exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Error al eliminar auditoría: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar la auditoría: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**

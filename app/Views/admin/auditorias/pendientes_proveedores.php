@@ -32,6 +32,7 @@
                             <th>Usuario Responsable</th>
                             <th>Fecha Creación</th>
                             <th>Estado</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tfoot class="table-light">
@@ -42,6 +43,7 @@
                             <th>Usuario Responsable</th>
                             <th>Fecha Creación</th>
                             <th>Estado</th>
+                            <th></th>
                         </tr>
                     </tfoot>
                     <tbody>
@@ -85,6 +87,15 @@
                                     <span class="badge bg-<?= $estado['class'] ?>">
                                         <i class="bi bi-<?= $estado['icon'] ?>"></i> <?= $estado['text'] ?>
                                     </span>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="btn btn-danger btn-sm btn-eliminar"
+                                            data-id="<?= $auditoria['id_auditoria'] ?>"
+                                            data-codigo="<?= esc($auditoria['codigo_formato']) ?>"
+                                            title="Eliminar auditoría">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -138,26 +149,70 @@
                     className: 'btn btn-success btn-sm',
                     title: 'Auditorias_Pendientes_Proveedores',
                     exportOptions: {
-                        columns: ':visible'
+                        columns: ':visible:not(:last-child)' // Excluir columna de acciones
                     }
                 }
             ],
             responsive: true,
+            columnDefs: [
+                { orderable: false, targets: -1 } // Deshabilitar orden en columna de Acciones
+            ],
             initComplete: function() {
-                // Agregar filtros en cada columna del footer
-                this.api().columns().every(function() {
+                // Agregar filtros en cada columna del footer excepto la última
+                this.api().columns().every(function(index) {
                     var column = this;
                     var title = $(column.header()).text();
 
-                    $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
-                        .appendTo($(column.footer()).empty())
-                        .on('keyup change clear', function() {
-                            if (column.search() !== this.value) {
-                                column.search(this.value).draw();
-                            }
-                        });
+                    if (index < this.api().columns().count() - 1) {
+                        $('<input type="text" class="form-control form-control-sm" placeholder="Filtrar '+title+'" />')
+                            .appendTo($(column.footer()).empty())
+                            .on('keyup change clear', function() {
+                                if (column.search() !== this.value) {
+                                    column.search(this.value).draw();
+                                }
+                            });
+                    }
                 });
             }
+        });
+
+        // Manejar eliminación de auditoría
+        $(document).on('click', '.btn-eliminar', function() {
+            const idAuditoria = $(this).data('id');
+            const codigoAuditoria = $(this).data('codigo');
+
+            if (!confirm(`¿Está seguro de eliminar la auditoría ${codigoAuditoria}?\n\nEsta acción eliminará:\n- La auditoría\n- Todos los items asociados\n- Todas las evidencias\n- Todos los clientes asignados\n- El historial de cambios\n\nEsta acción NO se puede deshacer.`)) {
+                return;
+            }
+
+            // Deshabilitar botón mientras se procesa
+            const btn = $(this);
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+            $.ajax({
+                url: `<?= site_url('admin/auditorias/') ?>${idAuditoria}/eliminar`,
+                method: 'POST',
+                dataType: 'json',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Mostrar mensaje de éxito
+                        alert(response.message);
+                        // Recargar la página para refrescar la tabla
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.message);
+                        btn.prop('disabled', false).html('<i class="bi bi-trash"></i>');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr);
+                    alert('Error al eliminar la auditoría. Por favor, intente nuevamente.');
+                    btn.prop('disabled', false).html('<i class="bi bi-trash"></i>');
+                }
+            });
         });
     });
     </script>
