@@ -195,7 +195,7 @@
                                 elseif ($rid===3) {
                                     $badge='warning';
                                     $label='Proveedor';
-                                    $icon='truck';
+                                    $icon='shop';
                                 }
                             ?>
                             <tr>
