@@ -107,6 +107,12 @@
                             title="Reenviar invitación por email al proveedor">
                       <i class="bi bi-envelope-arrow-up"></i> Reenviar Email
                     </button>
+                    <button type="button"
+                            class="btn btn-danger"
+                            onclick="eliminarAuditoria(<?= $aud['id_auditoria'] ?>, '<?= esc($aud['proveedor_nombre']) ?>')"
+                            title="Eliminar auditoría">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   <?php else: ?>
                     <!-- Estado borrador u otro -->
                     <a href="<?= site_url('consultor/auditoria/' . $aud['id_auditoria']) ?>"
@@ -123,6 +129,12 @@
                        title="Editar ítems de la auditoría">
                       <i class="bi bi-list-check"></i> Ítems
                     </a>
+                    <button type="button"
+                            class="btn btn-danger"
+                            onclick="eliminarAuditoria(<?= $aud['id_auditoria'] ?>, '<?= esc($aud['proveedor_nombre']) ?>')"
+                            title="Eliminar auditoría">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   <?php endif; ?>
                 </div>
               </td>
@@ -207,6 +219,45 @@ function reenviarEmail(idAuditoria) {
                 alert('✓ Email reenviado exitosamente al proveedor');
             } else {
                 alert('✗ Error al reenviar email: ' + (data.error || data.message));
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            alert('✗ Error de conexión: ' + error.message);
+            console.error('Error:', error);
+        });
+    }
+}
+
+function eliminarAuditoria(idAuditoria, nombreProveedor) {
+    if (confirm(`¿Estás seguro de eliminar la auditoría del proveedor "${nombreProveedor}"?\n\nEsta acción eliminará:\n- La auditoría\n- Todos los items asociados\n- Todas las evidencias\n- Todos los clientes asignados\n\nEsta acción NO se puede deshacer.`)) {
+        // Mostrar loading en el botón
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        // Hacer petición AJAX
+        fetch('<?= site_url('consultor/auditorias/') ?>' + idAuditoria + '/eliminar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ Auditoría eliminada exitosamente');
+                location.reload();
+            } else {
+                alert('✗ Error: ' + (data.message || 'No se pudo eliminar la auditoría'));
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
             }
         })
         .catch(error => {

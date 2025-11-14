@@ -261,6 +261,9 @@ $routes->group('consultor', ['filter' => 'role:2'], function ($routes) {
     $routes->get('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::adicionarClientes/$1');
     $routes->post('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::procesarAdicionClientes/$1');
     $routes->post('auditorias/(:num)/reenviar-credenciales', 'Admin\\AuditoriasController::reenviarCredenciales/$1');
+
+    // Eliminar auditoría (solo borrador o en_proveedor)
+    $routes->post('auditorias/(:num)/eliminar', 'Consultor\AuditoriasConsultorController::eliminar/$1');
 });
 
 // ============================================================

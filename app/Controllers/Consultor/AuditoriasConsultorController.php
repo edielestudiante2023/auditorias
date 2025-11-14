@@ -935,4 +935,86 @@ class AuditoriasConsultorController extends BaseController
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Elimina una auditoría (solo consultor que la creó, solo en estados borrador o en_proveedor)
+     */
+    public function eliminar($idAuditoria = null)
+    {
+        if (!$idAuditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID de auditoría no proporcionado'
+            ]);
+        }
+
+        $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+        if (!$auditoria) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Auditoría no encontrada'
+            ]);
+        }
+
+        // Verificar que sea el consultor propietario
+        if ($auditoria['id_consultor'] != $this->idConsultor) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No tienes permiso para eliminar esta auditoría'
+            ]);
+        }
+
+        // Solo permitir eliminar en estados: borrador, asignada, en_progreso, en_proveedor
+        $estadosPermitidos = ['borrador', 'asignada', 'en_progreso', 'en_proveedor'];
+        if (!in_array($auditoria['estado'], $estadosPermitidos)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No se puede eliminar una auditoría en estado: ' . $auditoria['estado']
+            ]);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // Eliminar registros relacionados en orden
+            // 1. Evidencias de items por cliente
+            $db->query("DELETE FROM auditoria_items_clientes WHERE id_auditoria_item IN (SELECT id_auditoria_item FROM auditoria_items WHERE id_auditoria = ?)", [$idAuditoria]);
+
+            // 2. Items de auditoría
+            $db->query("DELETE FROM auditoria_items WHERE id_auditoria = ?", [$idAuditoria]);
+
+            // 3. Clientes de auditoría
+            $db->query("DELETE FROM auditoria_clientes WHERE id_auditoria = ?", [$idAuditoria]);
+
+            // 4. Log de auditoría
+            $db->query("DELETE FROM auditoria_log WHERE id_auditoria = ?", [$idAuditoria]);
+
+            // 5. Finalmente, eliminar la auditoría
+            $this->auditoriaModel->delete($idAuditoria);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error al eliminar la auditoría. Transacción fallida.'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Auditoría eliminada exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Error al eliminar auditoría: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error al eliminar la auditoría: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
