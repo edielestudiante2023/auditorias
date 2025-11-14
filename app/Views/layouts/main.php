@@ -128,6 +128,82 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Sistema de inactividad para proveedores -->
+    <?php if (isLogged() && userRole() == 3): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        (function() {
+            const TIEMPO_INACTIVIDAD = 5 * 60 * 1000; // 5 minutos en milisegundos
+            let tiempoInactivo = 0;
+            let intervalo;
+            let alertaMostrada = false;
+
+            function reiniciarTemporizador() {
+                tiempoInactivo = 0;
+                alertaMostrada = false;
+            }
+
+            function verificarInactividad() {
+                tiempoInactivo += 1000; // Incrementar cada segundo
+
+                // Si han pasado 5 minutos
+                if (tiempoInactivo >= TIEMPO_INACTIVIDAD && !alertaMostrada) {
+                    alertaMostrada = true;
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sesión Inactiva',
+                        html: '<p>Llevas <strong>5 minutos sin actividad</strong>.</p><p>Por seguridad, tu sesión será cerrada.</p>',
+                        showConfirmButton: true,
+                        confirmButtonText: 'Entendido',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        confirmButtonColor: '#ffc107',
+                        timer: 5000,
+                        timerProgressBar: true,
+                        didOpen: () => {
+                            // Auto-cerrar después de 5 segundos
+                            const timer = Swal.getPopup().querySelector('b');
+                            if (timer) {
+                                timerInterval = setInterval(() => {
+                                    const content = Swal.getHtmlContainer();
+                                    if (content) {
+                                        const tiempo = Math.ceil(Swal.getTimerLeft() / 1000);
+                                        if (tiempo > 0) {
+                                            timer.textContent = tiempo;
+                                        }
+                                    }
+                                }, 100);
+                            }
+                        },
+                        willClose: () => {
+                            clearInterval(timerInterval);
+                        }
+                    }).then(() => {
+                        // Redirigir al login
+                        window.location.href = '<?= site_url('logout') ?>';
+                    });
+                }
+            }
+
+            // Eventos que detectan actividad del usuario
+            const eventos = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+            eventos.forEach(evento => {
+                document.addEventListener(evento, reiniciarTemporizador, true);
+            });
+
+            // Iniciar el temporizador de inactividad
+            intervalo = setInterval(verificarInactividad, 1000);
+
+            // Limpiar al cerrar la página
+            window.addEventListener('beforeunload', function() {
+                clearInterval(intervalo);
+            });
+        })();
+    </script>
+    <?php endif; ?>
+
     <!-- Custom Scripts -->
     <?= $this->renderSection('scripts') ?>
 </body>

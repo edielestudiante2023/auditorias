@@ -8,6 +8,7 @@
   <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('assets/images/brand/favicon.ico?v=2') ?>">
   <link rel="apple-touch-icon" href="<?= base_url('assets/images/brand/favicon.ico?v=2') ?>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     @keyframes gradientShift {
       0% { background-position: 0% 50%; }
@@ -146,6 +147,29 @@
       background-clip: text;
       animation: pulse 2s ease-in-out infinite;
     }
+
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #667eea;
+      z-index: 10;
+      transition: color 0.3s ease;
+    }
+
+    .password-toggle:hover {
+      color: #764ba2;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-wrapper input {
+      padding-right: 40px;
+    }
   </style>
 </head>
 <body>
@@ -172,7 +196,10 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Contraseña</label>
-              <input type="password" name="password" class="form-control" required>
+              <div class="password-wrapper">
+                <input type="password" id="password" name="password" class="form-control" required>
+                <i class="bi bi-eye password-toggle" id="togglePassword"></i>
+              </div>
             </div>
             <button class="btn btn-login w-100" type="submit">Ingresar</button>
           </form>
@@ -185,5 +212,20 @@
     </div>
   </div>
 </div>
+
+<script>
+  // Toggle password visibility
+  const togglePassword = document.getElementById('togglePassword');
+  const password = document.getElementById('password');
+
+  togglePassword.addEventListener('click', function() {
+    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+    password.setAttribute('type', type);
+
+    // Toggle icon
+    this.classList.toggle('bi-eye');
+    this.classList.toggle('bi-eye-slash');
+  });
+</script>
 </body>
 </html>

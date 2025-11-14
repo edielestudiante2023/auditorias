@@ -64,11 +64,13 @@
                 <th>#</th>
                 <th>Proveedor</th>
                 <th>Fecha Creación</th>
+                <th>Fecha Vencimiento</th>
                 <th>Estado</th>
                 <th>Calificación</th>
                 <th>Acciones</th>
               </tr>
               <tr class="filters">
+                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
@@ -90,6 +92,14 @@
                   <td>
                     <?= formatoFechaSolo($aud['created_at']) ?>
                     <br><small class="text-muted"><?= tiempoRelativo($aud['created_at']) ?></small>
+                  </td>
+                  <td>
+                    <?php if (!empty($aud['fecha_programada'])): ?>
+                      <?= formatoFechaSolo($aud['fecha_programada']) ?>
+                      <br><small class="text-muted"><?= tiempoRelativo($aud['fecha_programada']) ?></small>
+                    <?php else: ?>
+                      <span class="text-muted">No establecida</span>
+                    <?php endif; ?>
                   </td>
                   <td><?= estadoBadge($aud['estado']) ?></td>
                   <td>
@@ -227,7 +237,7 @@ $(document).ready(function() {
                 className: 'btn btn-success btn-sm',
                 title: 'Mis Auditorías',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4]
+                    columns: [0, 1, 2, 3, 4, 5]
                 }
             }
         ],
