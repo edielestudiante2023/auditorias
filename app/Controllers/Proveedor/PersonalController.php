@@ -135,7 +135,7 @@ class PersonalController extends BaseController
 
         // Validar datos
         $rules = [
-            'tipo_documento'   => 'required|in_list[CC,CE,PA,TI,NIT]',
+            'tipo_documento'   => 'required|in_list[CC,CE,PA,TI]',
             'numero_documento' => 'required|max_length[20]',
             'nombres'          => 'required|max_length[100]',
             'apellidos'        => 'required|max_length[100]',

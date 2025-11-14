@@ -41,7 +41,7 @@ class PersonalAsignadoModel extends Model
     protected $validationRules      = [
         'id_proveedor'      => 'required|integer',
         'id_cliente'        => 'required|integer',
-        'tipo_documento'    => 'required|in_list[CC,CE,PA,TI,NIT]',
+        'tipo_documento'    => 'required|in_list[CC,CE,PA,TI]',
         'numero_documento'  => 'required|max_length[20]',
         'nombres'           => 'required|max_length[100]',
         'apellidos'         => 'required|max_length[100]',
