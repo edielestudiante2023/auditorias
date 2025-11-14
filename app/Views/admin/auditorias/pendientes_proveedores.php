@@ -55,8 +55,10 @@
                                 'borrador' => ['class' => 'secondary', 'icon' => 'pencil-square', 'text' => 'Borrador'],
                                 'asignada' => ['class' => 'warning', 'icon' => 'envelope-exclamation', 'text' => 'Asignada'],
                                 'en_progreso' => ['class' => 'primary', 'icon' => 'hourglass-split', 'text' => 'En Progreso'],
+                                'en_proveedor' => ['class' => 'info', 'icon' => 'building', 'text' => 'En Proveedor'],
+                                'en_revision_consultor' => ['class' => 'primary', 'icon' => 'eye', 'text' => 'En Revisión'],
                             ];
-                            $estado = $estadoBadge[$auditoria['estado']] ?? ['class' => 'secondary', 'icon' => 'question-circle', 'text' => ucfirst($auditoria['estado'])];
+                            $estado = $estadoBadge[$auditoria['estado']] ?? ['class' => 'secondary', 'icon' => 'question-circle', 'text' => ucfirst(str_replace('_', ' ', $auditoria['estado']))];
                             ?>
                             <tr>
                                 <td>

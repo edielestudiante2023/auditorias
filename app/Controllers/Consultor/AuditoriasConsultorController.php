@@ -978,21 +978,62 @@ class AuditoriasConsultorController extends BaseController
         $db->transStart();
 
         try {
+            // Deshabilitar temporalmente las verificaciones de claves foráneas
+            $db->query("SET FOREIGN_KEY_CHECKS = 0");
+
             // Eliminar registros relacionados en orden
-            // 1. Evidencias de items por cliente
-            $db->query("DELETE FROM auditoria_items_clientes WHERE id_auditoria_item IN (SELECT id_auditoria_item FROM auditoria_items WHERE id_auditoria = ?)", [$idAuditoria]);
 
-            // 2. Items de auditoría
-            $db->query("DELETE FROM auditoria_items WHERE id_auditoria = ?", [$idAuditoria]);
+            // 1. Obtener IDs de items de esta auditoría
+            $itemsIds = $db->query("SELECT id_auditoria_item FROM auditoria_items WHERE id_auditoria = ?", [$idAuditoria])->getResultArray();
 
-            // 3. Clientes de auditoría
-            $db->query("DELETE FROM auditoria_clientes WHERE id_auditoria = ?", [$idAuditoria]);
+            if (!empty($itemsIds)) {
+                $itemsIdsArray = array_column($itemsIds, 'id_auditoria_item');
 
-            // 4. Log de auditoría
-            $db->query("DELETE FROM auditoria_log WHERE id_auditoria = ?", [$idAuditoria]);
+                // 1a. Obtener IDs de auditoria_item_cliente para eliminar evidencias
+                $itemClienteIds = $db->query("SELECT id_auditoria_item_cliente FROM auditoria_item_cliente WHERE id_auditoria_item IN (" . implode(',', $itemsIdsArray) . ")")->getResultArray();
+
+                if (!empty($itemClienteIds)) {
+                    $itemClienteIdsArray = array_column($itemClienteIds, 'id_auditoria_item_cliente');
+
+                    // Eliminar evidencias por cliente
+                    $db->table('evidencias_cliente')
+                       ->whereIn('id_auditoria_item_cliente', $itemClienteIdsArray)
+                       ->delete();
+                }
+
+                // 1b. Eliminar evidencias globales
+                $db->table('evidencias')
+                   ->whereIn('id_auditoria_item', $itemsIdsArray)
+                   ->delete();
+
+                // 1c. Eliminar respuestas de items por cliente
+                $db->table('auditoria_item_cliente')
+                   ->whereIn('id_auditoria_item', $itemsIdsArray)
+                   ->delete();
+            }
+
+            // 2. Eliminar items de auditoría
+            $db->table('auditoria_items')
+               ->where('id_auditoria', $idAuditoria)
+               ->delete();
+
+            // 3. Eliminar clientes de auditoría
+            $db->table('auditoria_clientes')
+               ->where('id_auditoria', $idAuditoria)
+               ->delete();
+
+            // 4. Eliminar log de auditoría
+            $db->table('auditoria_log')
+               ->where('id_auditoria', $idAuditoria)
+               ->delete();
 
             // 5. Finalmente, eliminar la auditoría
-            $this->auditoriaModel->delete($idAuditoria);
+            $db->table('auditorias')
+               ->where('id_auditoria', $idAuditoria)
+               ->delete();
+
+            // Reactivar las verificaciones de claves foráneas
+            $db->query("SET FOREIGN_KEY_CHECKS = 1");
 
             $db->transComplete();
 
@@ -1010,6 +1051,8 @@ class AuditoriasConsultorController extends BaseController
 
         } catch (\Exception $e) {
             $db->transRollback();
+            // Asegurarse de reactivar las claves foráneas incluso si hay error
+            $db->query("SET FOREIGN_KEY_CHECKS = 1");
             log_message('error', 'Error al eliminar auditoría: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
