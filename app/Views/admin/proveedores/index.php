@@ -240,10 +240,14 @@
                                     </td>
                                     <td>
                                         <?php if (!empty($proveedor['responsable_telefono'])): ?>
-                                            <i class="bi bi-telephone-fill text-success"></i>
-                                            <strong><?= esc($proveedor['responsable_telefono']) ?></strong>
+                                            <div>
+                                                <i class="bi bi-telephone-fill text-success"></i>
+                                                <strong><?= esc($proveedor['responsable_telefono']) ?></strong>
+                                            </div>
                                             <?php if (!empty($proveedor['responsable_nombre'])): ?>
-                                                <br><small class="text-muted"><?= esc($proveedor['responsable_nombre']) ?></small>
+                                                <div style="font-size: 0.65rem; color: #6c757d; margin-top: 2px;">
+                                                    <?= esc($proveedor['responsable_nombre']) ?>
+                                                </div>
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <span class="text-muted">-</span>
