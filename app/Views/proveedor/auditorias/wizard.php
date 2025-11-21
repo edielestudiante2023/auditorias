@@ -240,15 +240,12 @@
                                             </small>
                                         </div>
                                         <?php if ($auditoria['estado'] == 'en_proveedor'): ?>
-                                            <form method="post"
-                                                  action="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/evidencia/' . $ev['id_evidencia'] . '/eliminar') ?>"
-                                                  style="display: inline;"
-                                                  onsubmit="return confirm('¿Eliminar este archivo?');">
-                                                <?= csrf_field() ?>
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger btn-delete-evidencia"
+                                                    data-url="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/evidencia/' . $ev['id_evidencia'] . '/eliminar') ?>"
+                                                    data-nombre="<?= esc($ev['nombre_archivo_original']) ?>">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
@@ -376,15 +373,12 @@
                                                             </small>
                                                         </div>
                                                         <?php if ($auditoria['estado'] == 'en_proveedor'): ?>
-                                                            <form method="post"
-                                                                  action="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/evidencia-cliente/' . $ev['id_evidencia_cliente'] . '/eliminar') ?>"
-                                                                  style="display: inline;"
-                                                                  onsubmit="return confirm('¿Eliminar este archivo?');">
-                                                                <?= csrf_field() ?>
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                    <i class="bi bi-trash"></i>
-                                                                </button>
-                                                            </form>
+                                                            <button type="button"
+                                                                    class="btn btn-sm btn-outline-danger btn-delete-evidencia-cliente"
+                                                                    data-url="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/evidencia-cliente/' . $ev['id_evidencia_cliente'] . '/eliminar') ?>"
+                                                                    data-nombre="<?= esc($ev['nombre_archivo_original']) ?>">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
                                                         <?php endif; ?>
                                                     </div>
                                                 <?php endforeach; ?>
@@ -561,6 +555,70 @@ function showSuccessToast(message) {
 
     toast.show();
 }
+
+/**
+ * Manejar eliminación de evidencias globales
+ */
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.btn-delete-evidencia')) {
+        const btn = e.target.closest('.btn-delete-evidencia');
+        const url = btn.getAttribute('data-url');
+        const nombre = btn.getAttribute('data-nombre');
+
+        if (confirm(`¿Está seguro de eliminar el archivo "${nombre}"?`)) {
+            // Deshabilitar botón y mostrar loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            // Crear formulario y enviarlo
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+
+            // Agregar token CSRF
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '<?= csrf_token() ?>';
+            csrfInput.value = '<?= csrf_hash() ?>';
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+});
+
+/**
+ * Manejar eliminación de evidencias de cliente
+ */
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.btn-delete-evidencia-cliente')) {
+        const btn = e.target.closest('.btn-delete-evidencia-cliente');
+        const url = btn.getAttribute('data-url');
+        const nombre = btn.getAttribute('data-nombre');
+
+        if (confirm(`¿Está seguro de eliminar el archivo "${nombre}"?`)) {
+            // Deshabilitar botón y mostrar loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            // Crear formulario y enviarlo
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = url;
+
+            // Agregar token CSRF
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '<?= csrf_token() ?>';
+            csrfInput.value = '<?= csrf_hash() ?>';
+            form.appendChild(csrfInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+});
 </script>
 
 <?= $this->endSection() ?>
