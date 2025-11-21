@@ -61,6 +61,28 @@ class ProveedoresController extends BaseController
         $query = $db->query("SELECT * FROM proveedores ORDER BY created_at DESC");
         $proveedores = $query->getResultArray();
 
+        // Enriquecer cada proveedor con información del responsable de auditoría
+        foreach ($proveedores as &$proveedor) {
+            // Obtener el responsable de auditoría desde contratos
+            $responsable = $db->query("
+                SELECT
+                    u.nombre as responsable_nombre,
+                    u.email as responsable_email,
+                    u.telefono as responsable_telefono,
+                    cpc.id_usuario_responsable
+                FROM contratos_proveedor_cliente cpc
+                INNER JOIN users u ON u.id_users = cpc.id_usuario_responsable
+                WHERE cpc.id_proveedor = ?
+                AND cpc.estado = 'activo'
+                LIMIT 1
+            ", [$proveedor['id_proveedor']])->getRowArray();
+
+            // Agregar información del responsable al proveedor
+            $proveedor['responsable_nombre'] = $responsable['responsable_nombre'] ?? null;
+            $proveedor['responsable_email'] = $responsable['responsable_email'] ?? null;
+            $proveedor['responsable_telefono'] = $responsable['responsable_telefono'] ?? null;
+        }
+
         // DEBUG: Log para verificar cuántos proveedores se obtuvieron
         log_message('info', 'Proveedores obtenidos en index: ' . count($proveedores));
 

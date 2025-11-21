@@ -249,6 +249,10 @@ $routes->group('consultor', ['filter' => 'role:2'], function ($routes) {
     $routes->post('auditorias/(:num)/enviar-invitacion', 'Consultor\AuditoriasSetupController::enviarInvitacion/$1');
     $routes->post('auditorias/(:num)/reenviar-email', 'Consultor\AuditoriasSetupController::reenviarEmail/$1');
 
+    // Editar Auditoría (fecha de vencimiento)
+    $routes->get('auditorias/(:num)/editar', 'Consultor\AuditoriasSetupController::editar/$1');
+    $routes->post('auditorias/(:num)/actualizar', 'Consultor\AuditoriasSetupController::actualizar/$1');
+
     // Revisión de Auditoría
     $routes->get('auditoria/(:num)', 'Consultor\AuditoriasConsultorController::detalle/$1');
     $routes->post('auditoria/item/(:num)/calificar-global', 'Consultor\AuditoriasConsultorController::calificarItemGlobal/$1');

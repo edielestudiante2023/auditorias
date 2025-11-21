@@ -186,6 +186,7 @@
                                 <th>NIT</th>
                                 <th>Email Contacto</th>
                                 <th>Teléfono Contacto</th>
+                                <th>Teléfono Responsable</th>
                                 <th>Observaciones</th>
                                 <th>Usuarios Vinculados</th>
                                 <th class="text-center">Estado</th>
@@ -196,6 +197,7 @@
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar NIT"></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar email"></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar teléfono"></th>
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar tel. responsable"></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar observaciones"></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar usuario"></th>
                                 <th>
@@ -232,6 +234,17 @@
                                         <?php if (!empty($proveedor['telefono_contacto'])): ?>
                                             <i class="bi bi-telephone text-muted"></i>
                                             <small><?= esc($proveedor['telefono_contacto']) ?></small>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($proveedor['responsable_telefono'])): ?>
+                                            <i class="bi bi-telephone-fill text-success"></i>
+                                            <strong><?= esc($proveedor['responsable_telefono']) ?></strong>
+                                            <?php if (!empty($proveedor['responsable_nombre'])): ?>
+                                                <br><small class="text-muted"><?= esc($proveedor['responsable_nombre']) ?></small>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="text-muted">-</span>
                                         <?php endif; ?>
@@ -355,7 +368,7 @@ $(document).ready(function() {
                 className: 'btn btn-success btn-sm',
                 title: 'Proveedores',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6], // Exportar: Razón Social, NIT, Email, Teléfono, Observaciones, Usuarios, Estado
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7], // Exportar: Razón Social, NIT, Email, Teléfono, Tel. Responsable, Observaciones, Usuarios, Estado
                     orthogonal: 'export',
                     format: {
                         // Encabezados: tomar solo la primera fila del thead
@@ -386,8 +399,8 @@ $(document).ready(function() {
     $('#tablaProveedores thead tr.filters th').each(function(i) {
         var title = $(this).text();
 
-        if (i < 7) { // Filtros para las primeras 7 columnas
-            if (i === 6) { // Columna Estado (select)
+        if (i < 8) { // Filtros para las primeras 8 columnas (añadimos Tel. Responsable)
+            if (i === 7) { // Columna Estado (select) - ahora es la columna 7
                 $('select', this).on('change', function() {
                     table.column(i).search($(this).val()).draw();
                 });

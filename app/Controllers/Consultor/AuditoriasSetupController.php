@@ -40,6 +40,128 @@ class AuditoriasSetupController extends BaseController
     }
 
     /**
+     * Formulario para editar auditoría (solo fecha de vencimiento)
+     */
+    public function editar(int $idAuditoria)
+    {
+        // Obtener auditoría
+        $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+        if (!$auditoria) {
+            return redirect()
+                ->to('/consultor/auditorias')
+                ->with('error', 'Auditoría no encontrada.');
+        }
+
+        // Verificar que la auditoría pertenezca al consultor actual
+        $userId = session()->get('id_users');
+        $db = \Config\Database::connect();
+        $consultor = $db->table('consultores')
+            ->where('id_users', $userId)
+            ->get()
+            ->getRowArray();
+
+        if (!$consultor || $auditoria['id_consultor'] != $consultor['id_consultor']) {
+            return redirect()
+                ->to('/consultor/auditorias')
+                ->with('error', 'No tiene permisos para editar esta auditoría.');
+        }
+
+        // Solo permitir edición si está en estado 'en_proveedor'
+        if ($auditoria['estado'] !== 'en_proveedor') {
+            return redirect()
+                ->to('/consultor/auditorias')
+                ->with('error', 'Solo se pueden editar auditorías en estado "En Proveedor".');
+        }
+
+        // Obtener proveedor
+        $proveedor = $this->proveedorModel->find($auditoria['id_proveedor']);
+
+        $data = [
+            'title' => 'Editar Auditoría',
+            'auditoria' => $auditoria,
+            'proveedor' => $proveedor,
+        ];
+
+        return view('consultor/auditorias/editar', $data);
+    }
+
+    /**
+     * Actualiza la auditoría (solo fecha de vencimiento)
+     */
+    public function actualizar(int $idAuditoria)
+    {
+        // Obtener auditoría
+        $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+        if (!$auditoria) {
+            return redirect()
+                ->to('/consultor/auditorias')
+                ->with('error', 'Auditoría no encontrada.');
+        }
+
+        // Verificar permisos
+        $userId = session()->get('id_users');
+        $db = \Config\Database::connect();
+        $consultor = $db->table('consultores')
+            ->where('id_users', $userId)
+            ->get()
+            ->getRowArray();
+
+        if (!$consultor || $auditoria['id_consultor'] != $consultor['id_consultor']) {
+            return redirect()
+                ->to('/consultor/auditorias')
+                ->with('error', 'No tiene permisos para editar esta auditoría.');
+        }
+
+        // Solo permitir edición si está en estado 'en_proveedor'
+        if ($auditoria['estado'] !== 'en_proveedor') {
+            return redirect()
+                ->to('/consultor/auditorias')
+                ->with('error', 'Solo se pueden editar auditorías en estado "En Proveedor".');
+        }
+
+        // Validar datos
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'fecha_programada' => 'required|valid_date',
+            'motivo_cambio' => 'permit_empty|max_length[500]',
+        ]);
+
+        if (!$validation->withRequest($this->request)->run()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('errors', $validation->getErrors());
+        }
+
+        $fechaProgramada = $this->request->getPost('fecha_programada');
+        $motivoCambio = $this->request->getPost('motivo_cambio');
+
+        // Actualizar auditoría
+        $this->auditoriaModel->update($idAuditoria, [
+            'fecha_programada' => $fechaProgramada,
+        ]);
+
+        // Registrar cambio en la bitácora
+        $auditoriaLogModel = model('App\Models\AuditoriaLogModel');
+        $auditoriaLogModel->registrar(
+            $idAuditoria,
+            'fecha_vencimiento_actualizada',
+            [
+                'fecha_anterior' => $auditoria['fecha_programada'] ?: 'No establecida',
+                'fecha_nueva' => $fechaProgramada,
+                'motivo' => $motivoCambio ?: 'Sin motivo especificado',
+            ],
+            $userId
+        );
+
+        return redirect()
+            ->to('/consultor/auditorias')
+            ->with('success', 'Fecha de vencimiento actualizada exitosamente a ' . formatoFechaSolo($fechaProgramada));
+    }
+
+    /**
      * PASO 1: Formulario para crear nueva auditoría (información básica)
      */
     public function crear()

@@ -124,6 +124,11 @@
                        title="Ver auditoría">
                       <i class="bi bi-eye"></i> Ver
                     </a>
+                    <a href="<?= site_url('consultor/auditorias/' . $aud['id_auditoria'] . '/editar') ?>"
+                       class="btn btn-primary"
+                       title="Editar fecha de vencimiento">
+                      <i class="bi bi-pencil"></i> Editar
+                    </a>
                     <button type="button"
                             class="btn btn-warning"
                             onclick="reenviarEmail(<?= $aud['id_auditoria'] ?>)"
