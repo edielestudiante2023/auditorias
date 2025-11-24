@@ -159,10 +159,61 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
         <div class="card-body">
             <div class="row">
                 <?php foreach ($clientes as $cliente): ?>
-                    <div class="col-md-4 mb-2">
-                        <div class="border rounded p-2">
-                            <strong><?= esc($cliente['razon_social']) ?></strong>
-                            <br><small class="text-muted">NIT: <?= esc($cliente['nit']) ?></small>
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong class="text-primary"><?= esc($cliente['razon_social']) ?></strong>
+                                    <br><small class="text-muted">NIT: <?= esc($cliente['nit']) ?></small>
+                                </div>
+                            </div>
+
+                            <!-- Personal Asignado -->
+                            <?php if (!empty($cliente['personal'])): ?>
+                                <div class="mt-2 pt-2 border-top">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-people-fill text-success me-2"></i>
+                                        <strong class="small">Personal Asignado (<?= count($cliente['personal']) ?>)</strong>
+                                    </div>
+                                    <div class="list-group list-group-flush">
+                                        <?php foreach ($cliente['personal'] as $persona): ?>
+                                            <div class="list-group-item px-0 py-2 border-0 bg-transparent">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <div class="small">
+                                                            <i class="bi bi-person-badge"></i>
+                                                            <strong><?= esc($persona['nombres'] . ' ' . $persona['apellidos']) ?></strong>
+                                                        </div>
+                                                        <div class="small text-muted ms-3">
+                                                            <i class="bi bi-briefcase"></i> <?= esc($persona['cargo']) ?>
+                                                        </div>
+                                                        <div class="small text-muted ms-3">
+                                                            <i class="bi bi-card-text"></i> <?= esc($persona['tipo_documento']) ?>: <?= esc($persona['numero_documento']) ?>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <?php if ($persona['estado'] === 'activo'): ?>
+                                                            <span class="badge bg-success">Activo</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-secondary">Inactivo</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <div class="mt-2 pt-2 border-top">
+                                    <div class="alert alert-warning mb-0 py-2">
+                                        <small>
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <strong>Sin personal registrado</strong>
+                                            <br>El proveedor no ha registrado personal para este cliente
+                                        </small>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>

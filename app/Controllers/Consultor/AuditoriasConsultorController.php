@@ -78,6 +78,15 @@ class AuditoriasConsultorController extends BaseController
         $items = $this->getItemsConAlcanceConsultor($idAuditoria);
         $clientes = $this->auditoriaClienteModel->getClientesByAuditoria($idAuditoria);
 
+        // Enriquecer clientes con personal asignado
+        $personalAsignadoModel = new \App\Models\PersonalAsignadoModel();
+        foreach ($clientes as &$cliente) {
+            $cliente['personal'] = $personalAsignadoModel->getPersonalByProveedorCliente(
+                $auditoria['id_proveedor'],
+                $cliente['id_cliente']
+            );
+        }
+
         return view('consultor/auditorias/detalle', [
             'title' => 'Revisión de Auditoría',
             'auditoria' => $auditoria,

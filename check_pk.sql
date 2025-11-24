@@ -1,0 +1,7 @@
+USE cycloid_auditorias;
+
+SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, COLUMN_KEY, EXTRA
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = 'cycloid_auditorias'
+  AND COLUMN_KEY = 'PRI'
+ORDER BY TABLE_NAME;
