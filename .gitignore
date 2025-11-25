@@ -134,6 +134,12 @@ texto.txt
 *.bak
 *.backup
 
+# Scripts con credenciales de base de datos
+actualizar_descripcion_item.php
+actualizar_descripcion_item_local.php
+ver_estructura_items.php
+check_*.php
+
 #-------------------------
 # Archivos de Documentación con Credenciales
 #-------------------------
