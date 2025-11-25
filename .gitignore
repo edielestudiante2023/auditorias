@@ -138,6 +138,10 @@ texto.txt
 actualizar_descripcion_item.php
 actualizar_descripcion_item_local.php
 ver_estructura_items.php
+ver_estructura_auditoria_items.php
+verificar_porcentajes.php
+recalcular_porcentajes_produccion.php
+recalcular_porcentajes_local.php
 check_*.php
 
 #-------------------------
