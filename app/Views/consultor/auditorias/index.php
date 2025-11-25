@@ -291,7 +291,10 @@ function reenviarEmail(idAuditoria) {
             btn.innerHTML = originalHTML;
 
             if (data.ok) {
-                alert('✓ Email reenviado exitosamente al proveedor');
+                const mensaje = data.email
+                    ? `✓ Email reenviado exitosamente a:\n\n${data.nombre}\n${data.email}`
+                    : '✓ Email reenviado exitosamente al proveedor';
+                alert(mensaje);
             } else {
                 alert('✗ Error al reenviar email: ' + (data.error || data.message));
             }

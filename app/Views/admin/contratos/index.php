@@ -163,10 +163,12 @@
                                 <th>Consultor</th>
                                 <th>Responsable Proveedor</th>
                                 <th>Tipo de Auditoría</th>
+                                <th>Fecha de Creación</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                             <tr class="filters">
+                                <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                                 <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
@@ -224,6 +226,14 @@
                                         }
                                         ?>
                                         <span class="badge <?= $badgeClass ?>"><?= esc($tipoTexto) ?></span>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($contrato['created_at'])): ?>
+                                            <?= date('d/m/Y', strtotime($contrato['created_at'])) ?>
+                                            <br><small class="text-muted"><?= date('H:i', strtotime($contrato['created_at'])) ?></small>
+                                        <?php else: ?>
+                                            <span class="text-muted">N/A</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
                                         <?php if ($contrato['estado'] === 'activo'): ?>
@@ -285,7 +295,7 @@ $(document).ready(function() {
                 className: 'btn btn-success btn-sm',
                 title: 'Relaciones Cliente-Proveedor',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6]
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
                 }
             }
         ],
