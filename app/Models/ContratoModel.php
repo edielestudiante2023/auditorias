@@ -180,8 +180,19 @@ class ContratoModel extends Model
     public function hasAuditorias(int $id): bool
     {
         $db = \Config\Database::connect();
-        $count = $db->table('auditorias')
-                    ->where('id_contrato', $id)
+
+        // Obtener el contrato para saber el proveedor y cliente
+        $contrato = $this->find($id);
+
+        if (!$contrato) {
+            return false;
+        }
+
+        // Verificar si hay auditorías que involucren este proveedor y cliente
+        $count = $db->table('auditorias a')
+                    ->join('auditoria_clientes ac', 'ac.id_auditoria = a.id_auditoria')
+                    ->where('a.id_proveedor', $contrato['id_proveedor'])
+                    ->where('ac.id_cliente', $contrato['id_cliente'])
                     ->countAllResults();
 
         return $count > 0;
