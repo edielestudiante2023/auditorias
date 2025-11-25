@@ -151,11 +151,9 @@
                                 <td data-order="<?= $porcentajeCumplimiento ?>">
                                     <?php if ($aud['estado'] === 'cerrada'): ?>
                                         <!-- Auditoría cerrada: mostrar porcentaje de cumplimiento -->
-                                        <span class="badge bg-<?= $badgeClass ?>" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                        <span class="badge bg-<?= $badgeClass ?>" style="font-size: 1.1rem; padding: 0.6rem 1.2rem;">
                                             <?= number_format($porcentajeCumplimiento, 1) ?>%
                                         </span>
-                                        <br>
-                                        <small class="text-muted"><?= $itemsCalificados ?>/<?= $totalItems ?> items</small>
                                     <?php else: ?>
                                         <!-- Auditoría en progreso: mostrar barra de progreso -->
                                         <div class="progress" style="height: 25px;">
