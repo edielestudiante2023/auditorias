@@ -100,10 +100,25 @@
                             ];
                             $estado = $estadoBadge[$aud['estado']] ?? ['class' => 'secondary', 'icon' => 'question-circle', 'text' => ucfirst($aud['estado'])];
 
-                            // Calcular porcentaje de progreso de calificación
+                            // Porcentaje de cumplimiento (calidad de la auditoría)
+                            $porcentajeCumplimiento = $aud['porcentaje_cumplimiento'] ?? 0;
+
+                            // Determinar color del badge según el porcentaje
+                            $badgeClass = 'secondary';
+                            if ($porcentajeCumplimiento >= 90) {
+                                $badgeClass = 'success';
+                            } elseif ($porcentajeCumplimiento >= 70) {
+                                $badgeClass = 'info';
+                            } elseif ($porcentajeCumplimiento >= 50) {
+                                $badgeClass = 'warning';
+                            } else {
+                                $badgeClass = 'danger';
+                            }
+
+                            // Progreso de revisión
                             $totalItems = $aud['total_items'] ?? 0;
                             $itemsCalificados = $aud['items_calificados'] ?? 0;
-                            $porcentajeCalificacion = $totalItems > 0 ? round(($itemsCalificados / $totalItems) * 100) : 0;
+                            $porcentajeProgreso = $totalItems > 0 ? round(($itemsCalificados / $totalItems) * 100) : 0;
                             ?>
                             <tr>
                                 <td><strong>#<?= esc($aud['id_auditoria']) ?></strong></td>
@@ -133,18 +148,28 @@
                                         <i class="bi bi-<?= $estado['icon'] ?>"></i> <?= $estado['text'] ?>
                                     </span>
                                 </td>
-                                <td data-order="<?= $porcentajeCalificacion ?>">
-                                    <div class="progress" style="height: 25px;">
-                                        <div class="progress-bar bg-<?= $porcentajeCalificacion === 100 ? 'success' : 'primary' ?>"
-                                             role="progressbar"
-                                             style="width: <?= $porcentajeCalificacion ?>%;"
-                                             aria-valuenow="<?= $porcentajeCalificacion ?>"
-                                             aria-valuemin="0"
-                                             aria-valuemax="100">
-                                            <strong><?= $porcentajeCalificacion ?>%</strong>
+                                <td data-order="<?= $porcentajeCumplimiento ?>">
+                                    <?php if ($aud['estado'] === 'cerrada'): ?>
+                                        <!-- Auditoría cerrada: mostrar porcentaje de cumplimiento -->
+                                        <span class="badge bg-<?= $badgeClass ?>" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                            <?= number_format($porcentajeCumplimiento, 1) ?>%
+                                        </span>
+                                        <br>
+                                        <small class="text-muted"><?= $itemsCalificados ?>/<?= $totalItems ?> items</small>
+                                    <?php else: ?>
+                                        <!-- Auditoría en progreso: mostrar barra de progreso -->
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar bg-<?= $porcentajeProgreso === 100 ? 'success' : 'primary' ?>"
+                                                 role="progressbar"
+                                                 style="width: <?= $porcentajeProgreso ?>%;"
+                                                 aria-valuenow="<?= $porcentajeProgreso ?>"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                                <strong><?= $porcentajeProgreso ?>%</strong>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <small class="text-muted"><?= $itemsCalificados ?>/<?= $totalItems ?> items</small>
+                                        <small class="text-muted"><?= $itemsCalificados ?>/<?= $totalItems ?> items revisados</small>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
