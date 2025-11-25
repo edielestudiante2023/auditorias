@@ -70,7 +70,7 @@ class PdfService
         } elseif ($idServicio == 2) {
             $tipoAuditoria = 'AUDITORIA PROVEEDOR DE VIGILANCIA';
         } else {
-            $tipoAuditoria = 'AUDITORIA PROVEEDOR';
+            $tipoAuditoria = 'AUDITORIA OTROS PROVEEDORES';
         }
 
         // Formato para N8N: TIPO__CLIENTE___PROVEEDOR.pdf
