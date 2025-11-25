@@ -30,7 +30,8 @@
       "Bash(echo \"$f\")",
       "Bash(C:xamppmysqlbinmysql.exe -h 127.0.0.1 -u root -P 3306 cycloid_auditorias -e \"SHOW TABLES;\")",
       "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h 127.0.0.1 -u root -P 3306 cycloid_auditorias -e \"SHOW TABLES;\")",
-      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\":*)"
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\":*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
