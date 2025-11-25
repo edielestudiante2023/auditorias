@@ -201,10 +201,17 @@ class AuditoriaModel extends Model
         }
 
         $totalPuntos = 0;
-        $totalItems = count($todosLosItems);
+        $totalItems = 0;
 
         foreach ($todosLosItems as $item) {
             $calificacion = $item['calificacion'];
+
+            // Excluir ítems no aplicables del cálculo
+            if ($calificacion === 'no_aplica') {
+                continue;
+            }
+
+            $totalItems++;
 
             switch ($calificacion) {
                 case 'cumple':
@@ -215,9 +222,6 @@ class AuditoriaModel extends Model
                     break;
                 case 'no_cumple':
                     $totalPuntos += 0.0;
-                    break;
-                case 'no_aplica':
-                    $totalPuntos += 1.0; // No aplica cuenta como 100% (ítem cumplido)
                     break;
             }
         }
