@@ -805,6 +805,8 @@ class AuditoriasSetupController extends BaseController
                 return $this->response->setJSON([
                     'ok' => true,
                     'message' => 'Email reenviado exitosamente',
+                    'email' => $contrato['usuario_responsable_email'],
+                    'nombre' => $contrato['usuario_responsable_nombre'],
                     'error' => null
                 ]);
             } else {
