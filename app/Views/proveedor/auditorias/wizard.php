@@ -1,5 +1,10 @@
 <?= $this->extend('layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -621,4 +626,103 @@ document.addEventListener('click', function(e) {
 });
 </script>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+/**
+ * Validación de tamaño de archivos antes de enviar
+ * Muestra instructivo de Google Drive si el archivo es muy pesado
+ */
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+function validarTamanoArchivos(inputElement) {
+    const files = inputElement.files;
+    let archivosGrandes = [];
+
+    for (let i = 0; i < files.length; i++) {
+        if (files[i].size > MAX_FILE_SIZE_BYTES) {
+            const sizeMB = (files[i].size / (1024 * 1024)).toFixed(2);
+            archivosGrandes.push(`<li><strong>${files[i].name}</strong> (${sizeMB} MB)</li>`);
+        }
+    }
+
+    if (archivosGrandes.length > 0) {
+        // Limpiar el input de archivos
+        inputElement.value = '';
+
+        // Mostrar SweetAlert con instructivo
+        Swal.fire({
+            icon: 'warning',
+            title: '¡Archivo(s) demasiado grande(s)!',
+            html: `
+                <div style="text-align: left;">
+                    <p>Los siguientes archivos superan el límite de <strong>${MAX_FILE_SIZE_MB} MB</strong>:</p>
+                    <ul style="color: #dc3545; margin-bottom: 15px;">${archivosGrandes.join('')}</ul>
+
+                    <hr>
+
+                    <h5 style="color: #0d6efd;"><i class="bi bi-cloud-upload"></i> Solución alternativa (medida excepcional):</h5>
+
+                    <ol style="padding-left: 20px;">
+                        <li><strong>Suba el archivo a Google Drive</strong>
+                            <br><small class="text-muted">Puede usar su cuenta personal o empresarial</small>
+                        </li>
+                        <li><strong>Haga clic derecho sobre el archivo → "Compartir"</strong></li>
+                        <li><strong>Cambie el acceso a "Cualquier persona con el enlace"</strong>
+                            <br><small class="text-muted">Esto permite que el consultor pueda ver el archivo</small>
+                        </li>
+                        <li><strong>Copie el enlace</strong></li>
+                        <li><strong>Pegue el enlace en el campo de "Comentarios"</strong> de este ítem
+                            <br><small class="text-muted">El enlace es válido como evidencia</small>
+                        </li>
+                    </ol>
+
+                    <div class="alert alert-success mt-3 mb-0" style="font-size: 14px;">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <strong>¡Importante!</strong> Con el enlace de Google Drive puede continuar sin necesidad de adjuntar el archivo directamente.
+                    </div>
+                </div>
+            `,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#0d6efd',
+            width: '600px',
+            timer: 30000,
+            timerProgressBar: true
+        });
+
+        return false;
+    }
+
+    return true;
+}
+
+// Agregar validación a todos los inputs de archivo
+document.querySelectorAll('input[type="file"]').forEach(function(input) {
+    input.addEventListener('change', function() {
+        validarTamanoArchivos(this);
+    });
+});
+
+// Validar antes de enviar el formulario
+document.querySelectorAll('form[enctype="multipart/form-data"]').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        const fileInputs = this.querySelectorAll('input[type="file"]');
+        let todosValidos = true;
+
+        fileInputs.forEach(function(input) {
+            if (input.files.length > 0 && !validarTamanoArchivos(input)) {
+                todosValidos = false;
+            }
+        });
+
+        if (!todosValidos) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
 <?= $this->endSection() ?>
