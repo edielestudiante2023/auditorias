@@ -186,6 +186,7 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->post('contratos/update/(:num)', 'Admin\ContratosController::update/$1');
     $routes->post('contratos/eliminar/(:num)', 'Admin\ContratosController::eliminar/$1');
     $routes->post('contratos/eliminar-soporte/(:num)', 'Admin\ContratosController::eliminarSoporte/$1');
+    $routes->get('contratos/usuarios-proveedor/(:num)', 'Admin\ContratosController::getUsuariosByProveedor/$1');
 
     // ========== Usuarios ==========
     $routes->get('usuarios', 'Admin\\UsuariosController::index');

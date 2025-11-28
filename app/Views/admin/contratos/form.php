@@ -201,18 +201,22 @@
                                         id="id_usuario_responsable"
                                         name="id_usuario_responsable"
                                         required>
-                                    <option value="">Seleccionar usuario responsable...</option>
-                                    <?php foreach ($usuarios_proveedores as $usuario): ?>
-                                        <option value="<?= $usuario['id_users'] ?>"
-                                                <?= old('id_usuario_responsable', $contrato['id_usuario_responsable'] ?? '') == $usuario['id_users'] ? 'selected' : '' ?>>
-                                            <?= esc($usuario['nombre']) ?> (<?= esc($usuario['email']) ?>)
-                                        </option>
-                                    <?php endforeach; ?>
+                                    <option value="">Primero seleccione un proveedor...</option>
+                                    <?php if (!empty($contrato['id_usuario_responsable'])): ?>
+                                        <?php foreach ($usuarios_proveedores as $usuario): ?>
+                                            <?php if ($usuario['id_users'] == $contrato['id_usuario_responsable']): ?>
+                                                <option value="<?= $usuario['id_users'] ?>" selected>
+                                                    <?= esc($usuario['nombre']) ?> (<?= esc($usuario['email']) ?>)
+                                                </option>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </select>
                                 <div class="form-text">
                                     <i class="bi bi-exclamation-triangle text-warning"></i>
                                     <strong>Coordinador SST o Analista SST del proveedor</strong> que recibirá emails y cargará soportes
                                 </div>
+                                <div id="usuario_responsable_info" class="form-text text-info" style="display:none;"></div>
                                 <?php if (isset($errors['id_usuario_responsable'])): ?>
                                     <div class="invalid-feedback"><?= esc($errors['id_usuario_responsable']) ?></div>
                                 <?php endif; ?>
@@ -319,6 +323,57 @@ function cargarEmailCliente() {
     emailCliente.value = email || '';
 }
 
+// Cargar usuarios vinculados al proveedor seleccionado
+function cargarUsuariosProveedor(idProveedor, idUsuarioSeleccionado = null) {
+    const selectUsuario = $('#id_usuario_responsable');
+    const infoDiv = $('#usuario_responsable_info');
+
+    if (!idProveedor) {
+        selectUsuario.empty().append('<option value="">Primero seleccione un proveedor...</option>');
+        selectUsuario.trigger('change');
+        infoDiv.hide();
+        return;
+    }
+
+    // Mostrar loading
+    selectUsuario.empty().append('<option value="">Cargando usuarios...</option>');
+    selectUsuario.trigger('change');
+
+    $.ajax({
+        url: '<?= site_url('admin/contratos/usuarios-proveedor') ?>/' + idProveedor,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            selectUsuario.empty();
+
+            if (response.success && response.usuarios.length > 0) {
+                selectUsuario.append('<option value="">Seleccionar usuario responsable...</option>');
+
+                response.usuarios.forEach(function(usuario) {
+                    const selected = (idUsuarioSeleccionado && usuario.id_users == idUsuarioSeleccionado) ? 'selected' : '';
+                    selectUsuario.append(
+                        '<option value="' + usuario.id_users + '" ' + selected + '>' +
+                        usuario.nombre + ' (' + usuario.email + ')' +
+                        '</option>'
+                    );
+                });
+
+                infoDiv.html('<i class="bi bi-check-circle"></i> ' + response.usuarios.length + ' usuario(s) vinculado(s) a este proveedor').show();
+            } else {
+                selectUsuario.append('<option value="">No hay usuarios vinculados a este proveedor</option>');
+                infoDiv.html('<i class="bi bi-exclamation-triangle text-warning"></i> Debe crear un usuario para este proveedor primero en la sección de Usuarios').show();
+            }
+
+            selectUsuario.trigger('change');
+        },
+        error: function() {
+            selectUsuario.empty().append('<option value="">Error al cargar usuarios</option>');
+            selectUsuario.trigger('change');
+            infoDiv.html('<i class="bi bi-x-circle text-danger"></i> Error de conexión').show();
+        }
+    });
+}
+
 // Inicializar Select2 en los campos principales
 $(document).ready(function() {
     // Select2 para Cliente
@@ -361,7 +416,7 @@ $(document).ready(function() {
         width: '100%',
         language: {
             noResults: function() {
-                return "No se encontraron usuarios";
+                return "No hay usuarios vinculados a este proveedor";
             },
             searching: function() {
                 return "Buscando...";
@@ -374,8 +429,26 @@ $(document).ready(function() {
         cargarEmailCliente();
     });
 
+    // Evento para cargar usuarios cuando cambia el proveedor
+    $('#id_proveedor').on('select2:select', function(e) {
+        const idProveedor = e.params.data.id;
+        cargarUsuariosProveedor(idProveedor);
+    });
+
+    // Evento para limpiar usuarios cuando se deselecciona el proveedor
+    $('#id_proveedor').on('select2:clear', function(e) {
+        cargarUsuariosProveedor(null);
+    });
+
     // Cargar email al cargar la página si hay un cliente seleccionado
     cargarEmailCliente();
+
+    // Cargar usuarios si hay un proveedor preseleccionado (modo edición)
+    const idProveedorActual = $('#id_proveedor').val();
+    const idUsuarioActual = <?= json_encode($contrato['id_usuario_responsable'] ?? null) ?>;
+    if (idProveedorActual) {
+        cargarUsuariosProveedor(idProveedorActual, idUsuarioActual);
+    }
 });
 </script>
 </body>
