@@ -88,12 +88,26 @@ class ContratosController extends BaseController
      */
     public function store()
     {
+        $idProveedor = $this->request->getPost('id_proveedor');
+        $idUsuarioResponsable = $this->request->getPost('id_usuario_responsable');
+
+        // Validar que el usuario responsable esté vinculado al proveedor
+        if ($idProveedor && $idUsuarioResponsable) {
+            $usuariosProveedoresModel = new \App\Models\UsuariosProveedoresModel();
+            if (!$usuariosProveedoresModel->isVinculado($idUsuarioResponsable, $idProveedor)) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'El usuario responsable seleccionado no está vinculado al proveedor. Por favor seleccione un usuario válido.');
+            }
+        }
+
         $data = [
             'id_cliente'             => $this->request->getPost('id_cliente'),
-            'id_proveedor'           => $this->request->getPost('id_proveedor'),
+            'id_proveedor'           => $idProveedor,
             'id_servicio'            => $this->request->getPost('id_servicio'),
             'id_consultor'           => $this->request->getPost('id_consultor'),
-            'id_usuario_responsable' => $this->request->getPost('id_usuario_responsable'),
+            'id_usuario_responsable' => $idUsuarioResponsable,
             'tipo_auditoria'         => $this->request->getPost('tipo_auditoria'),
             'estado'                 => $this->request->getPost('estado') ?: 'activo',
             'observaciones'          => $this->request->getPost('observaciones'),
@@ -157,13 +171,27 @@ class ContratosController extends BaseController
                 ->with('error', 'Relación no encontrada.');
         }
 
+        $idProveedor = $this->request->getPost('id_proveedor');
+        $idUsuarioResponsable = $this->request->getPost('id_usuario_responsable');
+
+        // Validar que el usuario responsable esté vinculado al proveedor
+        if ($idProveedor && $idUsuarioResponsable) {
+            $usuariosProveedoresModel = new \App\Models\UsuariosProveedoresModel();
+            if (!$usuariosProveedoresModel->isVinculado($idUsuarioResponsable, $idProveedor)) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'El usuario responsable seleccionado no está vinculado al proveedor. Por favor seleccione un usuario válido.');
+            }
+        }
+
         $data = [
             'id_contrato'            => $id,
             'id_cliente'             => $this->request->getPost('id_cliente'),
-            'id_proveedor'           => $this->request->getPost('id_proveedor'),
+            'id_proveedor'           => $idProveedor,
             'id_servicio'            => $this->request->getPost('id_servicio'),
             'id_consultor'           => $this->request->getPost('id_consultor'),
-            'id_usuario_responsable' => $this->request->getPost('id_usuario_responsable'),
+            'id_usuario_responsable' => $idUsuarioResponsable,
             'tipo_auditoria'         => $this->request->getPost('tipo_auditoria'),
             'estado'                 => $this->request->getPost('estado'),
             'observaciones'          => $this->request->getPost('observaciones'),
@@ -212,5 +240,20 @@ class ContratosController extends BaseController
         return redirect()
             ->to('/admin/contratos')
             ->with('success', 'Relación cliente-proveedor eliminada exitosamente.');
+    }
+
+    /**
+     * API: Obtiene los usuarios vinculados a un proveedor específico
+     * Usado para filtrar el dropdown de usuario responsable dinámicamente
+     */
+    public function getUsuariosByProveedor(int $idProveedor)
+    {
+        $usuariosProveedoresModel = new \App\Models\UsuariosProveedoresModel();
+        $usuarios = $usuariosProveedoresModel->getUsuariosByProveedor($idProveedor);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'usuarios' => $usuarios
+        ]);
     }
 }
