@@ -97,16 +97,11 @@
             <div class="col">
                 <h5 class="mb-0"><i class="bi bi-table"></i> Detalle de Auditorías</h5>
             </div>
-            <div class="col-auto">
-                <button class="btn btn-sm btn-outline-success" onclick="exportarExcel()">
-                    <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-                </button>
-            </div>
         </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0" id="tablaReporte">
+            <table class="table table-hover table-striped mb-0" id="tablaReporte" style="width:100%">
                 <thead class="table-dark">
                     <tr>
                         <th>Código</th>
@@ -118,6 +113,17 @@
                         <th>Estado</th>
                         <th>F. Vencimiento</th>
                         <th>Acciones</th>
+                    </tr>
+                    <tr class="filters bg-light">
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -131,7 +137,7 @@
                             <br><small class="text-muted">NIT: <?= esc($aud['proveedor_nit']) ?></small>
                         </td>
                         <td><?= esc($aud['consultor']) ?></td>
-                        <td class="text-center" style="min-width: 150px;">
+                        <td class="text-center" style="min-width: 150px;" data-order="<?= $aud['progreso'] ?>">
                             <div class="progress" style="height: 20px;">
                                 <div class="progress-bar bg-<?= $aud['progreso'] >= 100 ? 'success' : ($aud['progreso'] >= 70 ? 'primary' : ($aud['progreso'] >= 30 ? 'warning' : 'secondary')) ?>"
                                      role="progressbar"
@@ -158,7 +164,7 @@
                                 <?= esc($aud['estado_descriptivo']) ?>
                             </span>
                         </td>
-                        <td>
+                        <td data-order="<?= $aud['fecha_programada'] ? strtotime($aud['fecha_programada']) : 0 ?>">
                             <?php if ($aud['fecha_programada']): ?>
                                 <?= date('d/m/Y', strtotime($aud['fecha_programada'])) ?>
                                 <?php if ($aud['vencida'] && $aud['estado'] === 'en_proveedor'): ?>
@@ -227,16 +233,70 @@
     </div>
 </div>
 
-<script>
-function exportarExcel() {
-    // Exportar tabla a Excel
-    const table = document.getElementById('tablaReporte');
-    const wb = XLSX.utils.table_to_book(table, {sheet: "Reporte Progreso"});
-    XLSX.writeFile(wb, 'reporte_progreso_auditorias_<?= date('Y-m-d') ?>.xlsx');
-}
-</script>
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
 
-<!-- SheetJS para exportar Excel -->
-<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<!-- jQuery (requerido por DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- DataTables Buttons -->
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    var table = $('#tablaReporte').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        },
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+        order: [[3, 'desc']], // Ordenar por progreso descendente
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"B>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Exportar a Excel',
+                className: 'btn btn-success btn-sm',
+                title: 'Reporte_Progreso_Auditorias_<?= date('Y-m-d') ?>',
+                exportOptions: {
+                    columns: ':visible:not(:last-child)' // Excluir columna de acciones
+                }
+            }
+        ],
+        responsive: true,
+        columnDefs: [
+            { orderable: false, targets: [-1] } // Deshabilitar orden en columna de acciones
+        ],
+        orderCellsTop: true,
+        fixedHeader: true,
+        initComplete: function() {
+            var api = this.api();
+
+            // Configurar filtros en la segunda fila del thead
+            api.columns().eq(0).each(function(colIdx) {
+                // Obtener el input de la fila de filtros
+                var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
+                var input = $('input', cell);
+
+                // Evento de búsqueda
+                input.on('keyup change', function() {
+                    api.column(colIdx).search(this.value).draw();
+                });
+            });
+        }
+    });
+});
+</script>
 
 <?= $this->endSection() ?>
