@@ -87,6 +87,13 @@
                                 </small>
                             <?php endif; ?>
                         </div>
+
+                        <?php if ($isCompleted && $estadoActual == 'en_proveedor'): ?>
+                            <div class="alert alert-danger mb-0 py-2">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <strong>ACCION REQUERIDA:</strong> Debe hacer clic en "Finalizar y Enviar a Revisión" dentro de la auditoría para completar el envío.
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="card-footer bg-transparent">
@@ -94,6 +101,12 @@
                             <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
                                class="btn btn-outline-secondary w-100">
                                 <i class="bi bi-eye"></i> Ver auditoría
+                            </a>
+                        <?php elseif ($isCompleted && $estadoActual == 'en_proveedor'): ?>
+                            <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
+                               class="btn btn-danger w-100 btn-lg">
+                                <i class="bi bi-send-check-fill"></i>
+                                <strong>FINALIZAR Y ENVIAR</strong>
                             </a>
                         <?php else: ?>
                             <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
@@ -117,9 +130,11 @@
             <div class="row text-center">
                 <?php
                 $total = count($auditorias);
-                $completadas = count(array_filter($auditorias, fn($a) => ($a['progreso'] ?? 0) >= 100));
+                // Enviadas = estado en_revision_consultor o cerrada
+                $enviadas = count(array_filter($auditorias, fn($a) => in_array($a['estado'] ?? '', ['en_revision_consultor', 'cerrada'])));
+                // Listas para enviar = 100% pero aún en_proveedor
+                $listasParaEnviar = count(array_filter($auditorias, fn($a) => ($a['progreso'] ?? 0) >= 100 && ($a['estado'] ?? '') == 'en_proveedor'));
                 $enProgreso = count(array_filter($auditorias, fn($a) => ($a['progreso'] ?? 0) < 100 && ($a['progreso'] ?? 0) > 0));
-                $sinIniciar = count(array_filter($auditorias, fn($a) => ($a['progreso'] ?? 0) == 0));
                 $promedio = $total > 0 ? array_sum(array_column($auditorias, 'progreso')) / $total : 0;
                 ?>
                 <div class="col-6 col-md-3 border-end">
@@ -127,12 +142,17 @@
                     <small class="text-muted">Total</small>
                 </div>
                 <div class="col-6 col-md-3 border-end">
-                    <h3 class="text-success mb-0"><?= $completadas ?></h3>
-                    <small class="text-muted">Completadas</small>
+                    <h3 class="text-success mb-0"><?= $enviadas ?></h3>
+                    <small class="text-muted">Enviadas</small>
                 </div>
                 <div class="col-6 col-md-3 border-end">
-                    <h3 class="text-warning mb-0"><?= $enProgreso ?></h3>
-                    <small class="text-muted">En Progreso</small>
+                    <?php if ($listasParaEnviar > 0): ?>
+                        <h3 class="text-danger mb-0"><?= $listasParaEnviar ?></h3>
+                        <small class="text-danger fw-bold">Pendientes de Enviar</small>
+                    <?php else: ?>
+                        <h3 class="text-warning mb-0"><?= $enProgreso ?></h3>
+                        <small class="text-muted">En Progreso</small>
+                    <?php endif; ?>
                 </div>
                 <div class="col-6 col-md-3">
                     <h3 class="<?= $promedio >= 70 ? 'text-success' : ($promedio >= 40 ? 'text-warning' : 'text-danger') ?> mb-0">
@@ -141,6 +161,13 @@
                     <small class="text-muted">Promedio</small>
                 </div>
             </div>
+            <?php if ($listasParaEnviar > 0): ?>
+                <div class="alert alert-danger mt-3 mb-0">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Tiene <?= $listasParaEnviar ?> auditoría(s) lista(s) que NO ha enviado.</strong>
+                    Ingrese a cada una y haga clic en "Finalizar y Enviar a Revisión".
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 <?php endif; ?>
