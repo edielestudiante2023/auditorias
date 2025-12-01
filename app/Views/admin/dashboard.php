@@ -227,6 +227,26 @@
   </div>
 
   <div class="row g-4">
+    <!-- NUEVO: Reporte de Progreso en Tiempo Real -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-primary border-2">
+        <div class="card-body text-center">
+          <i class="bi bi-graph-up-arrow text-primary" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Reporte de Progreso</h5>
+          <p class="card-text text-muted small">Monitoreo en tiempo real del avance de todas las auditorías</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/reporte-progreso') ?>" class="btn btn-primary" target="_blank">
+              <i class="bi bi-speedometer2"></i> Ver Reporte
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Sin permisos">
+              <i class="bi bi-lock"></i> Sin permisos
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
     <!-- Auditorías Completadas por Proveedores -->
     <div class="col-12 col-md-6 col-lg-4">
       <div class="card h-100 shadow-sm">
