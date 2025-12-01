@@ -258,7 +258,7 @@ $(document).ready(function() {
         },
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-        order: [[3, 'desc']], // Ordenar por progreso descendente
+        order: [[6, 'asc'], [3, 'desc'], [7, 'asc']], // 1) Estado (pendientes primero), 2) Progreso desc, 3) F. Vencimiento asc
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
              '<"row"<"col-sm-12"B>>' +
              '<"row"<"col-sm-12"tr>>' +
