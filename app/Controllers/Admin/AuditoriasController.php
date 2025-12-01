@@ -486,6 +486,189 @@ class AuditoriasController extends BaseController
     }
 
     /**
+     * Reporte de progreso de auditorías en tiempo real
+     */
+    public function reporteProgreso()
+    {
+        $db = \Config\Database::connect();
+
+        // Obtener todas las auditorías con sus datos básicos
+        $auditorias = $db->query("
+            SELECT a.id_auditoria, a.codigo_formato, a.estado, a.fecha_programada,
+                   a.fecha_envio_proveedor, a.fecha_envio_consultor, a.created_at,
+                   p.razon_social as proveedor,
+                   p.nit as proveedor_nit,
+                   c.nombre_completo as consultor
+            FROM auditorias a
+            JOIN proveedores p ON p.id_proveedor = a.id_proveedor
+            JOIN consultores c ON c.id_consultor = a.id_consultor
+            ORDER BY
+                CASE a.estado
+                    WHEN 'en_proveedor' THEN 1
+                    WHEN 'en_revision_consultor' THEN 2
+                    WHEN 'cerrada' THEN 3
+                    ELSE 4
+                END,
+                a.fecha_programada ASC
+        ")->getResultArray();
+
+        // Calcular progreso para cada auditoría
+        $reporteAuditorias = [];
+        $resumen = [
+            'total' => 0,
+            'completas_sin_enviar' => 0,
+            'en_progreso_alto' => 0,    // 70-99%
+            'en_progreso_medio' => 0,   // 30-69%
+            'en_progreso_bajo' => 0,    // 1-29%
+            'sin_iniciar' => 0,         // 0%
+            'enviadas_consultor' => 0,
+            'cerradas' => 0,
+            'vencidas' => 0,
+        ];
+
+        foreach ($auditorias as $aud) {
+            $idAuditoria = $aud['id_auditoria'];
+            $resumen['total']++;
+
+            // Calcular progreso igual que el controlador del proveedor
+
+            // Globales total
+            $stmt = $db->query("SELECT COUNT(*) as total FROM auditoria_items ai
+                                JOIN items_banco ib ON ib.id_item = ai.id_item
+                                WHERE ai.id_auditoria = ? AND ib.alcance IN ('global', 'mixto')", [$idAuditoria]);
+            $globalesTotal = $stmt->getRow()->total ?? 0;
+
+            // Globales completados
+            $stmt = $db->query("SELECT COUNT(DISTINCT ai.id_auditoria_item) as completados
+                                FROM auditoria_items ai
+                                JOIN items_banco ib ON ib.id_item = ai.id_item
+                                LEFT JOIN evidencias e ON e.id_auditoria_item = ai.id_auditoria_item
+                                WHERE ai.id_auditoria = ?
+                                  AND ib.alcance IN ('global', 'mixto')
+                                  AND ((ai.comentario_proveedor IS NOT NULL AND ai.comentario_proveedor != '')
+                                       OR e.id_evidencia IS NOT NULL)", [$idAuditoria]);
+            $globalesCompletos = $stmt->getRow()->completados ?? 0;
+
+            // Clientes
+            $stmt = $db->query("SELECT COUNT(*) as total_clientes FROM auditoria_clientes WHERE id_auditoria = ?", [$idAuditoria]);
+            $totalClientes = $stmt->getRow()->total_clientes ?? 0;
+
+            // Items por cliente
+            $stmt = $db->query("SELECT COUNT(*) as total_items FROM auditoria_items ai
+                                JOIN items_banco ib ON ib.id_item = ai.id_item
+                                WHERE ai.id_auditoria = ? AND ib.alcance = 'por_cliente'", [$idAuditoria]);
+            $itemsPorCliente = $stmt->getRow()->total_items ?? 0;
+            $porClienteTotal = $itemsPorCliente * $totalClientes;
+
+            // Por cliente completados
+            $stmt = $db->query("SELECT COUNT(DISTINCT aic.id_auditoria_item_cliente) as completados
+                                FROM auditoria_item_cliente aic
+                                JOIN auditoria_items ai ON ai.id_auditoria_item = aic.id_auditoria_item
+                                JOIN items_banco ib ON ib.id_item = ai.id_item
+                                LEFT JOIN evidencias_cliente ec ON ec.id_auditoria_item_cliente = aic.id_auditoria_item_cliente
+                                WHERE ai.id_auditoria = ?
+                                  AND ib.alcance = 'por_cliente'
+                                  AND ((aic.comentario_proveedor_cliente IS NOT NULL AND aic.comentario_proveedor_cliente != '')
+                                       OR ec.id_evidencia_cliente IS NOT NULL)", [$idAuditoria]);
+            $porClienteCompletos = $stmt->getRow()->completados ?? 0;
+
+            // Totales
+            $total = $globalesTotal + $porClienteTotal;
+            $completados = $globalesCompletos + $porClienteCompletos;
+            $porcentaje = $total > 0 ? round(($completados / $total) * 100, 2) : 0;
+
+            // Determinar estado descriptivo
+            $estadoDescriptivo = '';
+            $badgeClass = '';
+            $prioridad = 0;
+
+            // Verificar vencimiento
+            $vencida = strtotime($aud['fecha_programada']) < strtotime('today');
+
+            if ($aud['estado'] === 'cerrada') {
+                $estadoDescriptivo = 'Cerrada';
+                $badgeClass = 'success';
+                $resumen['cerradas']++;
+                $prioridad = 5;
+            } elseif ($aud['estado'] === 'en_revision_consultor') {
+                $estadoDescriptivo = 'En revisión consultor';
+                $badgeClass = 'info';
+                $resumen['enviadas_consultor']++;
+                $prioridad = 4;
+            } elseif ($porcentaje >= 100 && $aud['estado'] === 'en_proveedor') {
+                $estadoDescriptivo = '100% - PENDIENTE ENVIAR';
+                $badgeClass = 'danger';
+                $resumen['completas_sin_enviar']++;
+                $prioridad = 1;
+            } elseif ($porcentaje >= 70) {
+                $estadoDescriptivo = 'En progreso alto';
+                $badgeClass = 'primary';
+                $resumen['en_progreso_alto']++;
+                $prioridad = 2;
+            } elseif ($porcentaje >= 30) {
+                $estadoDescriptivo = 'En progreso';
+                $badgeClass = 'warning';
+                $resumen['en_progreso_medio']++;
+                $prioridad = 3;
+            } elseif ($porcentaje > 0) {
+                $estadoDescriptivo = 'Recién iniciada';
+                $badgeClass = 'secondary';
+                $resumen['en_progreso_bajo']++;
+                $prioridad = 3;
+            } else {
+                $estadoDescriptivo = 'Sin iniciar';
+                $badgeClass = 'dark';
+                $resumen['sin_iniciar']++;
+                $prioridad = 3;
+            }
+
+            if ($vencida && $aud['estado'] === 'en_proveedor') {
+                $estadoDescriptivo .= ' (VENCIDA)';
+                $badgeClass = 'danger';
+                $resumen['vencidas']++;
+            }
+
+            $reporteAuditorias[] = [
+                'id_auditoria' => $idAuditoria,
+                'codigo_formato' => $aud['codigo_formato'],
+                'proveedor' => $aud['proveedor'],
+                'proveedor_nit' => $aud['proveedor_nit'],
+                'consultor' => $aud['consultor'],
+                'estado' => $aud['estado'],
+                'estado_descriptivo' => $estadoDescriptivo,
+                'badge_class' => $badgeClass,
+                'fecha_programada' => $aud['fecha_programada'],
+                'fecha_envio_proveedor' => $aud['fecha_envio_proveedor'],
+                'fecha_envio_consultor' => $aud['fecha_envio_consultor'],
+                'vencida' => $vencida,
+                'progreso' => $porcentaje,
+                'globales_completos' => $globalesCompletos,
+                'globales_total' => $globalesTotal,
+                'por_cliente_completos' => $porClienteCompletos,
+                'por_cliente_total' => $porClienteTotal,
+                'total_clientes' => $totalClientes,
+                'items_completados' => $completados,
+                'items_total' => $total,
+                'prioridad' => $prioridad,
+            ];
+        }
+
+        // Ordenar por prioridad (problemas primero)
+        usort($reporteAuditorias, function($a, $b) {
+            if ($a['prioridad'] !== $b['prioridad']) {
+                return $a['prioridad'] - $b['prioridad'];
+            }
+            return $b['progreso'] - $a['progreso'];
+        });
+
+        return view('admin/auditorias/reporte_progreso', [
+            'title' => 'Reporte de Progreso de Auditorías',
+            'auditorias' => $reporteAuditorias,
+            'resumen' => $resumen,
+        ]);
+    }
+
+    /**
      * Reenvía credenciales al proveedor después de adicionar clientes
      */
     public function reenviarCredenciales($idAuditoria = null)
