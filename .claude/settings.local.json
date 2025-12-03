@@ -33,7 +33,11 @@
       "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\":*)",
       "Bash(git pull:*)",
       "Bash(git merge:*)",
-      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl-mode=REQUIRED cycloid_auditorias -e \"SHOW TABLES;\")"
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl-mode=REQUIRED cycloid_auditorias -e \"SHOW TABLES;\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl cycloid_auditorias -e \"SELECT id_proveedor, nombre, nit FROM proveedores WHERE nombre LIKE ''%JUPITER%'' OR nombre LIKE ''%MARTE%'' OR nombre LIKE ''%SATURNO%'' OR nombre LIKE ''%VENUS%'' OR nombre LIKE ''%MERCURIO%'' OR nombre LIKE ''%NEPTUNO%'' OR nombre LIKE ''%URANO%'' OR nombre LIKE ''%PLUTON%'';\")",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl --default-auth=mysql_native_password cycloid_auditorias -e \"SELECT id_proveedor, nombre FROM proveedores;\")",
+      "Bash(C:xamppphpphp.exe \"c:\\xampp\\htdocs\\auditorias\\limpiar_db.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/limpiar_db.php\")"
     ],
     "deny": [],
     "ask": []
