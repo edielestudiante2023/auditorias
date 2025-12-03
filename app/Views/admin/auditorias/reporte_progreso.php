@@ -112,6 +112,8 @@
                         <th class="text-center">Clientes</th>
                         <th>Estado</th>
                         <th>F. Vencimiento</th>
+                        <th>F. Envío Proveedor</th>
+                        <th>F. Calificación</th>
                         <th>Acciones</th>
                     </tr>
                     <tr class="filters bg-light">
@@ -121,6 +123,8 @@
                         <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                         <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                         <th></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                         <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                         <th><input type="text" class="form-control form-control-sm" placeholder="Buscar..."></th>
                         <th></th>
@@ -170,6 +174,20 @@
                                 <?php if ($aud['vencida'] && $aud['estado'] === 'en_proveedor'): ?>
                                     <br><span class="badge bg-danger">VENCIDA</span>
                                 <?php endif; ?>
+                            <?php else: ?>
+                                <span class="text-muted">-</span>
+                            <?php endif; ?>
+                        </td>
+                        <td data-order="<?= $aud['fecha_envio_proveedor'] ? strtotime($aud['fecha_envio_proveedor']) : 0 ?>">
+                            <?php if ($aud['fecha_envio_proveedor']): ?>
+                                <?= date('d/m/Y', strtotime($aud['fecha_envio_proveedor'])) ?>
+                            <?php else: ?>
+                                <span class="text-muted">-</span>
+                            <?php endif; ?>
+                        </td>
+                        <td data-order="<?= $aud['fecha_envio_consultor'] ? strtotime($aud['fecha_envio_consultor']) : 0 ?>">
+                            <?php if ($aud['fecha_envio_consultor']): ?>
+                                <?= date('d/m/Y', strtotime($aud['fecha_envio_consultor'])) ?>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
                             <?php endif; ?>
