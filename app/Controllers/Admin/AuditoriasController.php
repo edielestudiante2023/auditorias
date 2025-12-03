@@ -580,6 +580,7 @@ class AuditoriasController extends BaseController
             // Determinar estado descriptivo
             $estadoDescriptivo = '';
             $badgeClass = '';
+            $categoria = '';
             $prioridad = 0;
 
             // Verificar vencimiento
@@ -588,36 +589,43 @@ class AuditoriasController extends BaseController
             if ($aud['estado'] === 'cerrada') {
                 $estadoDescriptivo = 'Cerrada';
                 $badgeClass = 'success';
+                $categoria = 'cerradas';
                 $resumen['cerradas']++;
                 $prioridad = 5;
             } elseif ($aud['estado'] === 'en_revision_consultor') {
                 $estadoDescriptivo = 'En revisión consultor';
                 $badgeClass = 'info';
+                $categoria = 'en_revision';
                 $resumen['enviadas_consultor']++;
                 $prioridad = 4;
             } elseif ($porcentaje >= 100 && $aud['estado'] === 'en_proveedor') {
                 $estadoDescriptivo = '100% - PENDIENTE ENVIAR';
                 $badgeClass = 'danger';
+                $categoria = 'completas_sin_enviar';
                 $resumen['completas_sin_enviar']++;
                 $prioridad = 1;
             } elseif ($porcentaje >= 70) {
                 $estadoDescriptivo = 'En progreso alto';
                 $badgeClass = 'primary';
+                $categoria = 'en_progreso';
                 $resumen['en_progreso_alto']++;
                 $prioridad = 2;
             } elseif ($porcentaje >= 30) {
                 $estadoDescriptivo = 'En progreso';
                 $badgeClass = 'warning';
+                $categoria = 'en_progreso';
                 $resumen['en_progreso_medio']++;
                 $prioridad = 3;
             } elseif ($porcentaje > 0) {
                 $estadoDescriptivo = 'Recién iniciada';
                 $badgeClass = 'secondary';
+                $categoria = 'en_progreso';
                 $resumen['en_progreso_bajo']++;
                 $prioridad = 3;
             } else {
                 $estadoDescriptivo = 'Sin iniciar';
                 $badgeClass = 'dark';
+                $categoria = 'sin_iniciar';
                 $resumen['sin_iniciar']++;
                 $prioridad = 3;
             }
@@ -637,6 +645,7 @@ class AuditoriasController extends BaseController
                 'estado' => $aud['estado'],
                 'estado_descriptivo' => $estadoDescriptivo,
                 'badge_class' => $badgeClass,
+                'categoria' => $categoria,
                 'fecha_programada' => $aud['fecha_programada'],
                 'fecha_envio_proveedor' => $aud['fecha_envio_proveedor'],
                 'fecha_envio_consultor' => $aud['fecha_envio_consultor'],
