@@ -32,7 +32,8 @@
       "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h 127.0.0.1 -u root -P 3306 cycloid_auditorias -e \"SHOW TABLES;\")",
       "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\":*)",
       "Bash(git pull:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl-mode=REQUIRED cycloid_auditorias -e \"SHOW TABLES;\")"
     ],
     "deny": [],
     "ask": []

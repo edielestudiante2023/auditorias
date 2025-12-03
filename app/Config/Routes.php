@@ -105,6 +105,11 @@ $routes->group('test-upload', function ($routes) {
 });
 
 // ============================================================
+// Limpieza de datos de prueba (ELIMINAR DESPUÉS DE USAR)
+// ============================================================
+$routes->get('limpiar-datos-prueba', 'LimpiarDatos::index');
+
+// ============================================================
 // Test Email Service (ELIMINAR EN PRODUCCIÓN)
 // ============================================================
 $routes->group('test-email', function ($routes) {
