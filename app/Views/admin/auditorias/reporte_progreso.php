@@ -15,7 +15,7 @@
 <!-- Resumen Ejecutivo -->
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-primary text-white h-100">
+        <div class="card bg-primary text-white h-100 card-filtro" data-filtro="total" style="cursor: pointer;" title="Clic para mostrar todas">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['total'] ?></h2>
                 <small>Total</small>
@@ -25,7 +25,7 @@
 
     <?php if ($resumen['completas_sin_enviar'] > 0): ?>
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-danger text-white h-100 border-3">
+        <div class="card bg-danger text-white h-100 border-3 card-filtro" data-filtro="completas_sin_enviar" style="cursor: pointer;" title="Clic para filtrar">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> <?= $resumen['completas_sin_enviar'] ?></h2>
                 <small><strong>100% SIN ENVIAR</strong></small>
@@ -36,7 +36,7 @@
 
     <?php if ($resumen['vencidas'] > 0): ?>
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-danger text-white h-100">
+        <div class="card bg-danger text-white h-100 card-filtro" data-filtro="vencidas" style="cursor: pointer;" title="Clic para filtrar">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><i class="bi bi-clock-fill"></i> <?= $resumen['vencidas'] ?></h2>
                 <small>Vencidas</small>
@@ -46,7 +46,7 @@
     <?php endif; ?>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-info text-white h-100">
+        <div class="card bg-info text-white h-100 card-filtro" data-filtro="en_revision" style="cursor: pointer;" title="Clic para filtrar">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['enviadas_consultor'] ?></h2>
                 <small>En Revisión</small>
@@ -55,7 +55,7 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-warning h-100">
+        <div class="card bg-warning h-100 card-filtro" data-filtro="en_progreso" style="cursor: pointer;" title="Clic para filtrar">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['en_progreso_alto'] + $resumen['en_progreso_medio'] + $resumen['en_progreso_bajo'] ?></h2>
                 <small>En Progreso</small>
@@ -64,7 +64,7 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-success text-white h-100">
+        <div class="card bg-success text-white h-100 card-filtro" data-filtro="cerradas" style="cursor: pointer;" title="Clic para filtrar">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['cerradas'] ?></h2>
                 <small>Cerradas</small>
@@ -73,7 +73,7 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-dark text-white h-100">
+        <div class="card bg-dark text-white h-100 card-filtro" data-filtro="sin_iniciar" style="cursor: pointer;" title="Clic para filtrar">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['sin_iniciar'] ?></h2>
                 <small>Sin Iniciar</small>
@@ -128,7 +128,7 @@
                 </thead>
                 <tbody>
                     <?php foreach ($auditorias as $aud): ?>
-                    <tr class="<?= $aud['badge_class'] === 'danger' ? 'table-danger' : '' ?>">
+                    <tr class="<?= $aud['badge_class'] === 'danger' ? 'table-danger' : '' ?>" data-categoria="<?= esc($aud['categoria']) ?>" data-vencida="<?= $aud['vencida'] && $aud['estado'] === 'en_proveedor' ? '1' : '0' ?>">
                         <td>
                             <strong><?= esc($aud['codigo_formato']) ?></strong>
                         </td>
@@ -233,6 +233,27 @@
     </div>
 </div>
 
+<!-- Estilos para cards de filtro -->
+<style>
+.card-filtro {
+    transition: all 0.2s ease;
+}
+.card-filtro:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.card-filtro.active {
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.5), 0 4px 15px rgba(0,0,0,0.3);
+    transform: translateY(-3px);
+}
+.filtro-activo-badge {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+</style>
+
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
@@ -252,6 +273,8 @@
 
 <script>
 $(document).ready(function() {
+    var filtroActual = null;
+
     var table = $('#tablaReporte').DataTable({
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
@@ -295,6 +318,72 @@ $(document).ready(function() {
                 });
             });
         }
+    });
+
+    // Filtro personalizado para DataTables basado en data-attributes
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (filtroActual === null || filtroActual === 'total') {
+            return true;
+        }
+
+        var row = table.row(dataIndex).node();
+        var categoria = $(row).data('categoria');
+        var vencida = $(row).data('vencida');
+
+        if (filtroActual === 'vencidas') {
+            return vencida == 1;
+        }
+
+        return categoria === filtroActual;
+    });
+
+    // Evento clic en los cards de filtro
+    $('.card-filtro').on('click', function() {
+        var filtro = $(this).data('filtro');
+
+        // Remover clase active de todos los cards
+        $('.card-filtro').removeClass('active');
+
+        // Remover badge de filtro activo si existe
+        $('.filtro-activo-badge').remove();
+
+        if (filtroActual === filtro) {
+            // Si se hace clic en el mismo filtro, desactivar
+            filtroActual = null;
+        } else {
+            // Activar nuevo filtro
+            filtroActual = filtro;
+            $(this).addClass('active');
+
+            // Mostrar badge de filtro activo (excepto para "total")
+            if (filtro !== 'total') {
+                var nombreFiltro = $(this).find('small').text().trim();
+                $('body').append(
+                    '<div class="filtro-activo-badge">' +
+                        '<span class="badge bg-secondary fs-6">' +
+                            '<i class="bi bi-funnel-fill"></i> Filtro: ' + nombreFiltro +
+                            ' <button type="button" class="btn-close btn-close-white ms-2" aria-label="Quitar filtro" id="quitarFiltro"></button>' +
+                        '</span>' +
+                    '</div>'
+                );
+            }
+        }
+
+        // Redibujar la tabla
+        table.draw();
+
+        // Scroll suave a la tabla
+        $('html, body').animate({
+            scrollTop: $('#tablaReporte').offset().top - 100
+        }, 300);
+    });
+
+    // Evento para quitar filtro desde el badge
+    $(document).on('click', '#quitarFiltro', function() {
+        filtroActual = null;
+        $('.card-filtro').removeClass('active');
+        $('.filtro-activo-badge').remove();
+        table.draw();
     });
 });
 </script>
