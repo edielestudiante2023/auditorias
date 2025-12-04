@@ -178,9 +178,9 @@
                                 <span class="text-muted">-</span>
                             <?php endif; ?>
                         </td>
-                        <td data-order="<?= $aud['fecha_envio_proveedor'] ? strtotime($aud['fecha_envio_proveedor']) : 0 ?>">
-                            <?php if ($aud['fecha_envio_proveedor']): ?>
-                                <?= date('d/m/Y', strtotime($aud['fecha_envio_proveedor'])) ?>
+                        <td data-order="<?= $aud['fecha_envio_consultor'] ? strtotime($aud['fecha_envio_consultor']) : 0 ?>">
+                            <?php if ($aud['fecha_envio_consultor']): ?>
+                                <?= date('d/m/Y', strtotime($aud['fecha_envio_consultor'])) ?>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
                             <?php endif; ?>
