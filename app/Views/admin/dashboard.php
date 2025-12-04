@@ -247,6 +247,26 @@
       </div>
     </div>
 
+    <!-- NUEVO: Reporte por Clientes -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-info border-2">
+        <div class="card-body text-center">
+          <i class="bi bi-building text-info" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Reporte por Clientes</h5>
+          <p class="card-text text-muted small">Estado de auditorías agrupadas por cliente</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/auditorias/reporte-clientes') ?>" class="btn btn-info" target="_blank">
+              <i class="bi bi-list-columns"></i> Ver Reporte
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Sin permisos">
+              <i class="bi bi-lock"></i> Sin permisos
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
     <!-- Auditorías Completadas por Proveedores -->
     <div class="col-12 col-md-6 col-lg-4">
       <div class="card h-100 shadow-sm">
