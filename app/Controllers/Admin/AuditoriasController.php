@@ -818,4 +818,108 @@ class AuditoriasController extends BaseController
             ]);
         }
     }
+
+    /**
+     * Reporte centrado en clientes
+     * Muestra todos los clientes y el estado de sus auditorías
+     */
+    public function reporteClientes()
+    {
+        $db = \Config\Database::connect();
+
+        // Obtener todos los clientes con sus auditorías
+        $clientes = $db->query("
+            SELECT
+                cl.id_cliente,
+                cl.razon_social as cliente,
+                cl.nit as cliente_nit,
+                p.razon_social as proveedor,
+                p.nit as proveedor_nit,
+                a.id_auditoria,
+                a.codigo_formato,
+                a.estado,
+                a.porcentaje_cumplimiento,
+                c.nombre_completo as consultor
+            FROM clientes cl
+            LEFT JOIN auditoria_clientes ac ON ac.id_cliente = cl.id_cliente
+            LEFT JOIN auditorias a ON a.id_auditoria = ac.id_auditoria
+            LEFT JOIN proveedores p ON p.id_proveedor = a.id_proveedor
+            LEFT JOIN consultores c ON c.id_consultor = a.id_consultor
+            ORDER BY cl.razon_social ASC, a.created_at DESC
+        ")->getResultArray();
+
+        // Agrupar por cliente
+        $clientesAgrupados = [];
+        foreach ($clientes as $row) {
+            $idCliente = $row['id_cliente'];
+
+            if (!isset($clientesAgrupados[$idCliente])) {
+                $clientesAgrupados[$idCliente] = [
+                    'id_cliente' => $idCliente,
+                    'cliente' => $row['cliente'],
+                    'cliente_nit' => $row['cliente_nit'],
+                    'auditorias' => [],
+                    'total_auditorias' => 0,
+                    'cerradas' => 0,
+                    'en_revision' => 0,
+                    'en_proveedor' => 0,
+                    'promedio_cumplimiento' => 0,
+                ];
+            }
+
+            if ($row['id_auditoria']) {
+                $clientesAgrupados[$idCliente]['auditorias'][] = [
+                    'id_auditoria' => $row['id_auditoria'],
+                    'codigo_formato' => $row['codigo_formato'],
+                    'estado' => $row['estado'],
+                    'proveedor' => $row['proveedor'],
+                    'proveedor_nit' => $row['proveedor_nit'],
+                    'consultor' => $row['consultor'],
+                    'porcentaje_cumplimiento' => $row['porcentaje_cumplimiento'],
+                ];
+
+                $clientesAgrupados[$idCliente]['total_auditorias']++;
+
+                if ($row['estado'] === 'cerrada') {
+                    $clientesAgrupados[$idCliente]['cerradas']++;
+                } elseif ($row['estado'] === 'en_revision_consultor') {
+                    $clientesAgrupados[$idCliente]['en_revision']++;
+                } elseif ($row['estado'] === 'en_proveedor') {
+                    $clientesAgrupados[$idCliente]['en_proveedor']++;
+                }
+            }
+        }
+
+        // Calcular promedio de cumplimiento para clientes con auditorías cerradas
+        foreach ($clientesAgrupados as &$cliente) {
+            $totalPorcentaje = 0;
+            $countCerradas = 0;
+            foreach ($cliente['auditorias'] as $aud) {
+                if ($aud['estado'] === 'cerrada' && $aud['porcentaje_cumplimiento'] !== null) {
+                    $totalPorcentaje += $aud['porcentaje_cumplimiento'];
+                    $countCerradas++;
+                }
+            }
+            $cliente['promedio_cumplimiento'] = $countCerradas > 0
+                ? round($totalPorcentaje / $countCerradas, 1)
+                : null;
+        }
+
+        // Resumen general
+        $resumen = [
+            'total_clientes' => count($clientesAgrupados),
+            'con_auditorias' => count(array_filter($clientesAgrupados, fn($c) => $c['total_auditorias'] > 0)),
+            'sin_auditorias' => count(array_filter($clientesAgrupados, fn($c) => $c['total_auditorias'] === 0)),
+            'total_auditorias' => array_sum(array_column($clientesAgrupados, 'total_auditorias')),
+            'total_cerradas' => array_sum(array_column($clientesAgrupados, 'cerradas')),
+            'total_en_revision' => array_sum(array_column($clientesAgrupados, 'en_revision')),
+            'total_en_proveedor' => array_sum(array_column($clientesAgrupados, 'en_proveedor')),
+        ];
+
+        return view('admin/auditorias/reporte_clientes', [
+            'title' => 'Reporte por Clientes',
+            'clientes' => array_values($clientesAgrupados),
+            'resumen' => $resumen,
+        ]);
+    }
 }

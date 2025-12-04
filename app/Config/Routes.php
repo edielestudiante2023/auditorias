@@ -219,6 +219,7 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->get('auditorias/pendientes-proveedores', 'Admin\\AuditoriasController::pendientesProveedores');
     $routes->get('auditorias/revision-consultores', 'Admin\\AuditoriasController::revisionConsultores');
     $routes->get('auditorias/reporte-progreso', 'Admin\\AuditoriasController::reporteProgreso');
+    $routes->get('auditorias/reporte-clientes', 'Admin\\AuditoriasController::reporteClientes');
     $routes->get('auditorias/(:num)/clientes', 'Admin\\AuditoriasController::getClientes/$1');
 
     // ========== Auditorías Cerradas - Gestión y Reapertura ==========
