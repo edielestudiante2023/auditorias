@@ -38,7 +38,8 @@
       "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl --default-auth=mysql_native_password cycloid_auditorias -e \"SELECT id_proveedor, nombre FROM proveedores;\")",
       "Bash(C:xamppphpphp.exe \"c:\\xampp\\htdocs\\auditorias\\limpiar_db.php\")",
       "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/limpiar_db.php\")",
-      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/verificar_fechas.php\")"
+      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/verificar_fechas.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/actualizar_fechas_envio.php\")"
     ],
     "deny": [],
     "ask": []
