@@ -113,7 +113,7 @@
                         <th>Estado</th>
                         <th>F. Vencimiento</th>
                         <th>F. Envío Proveedor</th>
-                        <th>F. Calificación</th>
+                        <th>F. Cierre</th>
                         <th>Acciones</th>
                     </tr>
                     <tr class="filters bg-light">
@@ -185,9 +185,9 @@
                                 <span class="text-muted">-</span>
                             <?php endif; ?>
                         </td>
-                        <td data-order="<?= $aud['fecha_envio_consultor'] ? strtotime($aud['fecha_envio_consultor']) : 0 ?>">
-                            <?php if ($aud['fecha_envio_consultor']): ?>
-                                <?= date('d/m/Y', strtotime($aud['fecha_envio_consultor'])) ?>
+                        <td data-order="<?= $aud['fecha_cierre'] ? strtotime($aud['fecha_cierre']) : 0 ?>">
+                            <?php if ($aud['fecha_cierre']): ?>
+                                <?= date('d/m/Y H:i', strtotime($aud['fecha_cierre'])) ?>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
                             <?php endif; ?>

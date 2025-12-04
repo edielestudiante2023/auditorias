@@ -495,7 +495,7 @@ class AuditoriasController extends BaseController
         // Obtener todas las auditorías con sus datos básicos
         $auditorias = $db->query("
             SELECT a.id_auditoria, a.codigo_formato, a.estado, a.fecha_programada,
-                   a.fecha_envio_proveedor, a.fecha_envio_consultor, a.created_at,
+                   a.fecha_envio_proveedor, a.fecha_envio_consultor, a.created_at, a.updated_at,
                    p.razon_social as proveedor,
                    p.nit as proveedor_nit,
                    c.nombre_completo as consultor
@@ -649,6 +649,7 @@ class AuditoriasController extends BaseController
                 'fecha_programada' => $aud['fecha_programada'],
                 'fecha_envio_proveedor' => $aud['fecha_envio_proveedor'],
                 'fecha_envio_consultor' => $aud['fecha_envio_consultor'],
+                'fecha_cierre' => $aud['estado'] === 'cerrada' ? $aud['updated_at'] : null,
                 'vencida' => $vencida,
                 'progreso' => $porcentaje,
                 'globales_completos' => $globalesCompletos,
