@@ -127,11 +127,29 @@
                             }
                         }
 
-                        // Obtener lista única de proveedores
-                        $proveedores = [];
+                        // Obtener proveedores con su estado (color según estado de la auditoría)
+                        $proveedoresConEstado = [];
                         foreach ($cliente['auditorias'] as $aud) {
-                            if ($aud['proveedor'] && !in_array($aud['proveedor'], $proveedores)) {
-                                $proveedores[] = $aud['proveedor'];
+                            if ($aud['proveedor']) {
+                                $key = $aud['proveedor'];
+                                // Determinar color según estado
+                                $colorEstado = 'secondary';
+                                if ($aud['estado'] === 'cerrada') {
+                                    $colorEstado = 'success';
+                                } elseif ($aud['estado'] === 'en_revision_consultor') {
+                                    $colorEstado = 'warning';
+                                } elseif ($aud['estado'] === 'en_proveedor') {
+                                    $colorEstado = 'info';
+                                }
+
+                                // Guardar proveedor con su estado (si hay múltiples auditorías del mismo proveedor, priorizar la no cerrada)
+                                if (!isset($proveedoresConEstado[$key]) || $colorEstado !== 'success') {
+                                    $proveedoresConEstado[$key] = [
+                                        'nombre' => $aud['proveedor'],
+                                        'estado' => $aud['estado'],
+                                        'color' => $colorEstado,
+                                    ];
+                                }
                             }
                         }
                     ?>
@@ -178,9 +196,11 @@
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if (!empty($proveedores)): ?>
-                                <?php foreach ($proveedores as $prov): ?>
-                                    <span class="badge bg-light text-dark mb-1"><?= esc($prov) ?></span>
+                            <?php if (!empty($proveedoresConEstado)): ?>
+                                <?php foreach ($proveedoresConEstado as $prov): ?>
+                                    <span class="badge bg-<?= $prov['color'] ?> mb-1" title="<?= ucfirst(str_replace('_', ' ', $prov['estado'])) ?>">
+                                        <?= esc($prov['nombre']) ?>
+                                    </span>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
@@ -200,9 +220,25 @@
 <!-- Leyenda -->
 <div class="card mt-4">
     <div class="card-header bg-light">
-        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Leyenda</h6>
+        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Leyenda de Colores - Proveedores</h6>
     </div>
     <div class="card-body">
+        <div class="row g-2 mb-3">
+            <div class="col-auto">
+                <span class="badge bg-success">Proveedor</span>
+                <small class="text-muted ms-1">Auditoría cerrada</small>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-warning">Proveedor</span>
+                <small class="text-muted ms-1">En revisión del consultor</small>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-info">Proveedor</span>
+                <small class="text-muted ms-1">Proveedor diligenciando</small>
+            </div>
+        </div>
+        <hr>
+        <h6 class="text-muted mb-2">Estado General del Cliente</h6>
         <div class="row g-2">
             <div class="col-auto">
                 <span class="badge bg-success">Todas cerradas</span>
