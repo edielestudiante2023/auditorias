@@ -36,7 +36,8 @@
                         <tr>
                             <th>Código</th>
                             <th>Proveedor</th>
-                            <th>Fecha Finalización</th>
+                            <th>F. Envío Proveedor</th>
+                            <th>F. Vencimiento</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
@@ -55,24 +56,38 @@
                                     <small class="text-muted">NIT: <?= esc($auditoria['proveedor_nit']) ?></small>
                                 </td>
                                 <td>
-                                    <?php
-                                    $fecha = new DateTime($auditoria['updated_at']);
-                                    echo $fecha->format('d/m/Y H:i');
-                                    ?>
-                                    <br>
-                                    <small class="text-muted">
+                                    <?php if (!empty($auditoria['fecha_envio_consultor'])): ?>
                                         <?php
-                                        $now = new DateTime();
-                                        $diff = $now->diff($fecha);
-                                        if ($diff->days == 0) {
-                                            echo 'Hoy';
-                                        } elseif ($diff->days == 1) {
-                                            echo 'Ayer';
-                                        } else {
-                                            echo 'Hace ' . $diff->days . ' días';
-                                        }
+                                        $fechaEnvio = new DateTime($auditoria['fecha_envio_consultor']);
+                                        echo $fechaEnvio->format('d/m/Y H:i');
                                         ?>
-                                    </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            <?php
+                                            $now = new DateTime();
+                                            $diff = $now->diff($fechaEnvio);
+                                            if ($diff->days == 0) {
+                                                echo 'Hoy';
+                                            } elseif ($diff->days == 1) {
+                                                echo 'Ayer';
+                                            } else {
+                                                echo 'Hace ' . $diff->days . ' días';
+                                            }
+                                            ?>
+                                        </small>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if (!empty($auditoria['fecha_programada'])): ?>
+                                        <?php
+                                        $fechaVenc = new DateTime($auditoria['fecha_programada']);
+                                        echo $fechaVenc->format('d/m/Y');
+                                        ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <span class="badge bg-warning">
