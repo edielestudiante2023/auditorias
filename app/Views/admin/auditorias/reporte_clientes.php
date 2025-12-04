@@ -128,18 +128,24 @@
                         }
 
                         // Obtener proveedores con su estado (color según estado de la auditoría)
+                        // Colores consistentes con reporte-progreso:
+                        // success=cerrada, info=en_revision_consultor, warning=en_progreso, dark=sin_iniciar
                         $proveedoresConEstado = [];
                         foreach ($cliente['auditorias'] as $aud) {
                             if ($aud['proveedor']) {
                                 $key = $aud['proveedor'];
-                                // Determinar color según estado
-                                $colorEstado = 'secondary';
+                                // Determinar color según estado (mismo esquema que reporte-progreso)
+                                $colorEstado = 'dark'; // default: sin iniciar
+                                $estadoTextoP = 'Sin iniciar';
                                 if ($aud['estado'] === 'cerrada') {
                                     $colorEstado = 'success';
+                                    $estadoTextoP = 'Cerrada';
                                 } elseif ($aud['estado'] === 'en_revision_consultor') {
-                                    $colorEstado = 'warning';
-                                } elseif ($aud['estado'] === 'en_proveedor') {
                                     $colorEstado = 'info';
+                                    $estadoTextoP = 'En revisión consultor';
+                                } elseif ($aud['estado'] === 'en_proveedor') {
+                                    $colorEstado = 'warning';
+                                    $estadoTextoP = 'En proveedor';
                                 }
 
                                 // Guardar proveedor con su estado (si hay múltiples auditorías del mismo proveedor, priorizar la no cerrada)
@@ -147,6 +153,7 @@
                                     $proveedoresConEstado[$key] = [
                                         'nombre' => $aud['proveedor'],
                                         'estado' => $aud['estado'],
+                                        'estadoTexto' => $estadoTextoP,
                                         'color' => $colorEstado,
                                     ];
                                 }
@@ -198,7 +205,7 @@
                         <td>
                             <?php if (!empty($proveedoresConEstado)): ?>
                                 <?php foreach ($proveedoresConEstado as $prov): ?>
-                                    <span class="badge bg-<?= $prov['color'] ?> mb-1" title="<?= ucfirst(str_replace('_', ' ', $prov['estado'])) ?>">
+                                    <span class="badge bg-<?= $prov['color'] ?> mb-1" title="<?= $prov['estadoTexto'] ?>">
                                         <?= esc($prov['nombre']) ?>
                                     </span>
                                 <?php endforeach; ?>
@@ -226,15 +233,19 @@
         <div class="row g-2 mb-3">
             <div class="col-auto">
                 <span class="badge bg-success">Proveedor</span>
-                <small class="text-muted ms-1">Auditoría cerrada</small>
-            </div>
-            <div class="col-auto">
-                <span class="badge bg-warning">Proveedor</span>
-                <small class="text-muted ms-1">En revisión del consultor</small>
+                <small class="text-muted ms-1">Cerrada</small>
             </div>
             <div class="col-auto">
                 <span class="badge bg-info">Proveedor</span>
-                <small class="text-muted ms-1">Proveedor diligenciando</small>
+                <small class="text-muted ms-1">En revisión consultor</small>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-warning">Proveedor</span>
+                <small class="text-muted ms-1">En proveedor</small>
+            </div>
+            <div class="col-auto">
+                <span class="badge bg-dark">Proveedor</span>
+                <small class="text-muted ms-1">Sin iniciar</small>
             </div>
         </div>
         <hr>
