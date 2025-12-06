@@ -22,4 +22,102 @@ class NotificacionModel extends Model
     protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
+
+    /**
+     * Obtiene reporte de auditorías cerradas con estado de envío de emails por cliente
+     *
+     * @return array
+     */
+    public function getReporteEmailsClientes(): array
+    {
+        $db = \Config\Database::connect();
+
+        // Obtener todas las auditorías cerradas con sus clientes
+        $auditoriasCerradas = $db->query("
+            SELECT
+                a.id_auditoria,
+                a.fecha_cierre,
+                p.razon_social as proveedor_nombre,
+                p.nit as proveedor_nit,
+                c.id_cliente,
+                c.razon_social as cliente_nombre,
+                c.email_contacto as cliente_email,
+                ac.porcentaje_cumplimiento,
+                cons.nombre_completo as consultor_nombre
+            FROM auditorias a
+            INNER JOIN proveedores p ON p.id_proveedor = a.id_proveedor
+            INNER JOIN auditoria_clientes ac ON ac.id_auditoria = a.id_auditoria
+            INNER JOIN clientes c ON c.id_cliente = ac.id_cliente
+            INNER JOIN consultores cons ON cons.id_consultor = a.id_consultor
+            WHERE a.estado = 'cerrada'
+            ORDER BY a.fecha_cierre DESC, p.razon_social, c.razon_social
+        ")->getResultArray();
+
+        // Para cada combinación auditoría-cliente, buscar si se envió email
+        foreach ($auditoriasCerradas as &$row) {
+            $notificacion = $db->table('notificaciones')
+                ->where('id_auditoria', $row['id_auditoria'])
+                ->where('tipo', 'pdf_cliente')
+                ->like('payload_json', '"id_cliente":' . $row['id_cliente'])
+                ->orderBy('fecha_envio', 'DESC')
+                ->get()
+                ->getRowArray();
+
+            if ($notificacion) {
+                $row['email_enviado'] = true;
+                $row['fecha_envio_email'] = $notificacion['fecha_envio'];
+                $row['estado_envio'] = $notificacion['estado_envio'];
+                $row['detalle_error'] = $notificacion['detalle_error'];
+
+                // Extraer email destinatario del payload
+                $payload = json_decode($notificacion['payload_json'], true);
+                $row['email_destinatario'] = $payload['email_destinatario'] ?? null;
+            } else {
+                $row['email_enviado'] = false;
+                $row['fecha_envio_email'] = null;
+                $row['estado_envio'] = null;
+                $row['detalle_error'] = null;
+                $row['email_destinatario'] = null;
+            }
+        }
+
+        return $auditoriasCerradas;
+    }
+
+    /**
+     * Obtiene estadísticas de envío de emails
+     *
+     * @return array
+     */
+    public function getEstadisticasEnvio(): array
+    {
+        $db = \Config\Database::connect();
+
+        // Total de clientes en auditorías cerradas
+        $totalClientes = $db->query("
+            SELECT COUNT(*) as total
+            FROM auditoria_clientes ac
+            INNER JOIN auditorias a ON a.id_auditoria = ac.id_auditoria
+            WHERE a.estado = 'cerrada'
+        ")->getRow()->total;
+
+        // Emails enviados exitosamente
+        $enviados = $db->table('notificaciones')
+            ->where('tipo', 'pdf_cliente')
+            ->where('estado_envio', 'enviado')
+            ->countAllResults();
+
+        // Emails fallidos
+        $fallidos = $db->table('notificaciones')
+            ->where('tipo', 'pdf_cliente')
+            ->where('estado_envio', 'fallido')
+            ->countAllResults();
+
+        return [
+            'total_clientes_cerradas' => $totalClientes,
+            'emails_enviados' => $enviados,
+            'emails_fallidos' => $fallidos,
+            'pendientes' => $totalClientes - $enviados
+        ];
+    }
 }
