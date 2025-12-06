@@ -7,9 +7,12 @@
         <h2><i class="bi bi-building"></i> Reporte por Clientes</h2>
         <p class="text-muted mb-0">Estado de auditorías agrupadas por cliente</p>
     </div>
-    <a href="<?= site_url('admin/dashboard') ?>" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Volver
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('admin/auditorias/reporte-clientes')]) ?>
+        <a href="<?= site_url('admin/dashboard') ?>" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
 </div>
 
 <!-- Resumen Ejecutivo -->

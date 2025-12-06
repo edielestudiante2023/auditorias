@@ -7,9 +7,12 @@
         <h2><i class="bi bi-graph-up-arrow"></i> Reporte de Progreso de Auditorías</h2>
         <p class="text-muted mb-0">Monitoreo en tiempo real del avance de todas las auditorías</p>
     </div>
-    <a href="<?= site_url('admin/dashboard') ?>" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Volver
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('admin/auditorias/reporte-progreso')]) ?>
+        <a href="<?= site_url('admin/dashboard') ?>" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
 </div>
 
 <!-- Resumen Ejecutivo -->

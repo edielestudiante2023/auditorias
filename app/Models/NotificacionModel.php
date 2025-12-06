@@ -26,11 +26,15 @@ class NotificacionModel extends Model
     /**
      * Obtiene reporte de auditorías cerradas con estado de envío de emails por cliente
      *
+     * @param int|null $anio Año a filtrar (null = todos)
      * @return array
      */
-    public function getReporteEmailsClientes(): array
+    public function getReporteEmailsClientes(?int $anio = null): array
     {
         $db = \Config\Database::connect();
+
+        // Filtro de año
+        $filtroAnio = $anio ? "AND YEAR(a.created_at) = {$anio}" : "";
 
         // Obtener todas las auditorías cerradas con sus clientes
         $auditoriasCerradas = $db->query("
@@ -50,6 +54,7 @@ class NotificacionModel extends Model
             INNER JOIN clientes c ON c.id_cliente = ac.id_cliente
             INNER JOIN consultores cons ON cons.id_consultor = a.id_consultor
             WHERE a.estado = 'cerrada'
+            {$filtroAnio}
             ORDER BY a.updated_at DESC, p.razon_social, c.razon_social
         ")->getResultArray();
 
@@ -87,11 +92,15 @@ class NotificacionModel extends Model
     /**
      * Obtiene estadísticas de envío de emails
      *
+     * @param int|null $anio Año a filtrar (null = todos)
      * @return array
      */
-    public function getEstadisticasEnvio(): array
+    public function getEstadisticasEnvio(?int $anio = null): array
     {
         $db = \Config\Database::connect();
+
+        // Filtro de año
+        $filtroAnio = $anio ? "AND YEAR(a.created_at) = {$anio}" : "";
 
         // Total de clientes en auditorías cerradas
         $totalClientes = $db->query("
@@ -99,19 +108,30 @@ class NotificacionModel extends Model
             FROM auditoria_clientes ac
             INNER JOIN auditorias a ON a.id_auditoria = ac.id_auditoria
             WHERE a.estado = 'cerrada'
+            {$filtroAnio}
         ")->getRow()->total;
 
         // Emails enviados exitosamente (estado_envio ENUM: 'ok', 'error', 'pendiente')
-        $enviados = $db->table('notificaciones')
-            ->where('tipo', 'pdf_cliente')
-            ->where('estado_envio', 'ok')
-            ->countAllResults();
+        $queryEnviados = "
+            SELECT COUNT(*) as total
+            FROM notificaciones n
+            INNER JOIN auditorias a ON a.id_auditoria = n.id_auditoria
+            WHERE n.tipo = 'pdf_cliente'
+            AND n.estado_envio = 'ok'
+            {$filtroAnio}
+        ";
+        $enviados = $db->query($queryEnviados)->getRow()->total;
 
         // Emails fallidos
-        $fallidos = $db->table('notificaciones')
-            ->where('tipo', 'pdf_cliente')
-            ->where('estado_envio', 'error')
-            ->countAllResults();
+        $queryFallidos = "
+            SELECT COUNT(*) as total
+            FROM notificaciones n
+            INNER JOIN auditorias a ON a.id_auditoria = n.id_auditoria
+            WHERE n.tipo = 'pdf_cliente'
+            AND n.estado_envio = 'error'
+            {$filtroAnio}
+        ";
+        $fallidos = $db->query($queryFallidos)->getRow()->total;
 
         return [
             'total_clientes_cerradas' => $totalClientes,

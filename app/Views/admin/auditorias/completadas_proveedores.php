@@ -4,9 +4,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-check-circle"></i> Auditorías Completadas por Proveedores</h2>
-    <a href="<?= site_url('admin/dashboard') ?>" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Volver
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('admin/auditorias/completadas-proveedores')]) ?>
+        <a href="<?= site_url('admin/dashboard') ?>" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
 </div>
 
 <?= view('partials/flash') ?>

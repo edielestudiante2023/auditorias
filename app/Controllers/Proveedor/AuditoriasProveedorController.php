@@ -96,6 +96,9 @@ class AuditoriasProveedorController extends BaseController
             }
         }
 
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
+
         // Buscar auditorías asignadas a este usuario responsable
         // El usuario responsable se determina por el contrato activo entre cliente y proveedor
         $auditorias = $db->query("
@@ -110,6 +113,7 @@ class AuditoriasProveedorController extends BaseController
             WHERE cpc.id_usuario_responsable = ?
               AND cpc.estado = 'activo'
               AND a.estado IN ('en_proveedor', 'en_revision_consultor')
+              {$filtroAnio}
             ORDER BY a.created_at DESC
         ", [userId()])->getResultArray();
 
@@ -122,6 +126,7 @@ class AuditoriasProveedorController extends BaseController
         return view('proveedor/auditorias/index', [
             'title' => 'Mis Auditorías',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 
@@ -722,6 +727,8 @@ class AuditoriasProveedorController extends BaseController
     public function completadas()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Buscar auditorías cerradas asignadas a este usuario responsable
         // Incluye auditorías donde el usuario responsable está en cualquier contrato del proveedor
@@ -734,6 +741,7 @@ class AuditoriasProveedorController extends BaseController
             JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             JOIN consultores c ON c.id_consultor = a.id_consultor
             WHERE a.estado = 'cerrada'
+              {$filtroAnio}
               AND EXISTS (
                   SELECT 1
                   FROM contratos_proveedor_cliente cpc
@@ -746,6 +754,7 @@ class AuditoriasProveedorController extends BaseController
         return view('proveedor/auditorias/completadas', [
             'title' => 'Auditorías Completadas',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 

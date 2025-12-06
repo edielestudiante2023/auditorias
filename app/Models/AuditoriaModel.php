@@ -70,17 +70,23 @@ class AuditoriaModel extends Model
     /**
      * Obtiene auditorias de un consultor especifico con porcentaje de cumplimiento calculado
      * @param int $idConsultor ID del consultor
+     * @param int|null $anio Año a filtrar (null = todos)
      * @return array
      */
-    public function getAuditoriasByConsultor(int $idConsultor): array
+    public function getAuditoriasByConsultor(int $idConsultor, ?int $anio = null): array
     {
-        $auditorias = $this->select('auditorias.*,
+        $builder = $this->select('auditorias.*,
                               proveedores.razon_social as proveedor_nombre,
                               proveedores.nit as proveedor_nit,
                               proveedores.email_contacto as proveedor_email')
                     ->join('proveedores', 'proveedores.id_proveedor = auditorias.id_proveedor')
-                    ->where('auditorias.id_consultor', $idConsultor)
-                    ->orderBy('auditorias.created_at', 'DESC')
+                    ->where('auditorias.id_consultor', $idConsultor);
+
+        if ($anio) {
+            $builder->where('YEAR(auditorias.created_at)', $anio);
+        }
+
+        $auditorias = $builder->orderBy('auditorias.created_at', 'DESC')
                     ->findAll();
 
         // Calcular porcentaje de cumplimiento para cada auditoría
