@@ -36,7 +36,7 @@ class NotificacionModel extends Model
         $auditoriasCerradas = $db->query("
             SELECT
                 a.id_auditoria,
-                a.fecha_cierre,
+                a.updated_at as fecha_cierre,
                 p.razon_social as proveedor_nombre,
                 p.nit as proveedor_nit,
                 c.id_cliente,
@@ -50,7 +50,7 @@ class NotificacionModel extends Model
             INNER JOIN clientes c ON c.id_cliente = ac.id_cliente
             INNER JOIN consultores cons ON cons.id_consultor = a.id_consultor
             WHERE a.estado = 'cerrada'
-            ORDER BY a.fecha_cierre DESC, p.razon_social, c.razon_social
+            ORDER BY a.updated_at DESC, p.razon_social, c.razon_social
         ")->getResultArray();
 
         // Para cada combinación auditoría-cliente, buscar si se envió email
