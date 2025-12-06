@@ -11,12 +11,25 @@ class PdfService
 
     public function __construct()
     {
+        // Asegurar que existan los directorios necesarios para DomPDF
+        $fontCacheDir = WRITEPATH . 'dompdf_cache';
+        $tempDir = WRITEPATH . 'dompdf_temp';
+
+        if (!is_dir($fontCacheDir)) {
+            @mkdir($fontCacheDir, 0755, true);
+        }
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0755, true);
+        }
+
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isPhpEnabled', false); // Security: disable PHP in templates
         $options->set('isRemoteEnabled', true);
         $options->set('defaultFont', 'Arial');
         $options->set('chroot', FCPATH);
+        $options->set('fontCache', $fontCacheDir);
+        $options->set('tempDir', $tempDir);
 
         $this->dompdf = new Dompdf($options);
     }
@@ -44,7 +57,11 @@ class PdfService
         // Definir ruta de salida
         $dirBase = WRITEPATH . 'reports/' . $idAuditoria . '/clientes/' . $idCliente;
         if (!is_dir($dirBase)) {
-            mkdir($dirBase, 0755, true);
+            if (!@mkdir($dirBase, 0755, true)) {
+                $error = error_get_last();
+                log_message('error', "No se pudo crear directorio {$dirBase}: " . ($error['message'] ?? 'Permiso denegado'));
+                throw new \Exception("No se pudo crear el directorio para el PDF. Verifique que el directorio 'writable/reports' exista y tenga permisos de escritura.");
+            }
         }
 
         // Crear nombre descriptivo del archivo según el servicio

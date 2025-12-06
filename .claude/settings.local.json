@@ -39,7 +39,10 @@
       "Bash(C:xamppphpphp.exe \"c:\\xampp\\htdocs\\auditorias\\limpiar_db.php\")",
       "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/limpiar_db.php\")",
       "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/verificar_fechas.php\")",
-      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/actualizar_fechas_envio.php\")"
+      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/actualizar_fechas_envio.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/consulta_serviolam.php\")",
+      "Bash(\"/c/xampp/php/php.exe\" \"/c/xampp/htdocs/auditorias/eliminar_auditoria_45.php\")",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
