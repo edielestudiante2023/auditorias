@@ -22,6 +22,8 @@ class AuditoriasController extends BaseController
     public function completadasProveedores()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Todas las auditorías cerradas, sin filtro de usuario
         $auditorias = $db->query("
@@ -37,12 +39,14 @@ class AuditoriasController extends BaseController
             LEFT JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
             LEFT JOIN users u ON u.id_users = cpc.id_usuario_responsable
             WHERE a.estado = 'cerrada'
+              {$filtroAnio}
             ORDER BY a.updated_at DESC
         ")->getResultArray();
 
         return view('admin/auditorias/completadas_proveedores', [
             'title' => 'Auditorías Completadas por Proveedores',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 
@@ -53,6 +57,8 @@ class AuditoriasController extends BaseController
     public function pendientesProveedores()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Todas las auditorías que no están cerradas
         $auditorias = $db->query("
@@ -68,12 +74,14 @@ class AuditoriasController extends BaseController
             LEFT JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
             LEFT JOIN users u ON u.id_users = cpc.id_usuario_responsable
             WHERE a.estado != 'cerrada'
+              {$filtroAnio}
             ORDER BY a.created_at DESC
         ")->getResultArray();
 
         return view('admin/auditorias/pendientes_proveedores', [
             'title' => 'Auditorías Pendientes - Proveedores',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 
@@ -84,6 +92,8 @@ class AuditoriasController extends BaseController
     public function revisionConsultores()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Todas las auditorías de todos los consultores, sin filtro
         $auditorias = $db->query("
@@ -102,6 +112,7 @@ class AuditoriasController extends BaseController
             LEFT JOIN users u ON u.id_users = cpc.id_usuario_responsable
             LEFT JOIN auditoria_items ai ON ai.id_auditoria = a.id_auditoria
             WHERE a.estado IN ('borrador', 'asignada', 'en_progreso', 'en_revision_consultor', 'cerrada')
+              {$filtroAnio}
             GROUP BY a.id_auditoria, p.razon_social, p.nit, c.nombre_completo, u.nombre, u.email
             ORDER BY a.created_at DESC
         ")->getResultArray();
@@ -109,6 +120,7 @@ class AuditoriasController extends BaseController
         return view('admin/auditorias/revision_consultores', [
             'title' => 'Auditorías - Revisión Consultores',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 
@@ -160,6 +172,8 @@ class AuditoriasController extends BaseController
         }
 
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Obtener todas las auditorías cerradas con información completa
         $auditorias = $db->query("
@@ -175,6 +189,7 @@ class AuditoriasController extends BaseController
             LEFT JOIN users u ON u.id_users = c.id_users
             LEFT JOIN auditoria_clientes ac ON ac.id_auditoria = a.id_auditoria
             WHERE a.estado = 'cerrada'
+              {$filtroAnio}
             GROUP BY a.id_auditoria
             ORDER BY a.updated_at DESC
         ")->getResultArray();
@@ -197,6 +212,7 @@ class AuditoriasController extends BaseController
             'title' => 'Auditorías Cerradas - Gestión',
             'auditorias' => $auditorias,
             'historial' => $historial,
+            'anio' => $anio,
         ]);
     }
 
@@ -491,6 +507,8 @@ class AuditoriasController extends BaseController
     public function reporteProgreso()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "WHERE YEAR(a.created_at) = " . (int)$anio : "";
 
         // Obtener todas las auditorías con sus datos básicos
         $auditorias = $db->query("
@@ -502,6 +520,7 @@ class AuditoriasController extends BaseController
             FROM auditorias a
             JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             JOIN consultores c ON c.id_consultor = a.id_consultor
+            {$filtroAnio}
             ORDER BY
                 CASE a.estado
                     WHEN 'en_proveedor' THEN 1
@@ -675,6 +694,7 @@ class AuditoriasController extends BaseController
             'title' => 'Reporte de Progreso de Auditorías',
             'auditorias' => $reporteAuditorias,
             'resumen' => $resumen,
+            'anio' => $anio,
         ]);
     }
 
@@ -826,8 +846,10 @@ class AuditoriasController extends BaseController
     public function reporteClientes()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
-        // Obtener todos los clientes con sus auditorías
+        // Obtener todos los clientes con sus auditorías del año seleccionado
         $clientes = $db->query("
             SELECT
                 cl.id_cliente,
@@ -842,7 +864,7 @@ class AuditoriasController extends BaseController
                 c.nombre_completo as consultor
             FROM clientes cl
             LEFT JOIN auditoria_clientes ac ON ac.id_cliente = cl.id_cliente
-            LEFT JOIN auditorias a ON a.id_auditoria = ac.id_auditoria
+            LEFT JOIN auditorias a ON a.id_auditoria = ac.id_auditoria {$filtroAnio}
             LEFT JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             LEFT JOIN consultores c ON c.id_consultor = a.id_consultor
             ORDER BY cl.razon_social ASC, a.created_at DESC
@@ -920,6 +942,7 @@ class AuditoriasController extends BaseController
             'title' => 'Reporte por Clientes',
             'clientes' => array_values($clientesAgrupados),
             'resumen' => $resumen,
+            'anio' => $anio,
         ]);
     }
 }

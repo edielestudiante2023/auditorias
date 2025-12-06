@@ -58,11 +58,15 @@ class AuditoriasConsultorController extends BaseController
             return view('consultor/sin_consultor');
         }
 
-        $auditorias = $this->auditoriaModel->getAuditoriasByConsultor($this->idConsultor);
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $anioParam = ($anio !== 'todos') ? (int)$anio : null;
+
+        $auditorias = $this->auditoriaModel->getAuditoriasByConsultor($this->idConsultor, $anioParam);
 
         return view('consultor/auditorias/index', [
             'title' => 'Mis Auditorías',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 
@@ -624,11 +628,17 @@ class AuditoriasConsultorController extends BaseController
             return view('consultor/sin_consultor');
         }
 
-        $auditorias = $this->auditoriaModel
+        $anio = $this->request->getGet('anio') ?? date('Y');
+
+        $builder = $this->auditoriaModel
             ->where('id_consultor', $this->idConsultor)
-            ->where('estado', 'en_revision_consultor')
-            ->orderBy('updated_at', 'DESC')
-            ->findAll();
+            ->where('estado', 'en_revision_consultor');
+
+        if ($anio !== 'todos') {
+            $builder->where('YEAR(created_at)', (int)$anio);
+        }
+
+        $auditorias = $builder->orderBy('updated_at', 'DESC')->findAll();
 
         // Enriquecer con información de proveedor
         foreach ($auditorias as &$auditoria) {
@@ -640,6 +650,7 @@ class AuditoriasConsultorController extends BaseController
         return view('consultor/auditorias/pendientes', [
             'title' => 'Pendientes de Revisión',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 
@@ -652,11 +663,17 @@ class AuditoriasConsultorController extends BaseController
             return view('consultor/sin_consultor');
         }
 
-        $auditorias = $this->auditoriaModel
+        $anio = $this->request->getGet('anio') ?? date('Y');
+
+        $builder = $this->auditoriaModel
             ->where('id_consultor', $this->idConsultor)
-            ->where('estado', 'cerrada')
-            ->orderBy('updated_at', 'DESC')
-            ->findAll();
+            ->where('estado', 'cerrada');
+
+        if ($anio !== 'todos') {
+            $builder->where('YEAR(created_at)', (int)$anio);
+        }
+
+        $auditorias = $builder->orderBy('updated_at', 'DESC')->findAll();
 
         // Enriquecer con información de proveedor y clientes
         foreach ($auditorias as &$auditoria) {
@@ -673,6 +690,7 @@ class AuditoriasConsultorController extends BaseController
         return view('consultor/auditorias/reportes', [
             'title' => 'Reportes',
             'auditorias' => $auditorias,
+            'anio' => $anio,
         ]);
     }
 

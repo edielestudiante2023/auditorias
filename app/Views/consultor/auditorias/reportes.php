@@ -4,9 +4,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-file-pdf"></i> Reportes de Auditorías</h2>
-    <a href="<?= site_url('consultor/dashboard') ?>" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Volver
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('consultor/auditorias/reportes')]) ?>
+        <a href="<?= site_url('consultor/dashboard') ?>" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
 </div>
 
 <?= view('partials/flash') ?>

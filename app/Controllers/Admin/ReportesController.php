@@ -20,13 +20,17 @@ class ReportesController extends BaseController
      */
     public function emailsClientes()
     {
-        $reporte = $this->notificacionModel->getReporteEmailsClientes();
-        $estadisticas = $this->notificacionModel->getEstadisticasEnvio();
+        $anio = $this->request->getGet('anio') ?? date('Y');
+        $anioParam = ($anio !== 'todos') ? (int)$anio : null;
+
+        $reporte = $this->notificacionModel->getReporteEmailsClientes($anioParam);
+        $estadisticas = $this->notificacionModel->getEstadisticasEnvio($anioParam);
 
         return view('admin/reportes/emails_clientes', [
             'title' => 'Reporte de Emails Enviados a Clientes',
             'reporte' => $reporte,
-            'estadisticas' => $estadisticas
+            'estadisticas' => $estadisticas,
+            'anio' => $anio
         ]);
     }
 }

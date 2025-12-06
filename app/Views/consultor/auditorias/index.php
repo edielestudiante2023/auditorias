@@ -44,9 +44,12 @@
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4><i class="bi bi-list-ul"></i> Mis Auditorías</h4>
-    <a href="<?= site_url('consultor/auditorias/crear') ?>" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Nueva Auditoría
-    </a>
+    <div class="d-flex align-items-center gap-2">
+      <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('consultor/auditorias')]) ?>
+      <a href="<?= site_url('consultor/auditorias/crear') ?>" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nueva Auditoría
+      </a>
+    </div>
   </div>
 
   <?php if (empty($auditorias)): ?>

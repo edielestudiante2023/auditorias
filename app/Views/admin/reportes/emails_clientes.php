@@ -70,7 +70,10 @@
         </ol>
     </nav>
 
-    <h4 class="mb-4"><i class="bi bi-envelope-check"></i> <?= esc($title) ?></h4>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0"><i class="bi bi-envelope-check"></i> <?= esc($title) ?></h4>
+        <?= view('partials/filtro_anio', ['anio_actual' => $anio, 'url_base' => site_url('admin/reportes/emails-clientes')]) ?>
+    </div>
 
     <!-- Estadísticas -->
     <div class="row mb-4">
