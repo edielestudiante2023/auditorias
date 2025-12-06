@@ -1174,6 +1174,10 @@ class EmailService
             if ($response->statusCode() >= 200 && $response->statusCode() < 300) {
                 log_message('info', "PDF enviado por email a {$emailCliente} - Auditoría {$idAuditoria}");
 
+                // Registrar envío exitoso
+                $payload['email_destinatario'] = $emailCliente;
+                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'enviado');
+
                 return [
                     'ok' => true,
                     'message' => 'Email enviado exitosamente',
@@ -1183,6 +1187,10 @@ class EmailService
                 $errorBody = $response->body();
                 log_message('error', "Error al enviar PDF por email: {$errorBody}");
 
+                // Registrar fallo
+                $payload['email_destinatario'] = $emailCliente;
+                $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'fallido', $errorBody);
+
                 return [
                     'ok' => false,
                     'message' => 'Error al enviar email',
@@ -1191,6 +1199,10 @@ class EmailService
             }
         } catch (\Exception $e) {
             log_message('error', 'Excepción al enviar PDF por email: ' . $e->getMessage());
+
+            // Registrar excepción
+            $payload['email_destinatario'] = $emailCliente;
+            $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'fallido', $e->getMessage());
 
             return [
                 'ok' => false,

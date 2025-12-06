@@ -366,6 +366,26 @@
         </div>
       </div>
     </div>
+
+    <!-- Emails Enviados a Clientes -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-success">
+        <div class="card-body text-center">
+          <i class="bi bi-envelope-check text-success" style="font-size: 3rem;"></i>
+          <h5 class="card-title mt-3">Emails a Clientes</h5>
+          <p class="card-text text-muted small">Control de PDFs enviados por email a clientes</p>
+          <?php if ($rol_id == 1): ?>
+            <a href="<?= site_url('admin/reportes/emails-clientes') ?>" class="btn btn-success text-white" target="_blank">
+              <i class="bi bi-envelope-paper"></i> Ver Reporte
+            </a>
+          <?php else: ?>
+            <button class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Solo SuperAdmin">
+              <i class="bi bi-lock"></i> Solo SuperAdmin
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

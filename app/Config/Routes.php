@@ -225,6 +225,9 @@ $routes->group('admin', ['filter' => ['auth', 'role:1']], function ($routes) {
     $routes->post('auditorias/(:num)/adicionar-clientes', 'Admin\\AuditoriasController::procesarAdicionClientes/$1');
     $routes->post('auditorias/(:num)/reenviar-credenciales', 'Admin\\AuditoriasController::reenviarCredenciales/$1');
     $routes->post('auditorias/(:num)/eliminar', 'Admin\\AuditoriasController::eliminar/$1');
+
+    // ========== Reportes ==========
+    $routes->get('reportes/emails-clientes', 'Admin\\ReportesController::emailsClientes');
 });
 
 // ============================================================
