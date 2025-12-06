@@ -1174,9 +1174,9 @@ class EmailService
             if ($response->statusCode() >= 200 && $response->statusCode() < 300) {
                 log_message('info', "PDF enviado por email a {$emailCliente} - Auditoría {$idAuditoria}");
 
-                // Registrar envío exitoso
+                // Registrar envío exitoso (estado_envio ENUM: 'ok', 'error', 'pendiente')
                 $payload['email_destinatario'] = $emailCliente;
-                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'enviado');
+                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'ok');
 
                 return [
                     'ok' => true,
@@ -1187,9 +1187,9 @@ class EmailService
                 $errorBody = $response->body();
                 log_message('error', "Error al enviar PDF por email: {$errorBody}");
 
-                // Registrar fallo
+                // Registrar fallo (estado_envio ENUM: 'ok', 'error', 'pendiente')
                 $payload['email_destinatario'] = $emailCliente;
-                $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'fallido', $errorBody);
+                $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'error', $errorBody);
 
                 return [
                     'ok' => false,
@@ -1200,9 +1200,9 @@ class EmailService
         } catch (\Exception $e) {
             log_message('error', 'Excepción al enviar PDF por email: ' . $e->getMessage());
 
-            // Registrar excepción
+            // Registrar excepción (estado_envio ENUM: 'ok', 'error', 'pendiente')
             $payload['email_destinatario'] = $emailCliente;
-            $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'fallido', $e->getMessage());
+            $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'error', $e->getMessage());
 
             return [
                 'ok' => false,
