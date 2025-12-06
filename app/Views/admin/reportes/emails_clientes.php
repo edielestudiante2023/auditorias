@@ -164,7 +164,7 @@
                         </thead>
                         <tbody>
                             <?php foreach ($reporte as $row): ?>
-                                <tr class="<?= $row['email_enviado'] ? ($row['estado_envio'] === 'enviado' ? 'estado-enviado' : 'estado-fallido') : 'estado-pendiente' ?>">
+                                <tr class="<?= $row['email_enviado'] ? ($row['estado_envio'] === 'ok' ? 'estado-enviado' : 'estado-fallido') : 'estado-pendiente' ?>">
                                     <td>
                                         <a href="<?= site_url('admin/auditorias/detalle/' . $row['id_auditoria']) ?>">
                                             #<?= $row['id_auditoria'] ?>
@@ -185,7 +185,7 @@
                                     </td>
                                     <td>
                                         <?php if ($row['email_enviado']): ?>
-                                            <?php if ($row['estado_envio'] === 'enviado'): ?>
+                                            <?php if ($row['estado_envio'] === 'ok'): ?>
                                                 <span class="badge bg-success"><i class="bi bi-check-circle"></i> Enviado</span>
                                             <?php else: ?>
                                                 <span class="badge bg-danger" title="<?= esc($row['detalle_error']) ?>">

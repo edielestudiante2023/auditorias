@@ -101,16 +101,16 @@ class NotificacionModel extends Model
             WHERE a.estado = 'cerrada'
         ")->getRow()->total;
 
-        // Emails enviados exitosamente
+        // Emails enviados exitosamente (estado_envio ENUM: 'ok', 'error', 'pendiente')
         $enviados = $db->table('notificaciones')
             ->where('tipo', 'pdf_cliente')
-            ->where('estado_envio', 'enviado')
+            ->where('estado_envio', 'ok')
             ->countAllResults();
 
         // Emails fallidos
         $fallidos = $db->table('notificaciones')
             ->where('tipo', 'pdf_cliente')
-            ->where('estado_envio', 'fallido')
+            ->where('estado_envio', 'error')
             ->countAllResults();
 
         return [
