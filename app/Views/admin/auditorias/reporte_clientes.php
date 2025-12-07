@@ -130,13 +130,12 @@
                             }
                         }
 
-                        // Obtener proveedores con su estado (color según estado de la auditoría)
+                        // Obtener TODAS las auditorías con su estado (cada una por separado)
                         // Colores consistentes con reporte-progreso:
-                        // success=cerrada, info=en_revision_consultor, warning=en_progreso, dark=sin_iniciar
-                        $proveedoresConEstado = [];
+                        // success=cerrada, info=en_revision_consultor, warning=en_proveedor, dark=sin_iniciar
+                        $auditoriasConEstado = [];
                         foreach ($cliente['auditorias'] as $aud) {
                             if ($aud['proveedor']) {
-                                $key = $aud['proveedor'];
                                 // Determinar color según estado (mismo esquema que reporte-progreso)
                                 $colorEstado = 'dark'; // default: sin iniciar
                                 $estadoTextoP = 'Sin iniciar';
@@ -151,15 +150,14 @@
                                     $estadoTextoP = 'En proveedor';
                                 }
 
-                                // Guardar proveedor con su estado (si hay múltiples auditorías del mismo proveedor, priorizar la no cerrada)
-                                if (!isset($proveedoresConEstado[$key]) || $colorEstado !== 'success') {
-                                    $proveedoresConEstado[$key] = [
-                                        'nombre' => $aud['proveedor'],
-                                        'estado' => $aud['estado'],
-                                        'estadoTexto' => $estadoTextoP,
-                                        'color' => $colorEstado,
-                                    ];
-                                }
+                                // Guardar cada auditoría por separado
+                                $auditoriasConEstado[] = [
+                                    'id_auditoria' => $aud['id_auditoria'],
+                                    'nombre' => $aud['proveedor'],
+                                    'estado' => $aud['estado'],
+                                    'estadoTexto' => $estadoTextoP,
+                                    'color' => $colorEstado,
+                                ];
                             }
                         }
                     ?>
@@ -206,10 +204,10 @@
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if (!empty($proveedoresConEstado)): ?>
-                                <?php foreach ($proveedoresConEstado as $prov): ?>
-                                    <span class="badge bg-<?= $prov['color'] ?> mb-1" title="<?= $prov['estadoTexto'] ?>">
-                                        <?= esc($prov['nombre']) ?>
+                            <?php if (!empty($auditoriasConEstado)): ?>
+                                <?php foreach ($auditoriasConEstado as $aud): ?>
+                                    <span class="badge bg-<?= $aud['color'] ?> mb-1" title="<?= $aud['estadoTexto'] ?>">
+                                        <?= esc($aud['nombre']) ?>
                                     </span>
                                 <?php endforeach; ?>
                             <?php else: ?>
