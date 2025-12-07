@@ -54,7 +54,7 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-warning h-100">
+        <div class="card bg-info text-white h-100">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['total_en_revision'] ?></h2>
                 <small>En Revisión</small>
@@ -63,7 +63,7 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-dark text-white h-100">
+        <div class="card bg-warning h-100">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['total_en_proveedor'] ?></h2>
                 <small>En Proveedor</small>
@@ -178,14 +178,14 @@
                         </td>
                         <td class="text-center">
                             <?php if ($cliente['en_revision'] > 0): ?>
-                                <span class="badge bg-warning"><?= $cliente['en_revision'] ?></span>
+                                <span class="badge bg-info"><?= $cliente['en_revision'] ?></span>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
                             <?php if ($cliente['en_proveedor'] > 0): ?>
-                                <span class="badge bg-info"><?= $cliente['en_proveedor'] ?></span>
+                                <span class="badge bg-warning"><?= $cliente['en_proveedor'] ?></span>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
                             <?php endif; ?>

@@ -15,7 +15,7 @@ $anioActual = $anio_actual ?? date('Y');
 $urlBase = $url_base ?? current_url();
 $anioInicio = $anio_inicio ?? 2024;
 $mostrarTodos = $mostrar_todos ?? true; // Por defecto mostrar opción "Todos"
-$anioFin = date('Y') + 1; // Incluir el próximo año
+$anioFin = 2030; // Proyectar hasta 2030
 
 // Generar lista de años
 $anios = range($anioFin, $anioInicio);
