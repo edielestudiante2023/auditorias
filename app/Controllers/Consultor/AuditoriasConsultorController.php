@@ -912,19 +912,42 @@ class AuditoriasConsultorController extends BaseController
             return redirect()->back()->with('error', 'Cliente no encontrado');
         }
 
-        // Obtener el contrato y el usuario responsable del proveedor
+        // Obtener el contrato y el usuario responsable del proveedor (con LEFT JOIN para manejar usuarios eliminados)
         $contrato = $db->table('contratos_proveedor_cliente cpc')
             ->select('cpc.id_contrato, cpc.id_usuario_responsable,
                       users.email as usuario_responsable_email,
                       users.nombre as usuario_responsable_nombre')
-            ->join('users', 'users.id_users = cpc.id_usuario_responsable')
+            ->join('users', 'users.id_users = cpc.id_usuario_responsable', 'left')
             ->where('cpc.id_proveedor', $auditoria['id_proveedor'])
             ->where('cpc.id_cliente', $idCliente)
             ->where('cpc.estado', 'activo')
             ->get()
             ->getRowArray();
 
-        if (!$contrato || empty($contrato['usuario_responsable_email'])) {
+        // Fallback: si no hay usuario responsable válido, usar datos del proveedor
+        $emailDestino = null;
+        $nombreDestino = null;
+
+        if ($contrato && !empty($contrato['usuario_responsable_email'])) {
+            // Caso normal: usuario responsable existe
+            $emailDestino = $contrato['usuario_responsable_email'];
+            $nombreDestino = $contrato['usuario_responsable_nombre'];
+        } else {
+            // Fallback: buscar email del proveedor
+            $proveedor = $db->table('proveedores')
+                ->select('responsable_email, responsable_nombre, email_contacto, razon_social')
+                ->where('id_proveedor', $auditoria['id_proveedor'])
+                ->get()
+                ->getRowArray();
+
+            if ($proveedor) {
+                // Prioridad: responsable_email > email_contacto
+                $emailDestino = $proveedor['responsable_email'] ?: $proveedor['email_contacto'];
+                $nombreDestino = $proveedor['responsable_nombre'] ?: $proveedor['razon_social'];
+            }
+        }
+
+        if (empty($emailDestino)) {
             return redirect()->back()->with('error', 'No se encontró el usuario responsable del proveedor o no tiene email configurado');
         }
 
@@ -946,13 +969,13 @@ class AuditoriasConsultorController extends BaseController
             $resultado = $this->emailService->enviarPdfCliente(
                 $idAuditoria,
                 $idCliente,
-                $contrato['usuario_responsable_email'],
+                $emailDestino,
                 $cliente['razon_social'],
                 $fullPath
             );
 
             if ($resultado['ok']) {
-                return redirect()->back()->with('success', "✅ PDF enviado exitosamente a {$contrato['usuario_responsable_nombre']} ({$contrato['usuario_responsable_email']})");
+                return redirect()->back()->with('success', "✅ PDF enviado exitosamente a {$nombreDestino} ({$emailDestino})");
             } else {
                 return redirect()->back()->with('error', 'Error al enviar email: ' . ($resultado['error'] ?? 'Desconocido'));
             }
