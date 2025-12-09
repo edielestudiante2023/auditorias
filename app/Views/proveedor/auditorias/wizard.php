@@ -771,6 +771,12 @@ const AutoSave = {
 
             const data = await response.json();
 
+            // Actualizar token CSRF para la siguiente petición
+            if (data.csrf_token && data.csrf_hash) {
+                this.csrfToken = data.csrf_token;
+                this.csrfHash = data.csrf_hash;
+            }
+
             if (data.ok) {
                 this.pendingChanges.delete(textareaId);
                 this.showIndicator('saved', `Guardado ${data.timestamp}`);
