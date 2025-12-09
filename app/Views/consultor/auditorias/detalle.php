@@ -664,7 +664,232 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
 <?php endif; ?>
 
 <script>
+// ============================================================
+// AUTOSAVE SYSTEM - Guarda automáticamente las calificaciones
+// ============================================================
+const AutoSave = {
+    idAuditoria: <?= $auditoria['id_auditoria'] ?>,
+    csrfToken: '<?= csrf_token() ?>',
+    csrfHash: '<?= csrf_hash() ?>',
+    debounceTimers: {},
+    pendingChanges: new Set(),
+    isSaving: false,
+
+    init() {
+        // Solo activar autosave si la auditoría está en revisión
+        <?php if ($auditoria['estado'] === 'en_revision_consultor'): ?>
+        this.setupRadioListeners();
+        this.setupTextareaListeners();
+        this.setupBeforeUnloadWarning();
+        this.addAutosaveIndicator();
+        console.log('AutoSave inicializado para auditoría', this.idAuditoria);
+        <?php endif; ?>
+    },
+
+    // Agregar indicador visual de autosave
+    addAutosaveIndicator() {
+        const indicator = document.createElement('div');
+        indicator.id = 'autosave-indicator';
+        indicator.className = 'position-fixed';
+        indicator.style.cssText = 'bottom: 20px; right: 20px; z-index: 1050; display: none;';
+        indicator.innerHTML = `
+            <div class="alert alert-success py-2 px-3 mb-0 shadow-sm d-flex align-items-center">
+                <span class="spinner-border spinner-border-sm me-2 autosave-spinner" style="display: none;"></span>
+                <i class="bi bi-check-circle me-2 autosave-check" style="display: none;"></i>
+                <span class="autosave-text">Guardando...</span>
+            </div>
+        `;
+        document.body.appendChild(indicator);
+    },
+
+    showIndicator(status, message) {
+        const indicator = document.getElementById('autosave-indicator');
+        const spinner = indicator.querySelector('.autosave-spinner');
+        const check = indicator.querySelector('.autosave-check');
+        const text = indicator.querySelector('.autosave-text');
+        const alert = indicator.querySelector('.alert');
+
+        indicator.style.display = 'block';
+        text.textContent = message;
+
+        if (status === 'saving') {
+            spinner.style.display = 'inline-block';
+            check.style.display = 'none';
+            alert.className = 'alert alert-info py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
+        } else if (status === 'saved') {
+            spinner.style.display = 'none';
+            check.style.display = 'inline-block';
+            alert.className = 'alert alert-success py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
+            setTimeout(() => { indicator.style.display = 'none'; }, 2000);
+        } else if (status === 'error') {
+            spinner.style.display = 'none';
+            check.style.display = 'none';
+            alert.className = 'alert alert-danger py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
+            setTimeout(() => { indicator.style.display = 'none'; }, 3000);
+        }
+    },
+
+    // Listeners para radio buttons (guardar inmediatamente)
+    setupRadioListeners() {
+        document.querySelectorAll('input[type="radio"][name="calificacion_consultor"], input[type="radio"][name="calificacion_ajustada"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const form = e.target.closest('form');
+                if (form) {
+                    this.saveForm(form);
+                }
+            });
+        });
+    },
+
+    // Listeners para textareas (guardar con debounce de 2 segundos)
+    setupTextareaListeners() {
+        document.querySelectorAll('textarea[name="comentario_consultor"], textarea[name="comentario_cliente"]').forEach(textarea => {
+            textarea.addEventListener('input', (e) => {
+                const form = e.target.closest('form');
+                if (form) {
+                    const formId = this.getFormId(form);
+                    this.pendingChanges.add(formId);
+
+                    // Cancelar timer anterior
+                    if (this.debounceTimers[formId]) {
+                        clearTimeout(this.debounceTimers[formId]);
+                    }
+
+                    // Nuevo timer de 2 segundos
+                    this.debounceTimers[formId] = setTimeout(() => {
+                        this.saveForm(form);
+                    }, 2000);
+                }
+            });
+
+            // También guardar cuando pierde el foco
+            textarea.addEventListener('blur', (e) => {
+                const form = e.target.closest('form');
+                if (form) {
+                    const formId = this.getFormId(form);
+                    if (this.pendingChanges.has(formId)) {
+                        if (this.debounceTimers[formId]) {
+                            clearTimeout(this.debounceTimers[formId]);
+                        }
+                        this.saveForm(form);
+                    }
+                }
+            });
+        });
+    },
+
+    getFormId(form) {
+        return form.action || form.id || Math.random().toString();
+    },
+
+    // Guardar formulario vía AJAX
+    async saveForm(form) {
+        const formId = this.getFormId(form);
+        const action = form.action;
+
+        // Determinar tipo de calificación
+        let tipo, idAuditoriaItem, idCliente, calificacion, comentario;
+
+        if (action.includes('calificar-global')) {
+            tipo = 'global';
+            idAuditoriaItem = action.match(/item\/(\d+)/)[1];
+            calificacion = form.querySelector('input[name="calificacion_consultor"]:checked')?.value || '';
+            comentario = form.querySelector('textarea[name="comentario_consultor"]')?.value || '';
+        } else if (action.includes('calificar-por-cliente')) {
+            tipo = 'cliente';
+            const match = action.match(/item\/(\d+)\/calificar-por-cliente\/(\d+)/);
+            idAuditoriaItem = match[1];
+            idCliente = match[2];
+            calificacion = form.querySelector('input[name="calificacion_ajustada"]:checked')?.value || '';
+            comentario = form.querySelector('textarea[name="comentario_cliente"]')?.value || '';
+        } else {
+            return; // No es un formulario de calificación
+        }
+
+        this.showIndicator('saving', 'Guardando...');
+
+        try {
+            const formData = new FormData();
+            formData.append(this.csrfToken, this.csrfHash);
+            formData.append('tipo', tipo);
+            formData.append('id_auditoria_item', idAuditoriaItem);
+            formData.append('calificacion', calificacion);
+            formData.append('comentario', comentario);
+            if (idCliente) {
+                formData.append('id_cliente', idCliente);
+            }
+
+            const response = await fetch(`<?= site_url('consultor/auditoria/') ?>${this.idAuditoria}/autosave`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.ok) {
+                this.pendingChanges.delete(formId);
+                this.showIndicator('saved', `Guardado ${data.timestamp}`);
+
+                // Actualizar visualmente el badge del ítem si se calificó
+                if (calificacion) {
+                    this.updateItemBadge(idAuditoriaItem, calificacion, tipo, idCliente);
+                }
+            } else {
+                this.showIndicator('error', data.message || 'Error al guardar');
+            }
+        } catch (error) {
+            console.error('Autosave error:', error);
+            this.showIndicator('error', 'Error de conexión');
+        }
+    },
+
+    // Actualizar badge visual del ítem
+    updateItemBadge(idAuditoriaItem, calificacion, tipo, idCliente) {
+        // Buscar el accordion item
+        const accordionItem = document.querySelector(`[data-auditoria-item-id="${idAuditoriaItem}"]`);
+        if (!accordionItem) return;
+
+        const button = accordionItem.querySelector('.accordion-button');
+        if (!button) return;
+
+        // Actualizar badge de estado
+        let badge = button.querySelector('.badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge ms-2';
+            button.appendChild(badge);
+        }
+
+        const badgeColors = {
+            'cumple': 'bg-success',
+            'parcial': 'bg-warning',
+            'no_cumple': 'bg-danger',
+            'no_aplica': 'bg-secondary'
+        };
+
+        badge.className = `badge ms-2 ${badgeColors[calificacion] || 'bg-secondary'}`;
+        badge.textContent = calificacion.replace('_', ' ');
+    },
+
+    // Alerta al salir con cambios pendientes
+    setupBeforeUnloadWarning() {
+        window.addEventListener('beforeunload', (e) => {
+            if (this.pendingChanges.size > 0) {
+                e.preventDefault();
+                e.returnValue = 'Tienes cambios sin guardar. ¿Seguro que quieres salir?';
+                return e.returnValue;
+            }
+        });
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar autosave
+    AutoSave.init();
+
     // Mostrar toast si hay mensajes flash
     <?php if (session()->getFlashdata('success')): ?>
         showToast('<?= esc(session()->getFlashdata('success')) ?>', 'success', 5000);

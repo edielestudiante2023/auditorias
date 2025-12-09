@@ -271,6 +271,7 @@ $routes->group('consultor', ['filter' => 'role:2'], function ($routes) {
     $routes->get('auditoria/(:num)/asignar-clientes', 'Consultor\AuditoriasConsultorController::asignarClientes/$1');
     $routes->post('auditoria/(:num)/asignar-clientes', 'Consultor\AuditoriasConsultorController::guardarClientes/$1');
     $routes->post('auditoria/(:num)/override', 'Consultor\AuditoriasConsultorController::override/$1');
+    $routes->post('auditoria/(:num)/autosave', 'Consultor\AuditoriasConsultorController::autosave/$1');
     $routes->post('auditoria/(:num)/cerrar', 'Consultor\AuditoriasConsultorController::cerrar/$1');
 
     // Ver evidencias (globales y por cliente)
