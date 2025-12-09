@@ -207,8 +207,10 @@
                             <span class="text-danger">*</span>
                         </label>
                         <textarea name="comentario_proveedor"
-                                  class="form-control"
+                                  class="form-control autosave-textarea"
                                   rows="3"
+                                  data-tipo="global"
+                                  data-item-id="<?= $item['id_auditoria_item'] ?>"
                                   placeholder="Ingrese sus observaciones o comentarios para este ítem..."><?= esc($item['comentario_proveedor'] ?? '') ?></textarea>
                         <small class="text-muted">Este campo es requerido para marcar el ítem como completado</small>
                     </div>
@@ -340,8 +342,11 @@
                                             <span class="text-danger">*</span>
                                         </label>
                                         <textarea name="comentario_proveedor_cliente"
-                                                  class="form-control"
+                                                  class="form-control autosave-textarea"
                                                   rows="3"
+                                                  data-tipo="cliente"
+                                                  data-item-id="<?= $item['id_auditoria_item'] ?>"
+                                                  data-cliente-id="<?= $cliente['id_cliente'] ?>"
                                                   placeholder="Ingrese las observaciones específicas para <?= esc($cliente['razon_social']) ?>..."><?= esc($itemCliente['comentario_proveedor_cliente'] ?? '') ?></textarea>
                                         <small class="text-muted">Este campo es requerido para este cliente</small>
                                     </div>
@@ -631,6 +636,194 @@ document.addEventListener('click', function(e) {
 <?= $this->section('scripts') ?>
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<?php if ($auditoria['estado'] === 'en_proveedor'): ?>
+<script>
+// ============================================================
+// AUTOSAVE SYSTEM - Guarda automáticamente los comentarios
+// ============================================================
+const AutoSave = {
+    idAuditoria: <?= $auditoria['id_auditoria'] ?>,
+    csrfToken: '<?= csrf_token() ?>',
+    csrfHash: '<?= csrf_hash() ?>',
+    debounceTimers: {},
+    pendingChanges: new Set(),
+
+    init() {
+        this.setupTextareaListeners();
+        this.setupBeforeUnloadWarning();
+        this.addAutosaveIndicator();
+        console.log('AutoSave Proveedor inicializado para auditoría', this.idAuditoria);
+    },
+
+    // Agregar indicador visual de autosave
+    addAutosaveIndicator() {
+        const indicator = document.createElement('div');
+        indicator.id = 'autosave-indicator';
+        indicator.className = 'position-fixed';
+        indicator.style.cssText = 'bottom: 20px; right: 20px; z-index: 1050; display: none;';
+        indicator.innerHTML = `
+            <div class="alert alert-success py-2 px-3 mb-0 shadow-sm d-flex align-items-center">
+                <span class="spinner-border spinner-border-sm me-2 autosave-spinner" style="display: none;"></span>
+                <i class="bi bi-check-circle me-2 autosave-check" style="display: none;"></i>
+                <i class="bi bi-exclamation-triangle me-2 autosave-error" style="display: none;"></i>
+                <span class="autosave-text">Guardando...</span>
+            </div>
+        `;
+        document.body.appendChild(indicator);
+    },
+
+    showIndicator(status, message) {
+        const indicator = document.getElementById('autosave-indicator');
+        const spinner = indicator.querySelector('.autosave-spinner');
+        const check = indicator.querySelector('.autosave-check');
+        const errorIcon = indicator.querySelector('.autosave-error');
+        const text = indicator.querySelector('.autosave-text');
+        const alert = indicator.querySelector('.alert');
+
+        indicator.style.display = 'block';
+        text.textContent = message;
+
+        // Reset icons
+        spinner.style.display = 'none';
+        check.style.display = 'none';
+        errorIcon.style.display = 'none';
+
+        if (status === 'saving') {
+            spinner.style.display = 'inline-block';
+            alert.className = 'alert alert-info py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
+        } else if (status === 'saved') {
+            check.style.display = 'inline-block';
+            alert.className = 'alert alert-success py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
+            setTimeout(() => { indicator.style.display = 'none'; }, 2000);
+        } else if (status === 'error') {
+            errorIcon.style.display = 'inline-block';
+            alert.className = 'alert alert-danger py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
+            setTimeout(() => { indicator.style.display = 'none'; }, 3000);
+        }
+    },
+
+    // Listeners para textareas (guardar con debounce de 2 segundos)
+    setupTextareaListeners() {
+        document.querySelectorAll('textarea.autosave-textarea').forEach(textarea => {
+            const textareaId = this.getTextareaId(textarea);
+
+            textarea.addEventListener('input', (e) => {
+                this.pendingChanges.add(textareaId);
+
+                // Cancelar timer anterior
+                if (this.debounceTimers[textareaId]) {
+                    clearTimeout(this.debounceTimers[textareaId]);
+                }
+
+                // Nuevo timer de 2 segundos
+                this.debounceTimers[textareaId] = setTimeout(() => {
+                    this.saveTextarea(textarea);
+                }, 2000);
+            });
+
+            // También guardar cuando pierde el foco
+            textarea.addEventListener('blur', (e) => {
+                if (this.pendingChanges.has(textareaId)) {
+                    if (this.debounceTimers[textareaId]) {
+                        clearTimeout(this.debounceTimers[textareaId]);
+                    }
+                    this.saveTextarea(textarea);
+                }
+            });
+        });
+    },
+
+    getTextareaId(textarea) {
+        const tipo = textarea.dataset.tipo;
+        const itemId = textarea.dataset.itemId;
+        const clienteId = textarea.dataset.clienteId || '';
+        return `${tipo}-${itemId}-${clienteId}`;
+    },
+
+    // Guardar textarea vía AJAX
+    async saveTextarea(textarea) {
+        const textareaId = this.getTextareaId(textarea);
+        const tipo = textarea.dataset.tipo;
+        const idAuditoriaItem = textarea.dataset.itemId;
+        const idCliente = textarea.dataset.clienteId;
+        const comentario = textarea.value;
+
+        this.showIndicator('saving', 'Guardando...');
+
+        try {
+            const formData = new FormData();
+            formData.append(this.csrfToken, this.csrfHash);
+            formData.append('tipo', tipo);
+            formData.append('id_auditoria_item', idAuditoriaItem);
+            formData.append('comentario', comentario);
+            if (idCliente) {
+                formData.append('id_cliente', idCliente);
+            }
+
+            const response = await fetch(`<?= site_url('proveedor/auditoria/') ?>${this.idAuditoria}/autosave`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.ok) {
+                this.pendingChanges.delete(textareaId);
+                this.showIndicator('saved', `Guardado ${data.timestamp}`);
+
+                // Actualizar visual del badge si el comentario no está vacío
+                if (comentario.trim()) {
+                    this.updateItemBadge(idAuditoriaItem, tipo, idCliente);
+                }
+            } else {
+                this.showIndicator('error', data.message || 'Error al guardar');
+            }
+        } catch (error) {
+            console.error('Autosave error:', error);
+            this.showIndicator('error', 'Error de conexión');
+        }
+    },
+
+    // Actualizar badge visual del ítem
+    updateItemBadge(idAuditoriaItem, tipo, idCliente) {
+        // Buscar el accordion item
+        const accordionItem = document.getElementById(`item-${idAuditoriaItem}`);
+        if (!accordionItem) return;
+
+        // Si es cliente, actualizar el tab del cliente
+        if (tipo === 'cliente' && idCliente) {
+            const tabButton = document.getElementById(`tab-item${idAuditoriaItem}-cliente${idCliente}`);
+            if (tabButton && !tabButton.querySelector('.bi-check-circle-fill')) {
+                const checkIcon = document.createElement('i');
+                checkIcon.className = 'bi bi-check-circle-fill text-success ms-1';
+                tabButton.appendChild(checkIcon);
+            }
+        }
+    },
+
+    // Alerta al salir con cambios pendientes
+    setupBeforeUnloadWarning() {
+        window.addEventListener('beforeunload', (e) => {
+            if (this.pendingChanges.size > 0) {
+                e.preventDefault();
+                e.returnValue = 'Tienes cambios sin guardar. ¿Seguro que quieres salir?';
+                return e.returnValue;
+            }
+        });
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar autosave
+    AutoSave.init();
+});
+</script>
+<?php endif; ?>
+
 <script>
 /**
  * Validación de tamaño de archivos antes de enviar

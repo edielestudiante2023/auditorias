@@ -187,6 +187,101 @@ class AuditoriasProveedorController extends BaseController
     }
 
     /**
+     * Autosave - Guarda comentario vía AJAX sin recargar página
+     */
+    public function autosave(int $idAuditoria)
+    {
+        // Verificar que es una petición AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Petición inválida']);
+        }
+
+        $db = \Config\Database::connect();
+
+        // Verificar que la auditoría está asignada a este usuario responsable
+        $auditoria = $db->query("
+            SELECT a.*
+            FROM auditorias a
+            JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
+            WHERE a.id_auditoria = ?
+              AND cpc.id_usuario_responsable = ?
+              AND cpc.estado = 'activo'
+        ", [$idAuditoria, userId()])->getRowArray();
+
+        if (!$auditoria) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Auditoría no encontrada']);
+        }
+
+        // Solo permitir autosave en auditorías en estado en_proveedor
+        if ($auditoria['estado'] !== 'en_proveedor') {
+            return $this->response->setJSON(['ok' => false, 'message' => 'La auditoría no está en estado editable']);
+        }
+
+        $tipo = $this->request->getPost('tipo'); // 'global' o 'cliente'
+        $idAuditoriaItem = $this->request->getPost('id_auditoria_item');
+        $comentario = $this->request->getPost('comentario');
+
+        // Verificar que el ítem pertenece a esta auditoría
+        $item = $this->auditoriaItemModel->find($idAuditoriaItem);
+        if (!$item || $item['id_auditoria'] != $idAuditoria) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Ítem no válido']);
+        }
+
+        try {
+            if ($tipo === 'global') {
+                // Guardar comentario global
+                $this->auditoriaItemModel->update($idAuditoriaItem, [
+                    'comentario_proveedor' => $comentario,
+                ]);
+            } else if ($tipo === 'cliente') {
+                $idCliente = $this->request->getPost('id_cliente');
+
+                // Verificar que el cliente está asignado
+                $clienteAsignado = $this->auditoriaClienteModel
+                    ->where('id_auditoria', $idAuditoria)
+                    ->where('id_cliente', $idCliente)
+                    ->first();
+
+                if (!$clienteAsignado) {
+                    return $this->response->setJSON(['ok' => false, 'message' => 'Cliente no asignado']);
+                }
+
+                // Buscar o crear registro
+                $itemCliente = $this->auditoriaItemClienteModel
+                    ->where('id_auditoria_item', $idAuditoriaItem)
+                    ->where('id_cliente', $idCliente)
+                    ->first();
+
+                if (!$itemCliente) {
+                    $this->auditoriaItemClienteModel->insert([
+                        'id_auditoria_item' => $idAuditoriaItem,
+                        'id_cliente' => $idCliente,
+                        'comentario_proveedor_cliente' => $comentario,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ], false); // skip validation
+                } else {
+                    $this->auditoriaItemClienteModel->update($itemCliente['id_auditoria_item_cliente'], [
+                        'comentario_proveedor_cliente' => $comentario,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            } else {
+                return $this->response->setJSON(['ok' => false, 'message' => 'Tipo inválido']);
+            }
+
+            return $this->response->setJSON([
+                'ok' => true,
+                'message' => 'Guardado',
+                'timestamp' => date('H:i:s')
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Autosave proveedor error: ' . $e->getMessage());
+            return $this->response->setJSON(['ok' => false, 'message' => 'Error al guardar']);
+        }
+    }
+
+    /**
      * Guarda respuesta de un ítem (detecta automáticamente si es global o por cliente)
      */
     public function guardarItem(int $idAuditoria, int $idAuditoriaItem)

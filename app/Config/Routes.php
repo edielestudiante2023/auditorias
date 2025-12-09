@@ -310,6 +310,7 @@ $routes->group('proveedor', ['filter' => 'role:3'], function ($routes) {
     $routes->post('auditoria/(:num)/evidencia/(:num)/eliminar', 'Proveedor\AuditoriasProveedorController::deleteEvidencia/$1/$2');
     $routes->post('auditoria/(:num)/evidencia-cliente/(:num)/eliminar', 'Proveedor\AuditoriasProveedorController::deleteEvidenciaCliente/$1/$2');
     $routes->post('auditoria/(:num)/finalizar', 'Proveedor\AuditoriasProveedorController::finalizar/$1');
+    $routes->post('auditoria/(:num)/autosave', 'Proveedor\AuditoriasProveedorController::autosave/$1');
 
     // ========== Gestión de Personal Asignado ==========
     $routes->get('personal', 'Proveedor\PersonalController::index');
