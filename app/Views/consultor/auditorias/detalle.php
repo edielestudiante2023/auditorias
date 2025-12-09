@@ -883,6 +883,13 @@ const AutoSave = {
                 return e.returnValue;
             }
         });
+
+        // Limpiar pendingChanges cuando se hace submit de un formulario
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', () => {
+                this.pendingChanges.clear();
+            });
+        });
     }
 };
 
