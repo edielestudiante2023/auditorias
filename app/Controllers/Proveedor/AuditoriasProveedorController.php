@@ -272,12 +272,19 @@ class AuditoriasProveedorController extends BaseController
             return $this->response->setJSON([
                 'ok' => true,
                 'message' => 'Guardado',
-                'timestamp' => date('H:i:s')
+                'timestamp' => date('H:i:s'),
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
             log_message('error', 'Autosave proveedor error: ' . $e->getMessage());
-            return $this->response->setJSON(['ok' => false, 'message' => 'Error al guardar']);
+            return $this->response->setJSON([
+                'ok' => false,
+                'message' => 'Error al guardar',
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
         }
     }
 
