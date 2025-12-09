@@ -194,6 +194,95 @@ class AuditoriasConsultorController extends BaseController
         return redirect()->to('consultor/auditoria/' . $item['id_auditoria'] . '#item-' . $idAuditoriaItem)->with('success', '✅ Calificación del cliente guardada exitosamente');
     }
 
+    /**
+     * Autosave - Guarda calificación vía AJAX sin recargar página
+     */
+    public function autosave(int $idAuditoria)
+    {
+        // Verificar que es una petición AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Petición inválida']);
+        }
+
+        $auditoria = $this->auditoriaModel->find($idAuditoria);
+
+        if (!$auditoria || $auditoria['id_consultor'] != $this->idConsultor) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Auditoría no encontrada']);
+        }
+
+        // Solo permitir autosave en auditorías en revisión
+        if ($auditoria['estado'] !== 'en_revision_consultor') {
+            return $this->response->setJSON(['ok' => false, 'message' => 'La auditoría no está en estado de revisión']);
+        }
+
+        $tipo = $this->request->getPost('tipo'); // 'global' o 'cliente'
+        $idAuditoriaItem = $this->request->getPost('id_auditoria_item');
+        $calificacion = $this->request->getPost('calificacion');
+        $comentario = $this->request->getPost('comentario');
+
+        // Verificar que el ítem pertenece a esta auditoría
+        $item = $this->auditoriaItemModel->find($idAuditoriaItem);
+        if (!$item || $item['id_auditoria'] != $idAuditoria) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Ítem no válido']);
+        }
+
+        try {
+            if ($tipo === 'global') {
+                // Guardar calificación global
+                $this->auditoriaItemModel->update($idAuditoriaItem, [
+                    'calificacion_consultor' => $calificacion ?: null,
+                    'comentario_consultor' => $comentario,
+                ]);
+            } else if ($tipo === 'cliente') {
+                $idCliente = $this->request->getPost('id_cliente');
+
+                // Verificar que el cliente está asignado
+                $clienteAsignado = $this->auditoriaClienteModel
+                    ->where('id_auditoria', $idAuditoria)
+                    ->where('id_cliente', $idCliente)
+                    ->first();
+
+                if (!$clienteAsignado) {
+                    return $this->response->setJSON(['ok' => false, 'message' => 'Cliente no asignado']);
+                }
+
+                // Buscar o crear registro
+                $itemCliente = $this->auditoriaItemClienteModel
+                    ->where('id_auditoria_item', $idAuditoriaItem)
+                    ->where('id_cliente', $idCliente)
+                    ->first();
+
+                if (!$itemCliente) {
+                    $this->auditoriaItemClienteModel->insert([
+                        'id_auditoria_item' => $idAuditoriaItem,
+                        'id_cliente' => $idCliente,
+                        'calificacion_ajustada' => $calificacion ?: null,
+                        'comentario_cliente' => $comentario,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ]);
+                } else {
+                    $this->auditoriaItemClienteModel->update($itemCliente['id_auditoria_item_cliente'], [
+                        'calificacion_ajustada' => $calificacion ?: null,
+                        'comentario_cliente' => $comentario,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            } else {
+                return $this->response->setJSON(['ok' => false, 'message' => 'Tipo inválido']);
+            }
+
+            return $this->response->setJSON([
+                'ok' => true,
+                'message' => 'Guardado',
+                'timestamp' => date('H:i:s')
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Autosave error: ' . $e->getMessage());
+            return $this->response->setJSON(['ok' => false, 'message' => 'Error al guardar']);
+        }
+    }
+
     public function asignarClientes(int $idAuditoria)
     {
         $auditoria = $this->auditoriaModel->find($idAuditoria);
