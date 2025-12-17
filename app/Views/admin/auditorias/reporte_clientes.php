@@ -45,16 +45,16 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-success text-white h-100">
+        <div class="card bg-success text-white h-100 card-filtro" data-filtro="cerradas" style="cursor: pointer;" title="Filtrar clientes con auditorías cerradas">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['total_cerradas'] ?></h2>
-                <small>Aud. Cerradas</small>
+                <small>Con Cerradas</small>
             </div>
         </div>
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-info text-white h-100">
+        <div class="card bg-info text-white h-100 card-filtro" data-filtro="en_revision" style="cursor: pointer;" title="Filtrar clientes con auditorías en revisión">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['total_en_revision'] ?></h2>
                 <small>En Revisión</small>
@@ -63,7 +63,7 @@
     </div>
 
     <div class="col-6 col-md-4 col-lg-2">
-        <div class="card bg-warning h-100">
+        <div class="card bg-warning h-100 card-filtro" data-filtro="en_proveedor" style="cursor: pointer;" title="Filtrar clientes con auditorías en proveedor">
             <div class="card-body text-center py-3">
                 <h2 class="mb-0"><?= $resumen['total_en_proveedor'] ?></h2>
                 <small>En Proveedor</small>
@@ -161,7 +161,10 @@
                             }
                         }
                     ?>
-                    <tr data-tiene-auditorias="<?= $cliente['total_auditorias'] > 0 ? '1' : '0' ?>">
+                    <tr data-tiene-auditorias="<?= $cliente['total_auditorias'] > 0 ? '1' : '0' ?>"
+                        data-cerradas="<?= $cliente['cerradas'] ?>"
+                        data-en-revision="<?= $cliente['en_revision'] ?>"
+                        data-en-proveedor="<?= $cliente['en_proveedor'] ?>">
                         <td>
                             <strong><?= esc($cliente['cliente']) ?></strong>
                             <br><small class="text-muted">NIT: <?= esc($cliente['cliente_nit']) ?></small>
@@ -349,11 +352,20 @@ $(document).ready(function() {
 
         var row = table.row(dataIndex).node();
         var tieneAuditorias = $(row).data('tiene-auditorias');
+        var cerradas = parseInt($(row).data('cerradas')) || 0;
+        var enRevision = parseInt($(row).data('en-revision')) || 0;
+        var enProveedor = parseInt($(row).data('en-proveedor')) || 0;
 
         if (filtroActual === 'con_auditorias') {
             return tieneAuditorias == 1;
         } else if (filtroActual === 'sin_auditorias') {
             return tieneAuditorias == 0;
+        } else if (filtroActual === 'cerradas') {
+            return cerradas > 0;
+        } else if (filtroActual === 'en_revision') {
+            return enRevision > 0;
+        } else if (filtroActual === 'en_proveedor') {
+            return enProveedor > 0;
         }
 
         return true;

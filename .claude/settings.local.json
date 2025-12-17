@@ -45,7 +45,8 @@
       "Bash(grep:*)",
       "Bash(\"C:\\xampp\\mysql\\bin\\mysql.exe\" -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG -P 25060 --ssl cycloid_auditorias -e \"SELECT c.id_cliente, c.razon_social, c.email_contacto FROM clientes c WHERE c.id_cliente = 13;\")",
       "Bash(/c/xampp/php/php.exe:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
