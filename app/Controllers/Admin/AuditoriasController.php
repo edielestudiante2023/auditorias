@@ -927,15 +927,18 @@ class AuditoriasController extends BaseController
                 : null;
         }
 
-        // Resumen general
+        // Resumen general - contamos CLIENTES que tienen auditorías en cada estado
         $resumen = [
             'total_clientes' => count($clientesAgrupados),
             'con_auditorias' => count(array_filter($clientesAgrupados, fn($c) => $c['total_auditorias'] > 0)),
             'sin_auditorias' => count(array_filter($clientesAgrupados, fn($c) => $c['total_auditorias'] === 0)),
             'total_auditorias' => array_sum(array_column($clientesAgrupados, 'total_auditorias')),
-            'total_cerradas' => array_sum(array_column($clientesAgrupados, 'cerradas')),
-            'total_en_revision' => array_sum(array_column($clientesAgrupados, 'en_revision')),
-            'total_en_proveedor' => array_sum(array_column($clientesAgrupados, 'en_proveedor')),
+            // Clientes que tienen al menos una auditoría cerrada
+            'total_cerradas' => count(array_filter($clientesAgrupados, fn($c) => $c['cerradas'] > 0)),
+            // Clientes que tienen al menos una auditoría en revisión
+            'total_en_revision' => count(array_filter($clientesAgrupados, fn($c) => $c['en_revision'] > 0)),
+            // Clientes que tienen al menos una auditoría en proveedor
+            'total_en_proveedor' => count(array_filter($clientesAgrupados, fn($c) => $c['en_proveedor'] > 0)),
         ];
 
         return view('admin/auditorias/reporte_clientes', [
