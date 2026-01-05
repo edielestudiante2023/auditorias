@@ -846,10 +846,8 @@ class AuditoriasController extends BaseController
     public function reporteClientes()
     {
         $db = \Config\Database::connect();
-        $anio = $this->request->getGet('anio') ?? date('Y');
-        $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
-        // Obtener todos los clientes con sus auditorías del año seleccionado
+        // Obtener todos los clientes con sus auditorías 
         $clientes = $db->query("
             SELECT
                 cl.id_cliente,
@@ -867,7 +865,7 @@ class AuditoriasController extends BaseController
             LEFT JOIN auditorias a ON a.id_auditoria = ac.id_auditoria
             LEFT JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             LEFT JOIN consultores c ON c.id_consultor = a.id_consultor
-            WHERE (a.id_auditoria IS NULL {$filtroAnio})
+            WHERE 1=1
             ORDER BY cl.razon_social ASC, a.created_at DESC
         ")->getResultArray();
 
@@ -946,7 +944,6 @@ class AuditoriasController extends BaseController
             'title' => 'Reporte por Clientes',
             'clientes' => array_values($clientesAgrupados),
             'resumen' => $resumen,
-            'anio' => $anio,
         ]);
     }
 }
