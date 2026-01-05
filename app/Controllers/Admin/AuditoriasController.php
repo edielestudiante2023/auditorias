@@ -864,9 +864,10 @@ class AuditoriasController extends BaseController
                 c.nombre_completo as consultor
             FROM clientes cl
             LEFT JOIN auditoria_clientes ac ON ac.id_cliente = cl.id_cliente
-            LEFT JOIN auditorias a ON a.id_auditoria = ac.id_auditoria {$filtroAnio}
+            LEFT JOIN auditorias a ON a.id_auditoria = ac.id_auditoria
             LEFT JOIN proveedores p ON p.id_proveedor = a.id_proveedor
             LEFT JOIN consultores c ON c.id_consultor = a.id_consultor
+            WHERE (a.id_auditoria IS NULL {$filtroAnio})
             ORDER BY cl.razon_social ASC, a.created_at DESC
         ")->getResultArray();
 
