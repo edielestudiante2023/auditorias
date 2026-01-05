@@ -846,8 +846,9 @@ class AuditoriasController extends BaseController
     public function reporteClientes()
     {
         $db = \Config\Database::connect();
+        $anio = $this->request->getGet('anio') ?? date('Y');
 
-        // Obtener todos los clientes con sus auditorías 
+        // Obtener todos los clientes con sus auditorías
         $clientes = $db->query("
             SELECT
                 cl.id_cliente,
@@ -859,6 +860,7 @@ class AuditoriasController extends BaseController
                 a.codigo_formato,
                 a.estado,
                 a.porcentaje_cumplimiento,
+                a.created_at,
                 c.nombre_completo as consultor
             FROM clientes cl
             LEFT JOIN auditoria_clientes ac ON ac.id_cliente = cl.id_cliente
@@ -889,24 +891,28 @@ class AuditoriasController extends BaseController
             }
 
             if ($row['id_auditoria']) {
-                $clientesAgrupados[$idCliente]['auditorias'][] = [
-                    'id_auditoria' => $row['id_auditoria'],
-                    'codigo_formato' => $row['codigo_formato'],
-                    'estado' => $row['estado'],
-                    'proveedor' => $row['proveedor'],
-                    'proveedor_nit' => $row['proveedor_nit'],
-                    'consultor' => $row['consultor'],
-                    'porcentaje_cumplimiento' => $row['porcentaje_cumplimiento'],
-                ];
+                // Filtrar por año si no es "todos" - AQUÍ es seguro filtrar
+                $anioAuditoria = date('Y', strtotime($row['created_at']));
+                if ($anio === 'todos' || $anioAuditoria == $anio) {
+                    $clientesAgrupados[$idCliente]['auditorias'][] = [
+                        'id_auditoria' => $row['id_auditoria'],
+                        'codigo_formato' => $row['codigo_formato'],
+                        'estado' => $row['estado'],
+                        'proveedor' => $row['proveedor'],
+                        'proveedor_nit' => $row['proveedor_nit'],
+                        'consultor' => $row['consultor'],
+                        'porcentaje_cumplimiento' => $row['porcentaje_cumplimiento'],
+                    ];
 
-                $clientesAgrupados[$idCliente]['total_auditorias']++;
+                    $clientesAgrupados[$idCliente]['total_auditorias']++;
 
-                if ($row['estado'] === 'cerrada') {
-                    $clientesAgrupados[$idCliente]['cerradas']++;
-                } elseif ($row['estado'] === 'en_revision_consultor') {
-                    $clientesAgrupados[$idCliente]['en_revision']++;
-                } elseif ($row['estado'] === 'en_proveedor') {
-                    $clientesAgrupados[$idCliente]['en_proveedor']++;
+                    if ($row['estado'] === 'cerrada') {
+                        $clientesAgrupados[$idCliente]['cerradas']++;
+                    } elseif ($row['estado'] === 'en_revision_consultor') {
+                        $clientesAgrupados[$idCliente]['en_revision']++;
+                    } elseif ($row['estado'] === 'en_proveedor') {
+                        $clientesAgrupados[$idCliente]['en_proveedor']++;
+                    }
                 }
             }
         }
@@ -944,6 +950,7 @@ class AuditoriasController extends BaseController
             'title' => 'Reporte por Clientes',
             'clientes' => array_values($clientesAgrupados),
             'resumen' => $resumen,
+            'anio' => $anio,
         ]);
     }
 }
