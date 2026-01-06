@@ -44,19 +44,17 @@ $anios = range($anioFin, $anioInicio);
 
 <script>
 function filtrarPorAnio(anio) {
-    const urlBase = '<?= $urlBase ?>';
+    // Usar la URL actual sin parámetros de búsqueda
+    const url = new URL(window.location.href);
 
-    // Si url_base está definida, usarla (para vistas específicas)
-    if (urlBase && urlBase.trim() !== '') {
-        const url = new URL(urlBase, window.location.origin);
-        url.searchParams.set('anio', anio);
-        window.location.href = url.toString();
-    } else {
-        // Si no hay url_base, usar la URL actual y preservar parámetros
-        const url = new URL(window.location.href);
-        url.searchParams.set('anio', anio);
-        window.location.href = url.toString();
-    }
+    // Limpiar el pathname si contiene index.php duplicado
+    let pathname = url.pathname;
+
+    // Actualizar o agregar el parámetro de año
+    url.searchParams.set('anio', anio);
+
+    // Redirigir a la nueva URL
+    window.location.href = url.toString();
 }
 </script>
 
