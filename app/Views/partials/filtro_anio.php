@@ -45,10 +45,18 @@ $anios = range($anioFin, $anioInicio);
 <script>
 function filtrarPorAnio(anio) {
     const urlBase = '<?= $urlBase ?>';
-    // Limpiar parámetros existentes de la URL
-    const url = new URL(urlBase, window.location.origin);
-    url.searchParams.set('anio', anio);
-    window.location.href = url.toString();
+
+    // Si url_base está definida, usarla (para vistas específicas)
+    if (urlBase && urlBase.trim() !== '') {
+        const url = new URL(urlBase, window.location.origin);
+        url.searchParams.set('anio', anio);
+        window.location.href = url.toString();
+    } else {
+        // Si no hay url_base, usar la URL actual y preservar parámetros
+        const url = new URL(window.location.href);
+        url.searchParams.set('anio', anio);
+        window.location.href = url.toString();
+    }
 }
 </script>
 
