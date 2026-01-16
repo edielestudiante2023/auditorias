@@ -729,12 +729,12 @@ const CalificacionManager = {
             spinner.style.display = 'none';
             check.style.display = 'inline-block';
             alert.className = 'alert alert-success py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
-            setTimeout(() => { indicator.style.display = 'none'; }, 2000);
+            setTimeout(() => { indicator.style.display = 'none'; }, 4000);
         } else if (status === 'error') {
             spinner.style.display = 'none';
             check.style.display = 'none';
             alert.className = 'alert alert-danger py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
-            setTimeout(() => { indicator.style.display = 'none'; }, 3000);
+            setTimeout(() => { indicator.style.display = 'none'; }, 6000);
         }
     },
 
@@ -829,7 +829,7 @@ const CalificacionManager = {
 
         // Validar que haya una calificación seleccionada si es guardado manual
         if (showToastOnSuccess && !calificacion) {
-            showToast('Debe seleccionar una calificación', 'warning', 3000);
+            showToast('Debe seleccionar una calificación', 'warning', 5000);
             return false;
         }
 
@@ -880,7 +880,7 @@ const CalificacionManager = {
                     const msgCumplimiento = data.porcentaje_cumplimiento !== null
                         ? ` (Cumplimiento: ${data.porcentaje_cumplimiento.toFixed(1)}%)`
                         : '';
-                    showToast(`✅ Calificación guardada${msgCumplimiento}`, 'success', 3000);
+                    showToast(`✅ Calificación guardada${msgCumplimiento}`, 'success', 5000);
                 }
 
                 return true;
