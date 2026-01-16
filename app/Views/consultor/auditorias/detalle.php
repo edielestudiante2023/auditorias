@@ -356,9 +356,7 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                     </div>
                 <?php endif; ?>
 
-                <form method="post" action="<?= site_url('consultor/auditoria/item/' . $item['id_auditoria_item'] . '/calificar-global') ?>">
-                    <?= csrf_field() ?>
-
+                <form class="form-calificacion" data-tipo="global" data-id-item="<?= $item['id_auditoria_item'] ?>">
                     <div class="mb-3">
                         <label class="form-label"><strong>Calificación del Consultor <span class="text-danger">*</span></strong></label>
                         <div class="btn-group w-100" role="group">
@@ -398,7 +396,7 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                                   placeholder="Agregue sus observaciones..."><?= esc($item['comentario_consultor'] ?? '') ?></textarea>
                     </div>
 
-                    <button type="submit" class="btn btn-success">
+                    <button type="button" class="btn btn-success btn-guardar-calificacion">
                         <i class="bi bi-save"></i> Guardar Calificación
                     </button>
                 </form>
@@ -503,9 +501,7 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                                 <?php endif; ?>
 
                                 <!-- Formulario de calificación por cliente -->
-                                <form method="post" action="<?= site_url('consultor/auditoria/item/' . $item['id_auditoria_item'] . '/calificar-por-cliente/' . $cliente['id_cliente']) ?>">
-                                    <?= csrf_field() ?>
-
+                                <form class="form-calificacion" data-tipo="cliente" data-id-item="<?= $item['id_auditoria_item'] ?>" data-id-cliente="<?= $cliente['id_cliente'] ?>">
                                     <div class="mb-3">
                                         <label class="form-label"><strong>Calificación para <?= esc($cliente['razon_social']) ?> <span class="text-danger">*</span></strong></label>
                                         <div class="btn-group w-100" role="group">
@@ -545,7 +541,7 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                                                   placeholder="Agregue observaciones específicas para este cliente..."><?= esc($itemCliente['comentario_cliente'] ?? '') ?></textarea>
                                     </div>
 
-                                    <button type="submit" class="btn btn-success">
+                                    <button type="button" class="btn btn-success btn-guardar-calificacion">
                                         <i class="bi bi-save"></i> Guardar Calificación para <?= esc($cliente['razon_social']) ?>
                                     </button>
                                 </form>
@@ -665,9 +661,9 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
 
 <script>
 // ============================================================
-// AUTOSAVE SYSTEM - Guarda automáticamente las calificaciones
+// SISTEMA DE CALIFICACIÓN - Guarda calificaciones vía AJAX
 // ============================================================
-const AutoSave = {
+const CalificacionManager = {
     idAuditoria: <?= $auditoria['id_auditoria'] ?>,
     csrfToken: '<?= csrf_token() ?>',
     csrfHash: '<?= csrf_hash() ?>',
@@ -676,18 +672,18 @@ const AutoSave = {
     isSaving: false,
 
     init() {
-        // Solo activar autosave si la auditoría está en revisión
         <?php if ($auditoria['estado'] === 'en_revision_consultor'): ?>
+        this.setupButtonListeners();
         this.setupRadioListeners();
         this.setupTextareaListeners();
         this.setupBeforeUnloadWarning();
-        this.addAutosaveIndicator();
-        console.log('AutoSave inicializado para auditoría', this.idAuditoria);
+        this.addIndicator();
+        console.log('CalificacionManager inicializado para auditoría', this.idAuditoria);
         <?php endif; ?>
     },
 
-    // Agregar indicador visual de autosave
-    addAutosaveIndicator() {
+    // Agregar indicador visual
+    addIndicator() {
         const indicator = document.createElement('div');
         indicator.id = 'autosave-indicator';
         indicator.className = 'position-fixed';
@@ -729,13 +725,33 @@ const AutoSave = {
         }
     },
 
-    // Listeners para radio buttons (guardar inmediatamente)
+    // Listeners para botones de guardar
+    setupButtonListeners() {
+        document.querySelectorAll('.btn-guardar-calificacion').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const form = e.target.closest('.form-calificacion');
+                if (form) {
+                    const saved = await this.saveFormWithFeedback(form, true);
+                    if (saved) {
+                        // Expandir siguiente ítem después de guardar exitosamente
+                        const accordionItem = form.closest('.accordion-item');
+                        if (accordionItem) {
+                            const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
+                            this.expandNextItemFromIndex(itemIndex);
+                        }
+                    }
+                }
+            });
+        });
+    },
+
+    // Listeners para radio buttons (autosave)
     setupRadioListeners() {
         document.querySelectorAll('input[type="radio"][name="calificacion_consultor"], input[type="radio"][name="calificacion_ajustada"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
-                const form = e.target.closest('form');
+                const form = e.target.closest('.form-calificacion');
                 if (form) {
-                    this.saveForm(form);
+                    this.saveFormWithFeedback(form, false);
                 }
             });
         });
@@ -745,33 +761,30 @@ const AutoSave = {
     setupTextareaListeners() {
         document.querySelectorAll('textarea[name="comentario_consultor"], textarea[name="comentario_cliente"]').forEach(textarea => {
             textarea.addEventListener('input', (e) => {
-                const form = e.target.closest('form');
+                const form = e.target.closest('.form-calificacion');
                 if (form) {
                     const formId = this.getFormId(form);
                     this.pendingChanges.add(formId);
 
-                    // Cancelar timer anterior
                     if (this.debounceTimers[formId]) {
                         clearTimeout(this.debounceTimers[formId]);
                     }
 
-                    // Nuevo timer de 2 segundos
                     this.debounceTimers[formId] = setTimeout(() => {
-                        this.saveForm(form);
+                        this.saveFormWithFeedback(form, false);
                     }, 2000);
                 }
             });
 
-            // También guardar cuando pierde el foco
             textarea.addEventListener('blur', (e) => {
-                const form = e.target.closest('form');
+                const form = e.target.closest('.form-calificacion');
                 if (form) {
                     const formId = this.getFormId(form);
                     if (this.pendingChanges.has(formId)) {
                         if (this.debounceTimers[formId]) {
                             clearTimeout(this.debounceTimers[formId]);
                         }
-                        this.saveForm(form);
+                        this.saveFormWithFeedback(form, false);
                     }
                 }
             });
@@ -779,31 +792,32 @@ const AutoSave = {
     },
 
     getFormId(form) {
-        return form.action || form.id || Math.random().toString();
+        const tipo = form.dataset.tipo;
+        const idItem = form.dataset.idItem;
+        const idCliente = form.dataset.idCliente || '';
+        return `${tipo}-${idItem}-${idCliente}`;
     },
 
-    // Guardar formulario vía AJAX
-    async saveForm(form) {
-        const formId = this.getFormId(form);
-        const action = form.action;
+    // Guardar formulario vía AJAX con feedback visual
+    async saveFormWithFeedback(form, showToastOnSuccess) {
+        const tipo = form.dataset.tipo;
+        const idAuditoriaItem = form.dataset.idItem;
+        const idCliente = form.dataset.idCliente;
 
-        // Determinar tipo de calificación
-        let tipo, idAuditoriaItem, idCliente, calificacion, comentario;
+        let calificacion, comentario;
 
-        if (action.includes('calificar-global')) {
-            tipo = 'global';
-            idAuditoriaItem = action.match(/item\/(\d+)/)[1];
+        if (tipo === 'global') {
             calificacion = form.querySelector('input[name="calificacion_consultor"]:checked')?.value || '';
             comentario = form.querySelector('textarea[name="comentario_consultor"]')?.value || '';
-        } else if (action.includes('calificar-por-cliente')) {
-            tipo = 'cliente';
-            const match = action.match(/item\/(\d+)\/calificar-por-cliente\/(\d+)/);
-            idAuditoriaItem = match[1];
-            idCliente = match[2];
+        } else {
             calificacion = form.querySelector('input[name="calificacion_ajustada"]:checked')?.value || '';
             comentario = form.querySelector('textarea[name="comentario_cliente"]')?.value || '';
-        } else {
-            return; // No es un formulario de calificación
+        }
+
+        // Validar que haya una calificación seleccionada si es guardado manual
+        if (showToastOnSuccess && !calificacion) {
+            showToast('Debe seleccionar una calificación', 'warning', 3000);
+            return false;
         }
 
         this.showIndicator('saving', 'Guardando...');
@@ -836,48 +850,208 @@ const AutoSave = {
             }
 
             if (data.ok) {
+                const formId = this.getFormId(form);
                 this.pendingChanges.delete(formId);
                 this.showIndicator('saved', `Guardado ${data.timestamp}`);
 
-                // Actualizar visualmente el badge del ítem si se calificó
                 if (calificacion) {
-                    this.updateItemBadge(idAuditoriaItem, calificacion, tipo, idCliente);
+                    this.updateItemVisualStatus(idAuditoriaItem, calificacion, tipo, idCliente);
                 }
+
+                if (showToastOnSuccess) {
+                    showToast('✅ Calificación guardada exitosamente', 'success', 3000);
+                }
+
+                return true;
             } else {
                 this.showIndicator('error', data.message || 'Error al guardar');
+                if (showToastOnSuccess) {
+                    showToast(data.message || 'Error al guardar', 'error', 5000);
+                }
+                return false;
             }
         } catch (error) {
-            console.error('Autosave error:', error);
+            console.error('Error al guardar:', error);
             this.showIndicator('error', 'Error de conexión');
+            if (showToastOnSuccess) {
+                showToast('Error de conexión. Intente nuevamente.', 'error', 5000);
+            }
+            return false;
         }
     },
 
-    // Actualizar badge visual del ítem
-    updateItemBadge(idAuditoriaItem, calificacion, tipo, idCliente) {
-        // Buscar el accordion item
-        const accordionItem = document.querySelector(`[data-auditoria-item-id="${idAuditoriaItem}"]`);
+    // Actualizar estado visual del ítem
+    updateItemVisualStatus(idAuditoriaItem, calificacion, tipo, idCliente) {
+        const accordionItem = document.getElementById(`item-${idAuditoriaItem}`);
         if (!accordionItem) return;
 
         const button = accordionItem.querySelector('.accordion-button');
         if (!button) return;
 
-        // Actualizar badge de estado
-        let badge = button.querySelector('.badge');
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'badge ms-2';
-            button.appendChild(badge);
+        // Para ítems por cliente, actualizar el badge del tab
+        if (tipo === 'cliente' && idCliente) {
+            const tabButton = document.getElementById(`tab-consultor-item${idAuditoriaItem}-cliente${idCliente}`);
+            if (tabButton) {
+                let checkIcon = tabButton.querySelector('.bi-check-circle-fill');
+                if (!checkIcon && calificacion) {
+                    const icon = document.createElement('i');
+                    icon.className = 'bi bi-check-circle-fill text-success ms-1';
+                    tabButton.appendChild(icon);
+                }
+            }
         }
 
-        const badgeColors = {
-            'cumple': 'bg-success',
-            'parcial': 'bg-warning',
-            'no_cumple': 'bg-danger',
-            'no_aplica': 'bg-secondary'
-        };
+        // Verificar si todos los elementos del ítem están calificados
+        const allCalificado = this.checkItemFullyCalificado(accordionItem, tipo);
 
-        badge.className = `badge ms-2 ${badgeColors[calificacion] || 'bg-secondary'}`;
-        badge.textContent = calificacion.replace('_', ' ');
+        if (allCalificado) {
+            // Actualizar badge del accordion header
+            const statusBadge = button.querySelector('.badge.bg-warning, .badge.bg-success');
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Calificado';
+            }
+
+            // Agregar clase de borde verde
+            accordionItem.classList.add('border-success');
+            button.classList.add('bg-success', 'bg-opacity-10');
+        }
+
+        // Actualizar la barra de progreso
+        this.updateProgressBar();
+    },
+
+    checkItemFullyCalificado(accordionItem, tipo) {
+        if (tipo === 'global') {
+            const radio = accordionItem.querySelector('input[name="calificacion_consultor"]:checked');
+            return radio && radio.value && radio.value !== 'sin_revision';
+        } else {
+            // Para por_cliente, verificar todos los tabs
+            const radios = accordionItem.querySelectorAll('input[name="calificacion_ajustada"]');
+            const forms = accordionItem.querySelectorAll('.form-calificacion[data-tipo="cliente"]');
+
+            for (const form of forms) {
+                const checkedRadio = form.querySelector('input[name="calificacion_ajustada"]:checked');
+                if (!checkedRadio || !checkedRadio.value || checkedRadio.value === 'sin_revision') {
+                    return false;
+                }
+            }
+            return forms.length > 0;
+        }
+    },
+
+    updateProgressBar() {
+        // Contar ítems calificados
+        let totalItems = 0;
+        let itemsCalificados = 0;
+
+        document.querySelectorAll('.accordion-item').forEach(item => {
+            const forms = item.querySelectorAll('.form-calificacion');
+            forms.forEach(form => {
+                totalItems++;
+                const tipo = form.dataset.tipo;
+                let checkedRadio;
+
+                if (tipo === 'global') {
+                    checkedRadio = form.querySelector('input[name="calificacion_consultor"]:checked');
+                } else {
+                    checkedRadio = form.querySelector('input[name="calificacion_ajustada"]:checked');
+                }
+
+                if (checkedRadio && checkedRadio.value && checkedRadio.value !== 'sin_revision') {
+                    itemsCalificados++;
+                }
+            });
+        });
+
+        const porcentaje = totalItems > 0 ? Math.round((itemsCalificados / totalItems) * 100) : 0;
+        const todoCalificado = itemsCalificados === totalItems && totalItems > 0;
+
+        // Actualizar barra de progreso
+        const progressBar = document.querySelector('.progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${porcentaje}%`;
+            progressBar.textContent = `${porcentaje}%`;
+            progressBar.className = `progress-bar ${todoCalificado ? 'bg-success' : 'bg-warning'}`;
+        }
+
+        // Actualizar badge de conteo
+        const countBadge = document.querySelector('.card.sticky-top .badge');
+        if (countBadge) {
+            countBadge.textContent = `${itemsCalificados}/${totalItems} ítems calificados`;
+            countBadge.className = `badge ${todoCalificado ? 'bg-success' : 'bg-warning'}`;
+        }
+
+        // Actualizar mensaje
+        const messageContainer = document.querySelector('.card.sticky-top small');
+        if (messageContainer) {
+            if (todoCalificado) {
+                messageContainer.className = 'text-success mt-2 d-block';
+                messageContainer.innerHTML = '<i class="bi bi-check-circle-fill"></i> Todos los ítems han sido calificados. Puede cerrar la auditoría.';
+            } else {
+                messageContainer.className = 'text-muted mt-2 d-block';
+                messageContainer.innerHTML = `<i class="bi bi-info-circle"></i> Faltan ${totalItems - itemsCalificados} ítem(s) por calificar.`;
+            }
+        }
+
+        // Habilitar/deshabilitar botón de cerrar
+        const cerrarBtn = document.querySelector('button[type="submit"].btn-success.btn-lg');
+        if (cerrarBtn) {
+            cerrarBtn.disabled = !todoCalificado;
+        }
+    },
+
+    // Expandir siguiente ítem con scroll suave centrado
+    expandNextItemFromIndex(currentIndex) {
+        const nextIndex = currentIndex + 1;
+        const nextItem = document.querySelector(`.accordion-item[data-item-index="${nextIndex}"]`);
+
+        if (nextItem) {
+            // Cerrar ítem actual
+            const currentItem = document.querySelector(`.accordion-item[data-item-index="${currentIndex}"]`);
+            if (currentItem) {
+                const currentCollapse = currentItem.querySelector('.accordion-collapse');
+                const bsCollapse = bootstrap.Collapse.getInstance(currentCollapse);
+                if (bsCollapse) {
+                    bsCollapse.hide();
+                }
+            }
+
+            // Abrir siguiente ítem
+            const nextCollapse = nextItem.querySelector('.accordion-collapse');
+            const nextBsCollapse = new bootstrap.Collapse(nextCollapse, { toggle: false });
+
+            setTimeout(() => {
+                nextBsCollapse.show();
+
+                // Scroll suave al siguiente ítem con offset para el header sticky
+                setTimeout(() => {
+                    const headerOffset = 150; // Altura del header sticky + margen
+                    const elementPosition = nextItem.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }, 350);
+            }, 300);
+        } else {
+            // No hay más ítems - scroll al botón de cerrar
+            const cerrarCard = document.querySelector('.card.border-success, .card.border-secondary');
+            if (cerrarCard) {
+                setTimeout(() => {
+                    const headerOffset = 150;
+                    const elementPosition = cerrarCard.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }, 400);
+            }
+        }
     },
 
     // Alerta al salir con cambios pendientes
@@ -889,25 +1063,16 @@ const AutoSave = {
                 return e.returnValue;
             }
         });
-
-        // Limpiar pendingChanges cuando se hace submit de un formulario
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', () => {
-                this.pendingChanges.clear();
-            });
-        });
     }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar autosave
-    AutoSave.init();
+    // Inicializar manager de calificaciones
+    CalificacionManager.init();
 
     // Mostrar toast si hay mensajes flash
     <?php if (session()->getFlashdata('success')): ?>
         showToast('<?= esc(session()->getFlashdata('success')) ?>', 'success', 5000);
-        // Auto-expand next item after save
-        expandNextItem();
     <?php endif; ?>
 
     <?php if (session()->getFlashdata('error')): ?>
@@ -917,82 +1082,13 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php if (session()->getFlashdata('warning')): ?>
         showToast('<?= esc(session()->getFlashdata('warning')) ?>', 'warning', 5000);
     <?php endif; ?>
-
-    // Add event listeners to all forms to save current item index
-    const forms = document.querySelectorAll('form[method="post"]');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            // No guardar para el formulario de cerrar auditoría
-            if (!this.action.includes('/cerrar')) {
-                // Find the accordion item containing this form
-                const accordionItem = this.closest('.accordion-item');
-                if (accordionItem) {
-                    const itemIndex = accordionItem.getAttribute('data-item-index');
-                    sessionStorage.setItem('lastSavedItemIndex', itemIndex);
-                }
-            }
-        });
-    });
 });
 
 /**
- * Expand next item after successful save
+ * Función legacy para compatibilidad (ya no se usa con POST tradicional)
  */
 function expandNextItem() {
-    const lastSavedIndex = sessionStorage.getItem('lastSavedItemIndex');
-
-    if (lastSavedIndex !== null) {
-        const currentIndex = parseInt(lastSavedIndex);
-        const nextIndex = currentIndex + 1;
-
-        // Find next accordion item
-        const nextItem = document.querySelector(`.accordion-item[data-item-index="${nextIndex}"]`);
-
-        if (nextItem) {
-            // Close current item
-            const currentItem = document.querySelector(`.accordion-item[data-item-index="${currentIndex}"]`);
-            if (currentItem) {
-                const currentCollapse = currentItem.querySelector('.accordion-collapse');
-                const bsCollapse = bootstrap.Collapse.getInstance(currentCollapse);
-                if (bsCollapse) {
-                    bsCollapse.hide();
-                }
-            }
-
-            // Open next item
-            const nextCollapse = nextItem.querySelector('.accordion-collapse');
-            const nextBsCollapse = new bootstrap.Collapse(nextCollapse, {
-                toggle: false
-            });
-
-            // Wait a bit for the current to close, then open next
-            setTimeout(() => {
-                nextBsCollapse.show();
-
-                // Scroll to the next item smoothly
-                setTimeout(() => {
-                    nextItem.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }, 350);
-            }, 350);
-        } else {
-            // No more items - scroll to cerrar button
-            const cerrarCard = document.querySelector('.card.border-success, .card.border-secondary');
-            if (cerrarCard) {
-                setTimeout(() => {
-                    cerrarCard.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }, 500);
-            }
-        }
-
-        // Clear the saved index
-        sessionStorage.removeItem('lastSavedItemIndex');
-    }
+    // Ya no se necesita - el nuevo sistema usa expandNextItemFromIndex
 }
 
 /**
