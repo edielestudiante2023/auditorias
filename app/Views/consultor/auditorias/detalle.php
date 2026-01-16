@@ -22,9 +22,14 @@
             ?>
         </p>
     </div>
-    <div>
-        <a href="<?= site_url('consultor/auditoria/' . $auditoria['id_auditoria'] . '/asignar-clientes') ?>" class="btn btn-outline-primary me-2">
-            <i class="bi bi-building"></i> Asignar Clientes (<?= count($clientes) ?>)
+    <div class="d-flex gap-2">
+        <?php if (in_array($auditoria['estado'], ['en_proveedor', 'en_revision_consultor'])): ?>
+            <button type="button" class="btn btn-outline-info" onclick="reenviarEmailProveedor()" title="Reenviar credenciales al proveedor">
+                <i class="bi bi-envelope"></i> Reenviar Email
+            </button>
+        <?php endif; ?>
+        <a href="<?= site_url('consultor/auditoria/' . $auditoria['id_auditoria'] . '/asignar-clientes') ?>" class="btn btn-outline-primary">
+            <i class="bi bi-building"></i> Clientes (<?= count($clientes) ?>)
         </a>
         <a href="<?= site_url('consultor/auditorias') ?>" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver
@@ -866,8 +871,16 @@ const CalificacionManager = {
                     this.updateItemVisualStatus(idAuditoriaItem, calificacion, tipo, idCliente);
                 }
 
+                // Actualizar porcentaje de cumplimiento si viene en la respuesta
+                if (data.porcentaje_cumplimiento !== null && data.porcentaje_cumplimiento !== undefined) {
+                    this.updateCumplimiento(data.porcentaje_cumplimiento);
+                }
+
                 if (showToastOnSuccess) {
-                    showToast('✅ Calificación guardada exitosamente', 'success', 3000);
+                    const msgCumplimiento = data.porcentaje_cumplimiento !== null
+                        ? ` (Cumplimiento: ${data.porcentaje_cumplimiento.toFixed(1)}%)`
+                        : '';
+                    showToast(`✅ Calificación guardada${msgCumplimiento}`, 'success', 3000);
                 }
 
                 return true;
@@ -1071,6 +1084,63 @@ const CalificacionManager = {
                 return e.returnValue;
             }
         });
+    },
+
+    // Actualizar porcentaje de cumplimiento en tiempo real
+    updateCumplimiento(porcentaje) {
+        // Buscar o crear el badge de cumplimiento
+        let cumplimientoBadge = document.getElementById('cumplimiento-badge');
+        const progressContainer = document.querySelector('#progress-bar-compact .d-flex');
+
+        if (!cumplimientoBadge && progressContainer) {
+            // Crear el badge si no existe
+            cumplimientoBadge = document.createElement('span');
+            cumplimientoBadge.id = 'cumplimiento-badge';
+            cumplimientoBadge.className = 'badge bg-info ms-2';
+            cumplimientoBadge.title = 'Porcentaje de cumplimiento calculado';
+
+            const chevronBtn = progressContainer.querySelector('button[data-bs-toggle="collapse"]');
+            if (chevronBtn) {
+                progressContainer.insertBefore(cumplimientoBadge, chevronBtn);
+            } else {
+                progressContainer.appendChild(cumplimientoBadge);
+            }
+        }
+
+        if (cumplimientoBadge) {
+            // Determinar color según porcentaje
+            let badgeClass = 'bg-danger';
+            if (porcentaje >= 90) {
+                badgeClass = 'bg-success';
+            } else if (porcentaje >= 70) {
+                badgeClass = 'bg-info';
+            } else if (porcentaje >= 50) {
+                badgeClass = 'bg-warning';
+            }
+
+            cumplimientoBadge.className = `badge ${badgeClass} ms-2`;
+            cumplimientoBadge.innerHTML = `<i class="bi bi-graph-up"></i> ${porcentaje.toFixed(1)}%`;
+        }
+
+        // También actualizar en el panel de detalles si existe
+        const detailsPanel = document.querySelector('#progress-details');
+        if (detailsPanel) {
+            let cumplimientoDetail = detailsPanel.querySelector('.cumplimiento-detail');
+            if (!cumplimientoDetail) {
+                cumplimientoDetail = document.createElement('div');
+                cumplimientoDetail.className = 'cumplimiento-detail mt-2 pt-2 border-top';
+                detailsPanel.querySelector('.pt-2').appendChild(cumplimientoDetail);
+            }
+            cumplimientoDetail.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                    <strong>Cumplimiento:</strong>
+                    <span class="ms-2 badge ${porcentaje >= 70 ? 'bg-success' : (porcentaje >= 50 ? 'bg-warning' : 'bg-danger')}">
+                        ${porcentaje.toFixed(1)}%
+                    </span>
+                </div>
+            `;
+        }
     }
 };
 
@@ -1097,6 +1167,46 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function expandNextItem() {
     // Ya no se necesita - el nuevo sistema usa expandNextItemFromIndex
+}
+
+/**
+ * Reenviar email de credenciales al proveedor
+ */
+function reenviarEmailProveedor() {
+    if (!confirm('¿Desea reenviar el email de acceso al proveedor?\n\nSe generará una nueva contraseña temporal.')) {
+        return;
+    }
+
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+    fetch('<?= site_url('consultor/auditoria/' . $auditoria['id_auditoria'] . '/reenviar-email') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: '<?= csrf_token() ?>=<?= csrf_hash() ?>'
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+
+        if (data.success) {
+            showToast(data.message, 'success', 5000);
+        } else {
+            showToast(data.message || 'Error al enviar email', 'error', 5000);
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        showToast('Error de conexión', 'error', 5000);
+        console.error('Error:', error);
+    });
 }
 
 /**

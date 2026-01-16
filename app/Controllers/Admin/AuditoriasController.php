@@ -236,11 +236,13 @@ class AuditoriasController extends BaseController
         }
 
         $motivo = $this->request->getPost('motivo');
+        $destino = $this->request->getPost('destino') ?? 'consultor';
 
         $resultado = $this->auditoriaModel->reabrirAuditoria(
             $idAuditoria,
             userId(),
-            $motivo
+            $motivo,
+            $destino
         );
 
         return $this->response->setJSON($resultado);

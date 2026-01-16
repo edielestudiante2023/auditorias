@@ -20,6 +20,7 @@
 </div>
 
 <?= view('partials/flash') ?>
+<?= $this->include('components/toast') ?>
 
 <!-- Barra de progreso compacta y flotante -->
 <?php
@@ -441,25 +442,13 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
     </div>
 <?php endif; ?>
 
-<!-- Toast Container -->
-<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
-    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <span id="toastMessage">Guardado exitosamente</span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    </div>
-</div>
 
 <!-- JavaScript for Accordion auto-navigation and Toast notifications -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Show toast on successful save from flash messages
     <?php if (session()->getFlashdata('success')): ?>
-        showSuccessToast('<?= addslashes(session()->getFlashdata('success')) ?>');
+        showToast('<?= addslashes(session()->getFlashdata('success')) ?>', 'success');
 
         // Auto-expand next item after save
         expandNextItem();
@@ -550,23 +539,6 @@ function expandNextItem() {
     }
 }
 
-/**
- * Show success toast with custom message
- */
-function showSuccessToast(message) {
-    const toastEl = document.getElementById('successToast');
-    const toastMessage = document.getElementById('toastMessage');
-
-    toastMessage.textContent = message;
-
-    const toast = new bootstrap.Toast(toastEl, {
-        animation: true,
-        autohide: true,
-        delay: 4000
-    });
-
-    toast.show();
-}
 
 /**
  * Manejar eliminación de evidencias globales
@@ -828,7 +800,7 @@ const FormManager = {
         }
 
         if (!comentarioField || !comentarioField.value.trim()) {
-            showSuccessToast('Debe ingresar un comentario', 'warning');
+            showToast('Debe ingresar un comentario', 'warning');
             comentarioField?.focus();
             return false;
         }
@@ -862,7 +834,7 @@ const FormManager = {
 
             if (data.ok) {
                 this.showIndicator('saved', data.message);
-                showSuccessToast(data.message);
+                showToast(data.message, 'success');
 
                 // Limpiar input de archivos
                 const fileInputs = form.querySelectorAll('input[type="file"]');
@@ -885,7 +857,7 @@ const FormManager = {
                 return true;
             } else {
                 this.showIndicator('error', data.message || 'Error al guardar');
-                showSuccessToast(data.message || 'Error al guardar', 'error');
+                showToast(data.message || 'Error al guardar', 'error');
                 btn.disabled = false;
                 btn.innerHTML = originalText;
                 return false;
@@ -893,7 +865,7 @@ const FormManager = {
         } catch (error) {
             console.error('Error al guardar:', error);
             this.showIndicator('error', 'Error de conexión');
-            showSuccessToast('Error de conexión. Intente nuevamente.', 'error');
+            showToast('Error de conexión. Intente nuevamente.', 'error');
             btn.disabled = false;
             btn.innerHTML = originalText;
             return false;
@@ -1052,30 +1024,6 @@ const FormManager = {
 document.addEventListener('DOMContentLoaded', function() {
     FormManager.init();
 });
-
-// Toast helper
-function showSuccessToast(message, type = 'success') {
-    const toastEl = document.getElementById('successToast');
-    const toastMessage = document.getElementById('toastMessage');
-    const toastDiv = toastEl.querySelector('.toast');
-
-    toastMessage.textContent = message;
-
-    if (type === 'error') {
-        toastDiv.className = 'toast align-items-center text-white bg-danger border-0';
-    } else if (type === 'warning') {
-        toastDiv.className = 'toast align-items-center text-white bg-warning border-0';
-    } else {
-        toastDiv.className = 'toast align-items-center text-white bg-success border-0';
-    }
-
-    const toast = new bootstrap.Toast(toastEl, {
-        animation: true,
-        autohide: true,
-        delay: 4000
-    });
-    toast.show();
-}
 </script>
 <?php endif; ?>
 

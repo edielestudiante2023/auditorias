@@ -190,12 +190,36 @@
             </div>
             <div class="modal-body">
                 <p>¿Está seguro que desea reabrir la auditoría <strong id="codigoReabrir"></strong>?</p>
-                <p class="text-muted small">La auditoría cambiará a estado "en_revision" y el consultor podrá hacer modificaciones.</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Enviar a <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="destinoReabrir" id="destinoProveedor" value="proveedor">
+                            <label class="form-check-label" for="destinoProveedor">
+                                <i class="bi bi-building text-primary"></i> Proveedor
+                                <small class="d-block text-muted">Para que suba nuevos documentos</small>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="destinoReabrir" id="destinoConsultor" value="consultor" checked>
+                            <label class="form-check-label" for="destinoConsultor">
+                                <i class="bi bi-person-badge text-success"></i> Consultor
+                                <small class="d-block text-muted">Para que revise/califique</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="mb-3">
                     <label for="motivoReabrir" class="form-label">Motivo de reapertura <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="motivoReabrir" rows="3" placeholder="Ingrese el motivo por el cual reabre esta auditoría..." required></textarea>
                     <div class="form-text">Este motivo quedará registrado en el historial.</div>
+                </div>
+
+                <div class="alert alert-info mb-0" id="alertaDestino">
+                    <i class="bi bi-info-circle"></i>
+                    <span id="textoDestino">La auditoría será enviada al consultor para revisión.</span>
                 </div>
 
                 <input type="hidden" id="idAuditoriaReabrir">
@@ -239,12 +263,31 @@ function mostrarModalReabrir(idAuditoria, codigo) {
     $('#idAuditoriaReabrir').val(idAuditoria);
     $('#codigoReabrir').text(codigo);
     $('#motivoReabrir').val('');
+    $('#destinoConsultor').prop('checked', true);
+    actualizarTextoDestino();
     $('#modalReabrir').modal('show');
+}
+
+// Actualizar texto según destino seleccionado
+$('input[name="destinoReabrir"]').on('change', function() {
+    actualizarTextoDestino();
+});
+
+function actualizarTextoDestino() {
+    const destino = $('input[name="destinoReabrir"]:checked').val();
+    if (destino === 'proveedor') {
+        $('#textoDestino').html('<strong>Proveedor:</strong> Podrá subir nuevos documentos y evidencias.');
+        $('#alertaDestino').removeClass('alert-info').addClass('alert-primary');
+    } else {
+        $('#textoDestino').html('<strong>Consultor:</strong> Podrá revisar y cambiar calificaciones.');
+        $('#alertaDestino').removeClass('alert-primary').addClass('alert-info');
+    }
 }
 
 function confirmarReabrir() {
     const idAuditoria = $('#idAuditoriaReabrir').val();
     const motivo = $('#motivoReabrir').val().trim();
+    const destino = $('input[name="destinoReabrir"]:checked').val();
 
     if (!motivo) {
         alert('Debe ingresar un motivo para reabrir la auditoría');
@@ -256,11 +299,31 @@ function confirmarReabrir() {
         type: 'POST',
         data: {
             motivo: motivo,
+            destino: destino,
             <?= csrf_token() ?>: '<?= csrf_hash() ?>'
         },
         success: function(response) {
             if (response.success) {
                 $('#modalReabrir').modal('hide');
+
+                // Construir opciones según destino
+                let opcionesHtml = '';
+                if (response.destino === 'proveedor') {
+                    opcionesHtml = `
+                        <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/reenviar-email" class="btn btn-primary">
+                            <i class="bi bi-envelope"></i> Enviar Email al Proveedor
+                        </a>
+                        <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/adicionar-clientes" class="btn btn-outline-primary">
+                            <i class="bi bi-person-plus"></i> Adicionar Clientes
+                        </a>
+                    `;
+                } else {
+                    opcionesHtml = `
+                        <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/adicionar-clientes" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Adicionar Clientes
+                        </a>
+                    `;
+                }
 
                 // Mostrar modal con opciones
                 const modalHtml = `
@@ -273,12 +336,10 @@ function confirmarReabrir() {
                                     </h5>
                                 </div>
                                 <div class="modal-body">
-                                    <p><strong>` + response.message + `</strong></p>
+                                    <p><strong>${response.message}</strong></p>
                                     <p class="text-muted">¿Qué deseas hacer ahora?</p>
                                     <div class="d-grid gap-2">
-                                        <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/adicionar-clientes" class="btn btn-primary">
-                                            <i class="bi bi-person-plus"></i> Adicionar Clientes
-                                        </a>
+                                        ${opcionesHtml}
                                         <button class="btn btn-secondary" onclick="location.reload()">
                                             <i class="bi bi-arrow-clockwise"></i> Volver a la Lista
                                         </button>

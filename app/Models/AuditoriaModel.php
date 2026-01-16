@@ -295,14 +295,15 @@ class AuditoriaModel extends Model
 
     /**
      * Reabre una auditoría cerrada (solo SuperAdmin)
-     * Cambia el estado de 'cerrada' a 'en_revision'
+     * Permite elegir si va al proveedor o al consultor
      *
      * @param int $idAuditoria
      * @param int $idUsuarioReapertura ID del usuario que reabre (debe ser superadmin)
      * @param string|null $motivo Motivo de la reapertura
+     * @param string $destino Estado destino: 'proveedor' o 'consultor'
      * @return array ['success' => bool, 'message' => string, 'auditoria' => array|null]
      */
-    public function reabrirAuditoria(int $idAuditoria, int $idUsuarioReapertura, ?string $motivo = null): array
+    public function reabrirAuditoria(int $idAuditoria, int $idUsuarioReapertura, ?string $motivo = null, string $destino = 'consultor'): array
     {
         $auditoria = $this->find($idAuditoria);
 
@@ -322,9 +323,13 @@ class AuditoriaModel extends Model
             ];
         }
 
-        // Cambiar estado a en_revision
+        // Determinar estado destino
+        $estadoDestino = $destino === 'proveedor' ? 'en_proveedor' : 'en_revision_consultor';
+        $destinoTexto = $destino === 'proveedor' ? 'Proveedor' : 'Consultor';
+
+        // Cambiar estado
         $updated = $this->update($idAuditoria, [
-            'estado' => 'en_revision',
+            'estado' => $estadoDestino,
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
@@ -338,7 +343,7 @@ class AuditoriaModel extends Model
 
         // Registrar en log de reaperturas
         $db = \Config\Database::connect();
-        $detalle = "Reapertura: cerrada → en_revision";
+        $detalle = "Reapertura: cerrada → {$estadoDestino} (enviada a {$destinoTexto})";
         if ($motivo) {
             $detalle .= " | Motivo: " . $motivo;
         }
@@ -353,7 +358,8 @@ class AuditoriaModel extends Model
 
         return [
             'success' => true,
-            'message' => 'Auditoría reabierta exitosamente',
+            'message' => "Auditoría reabierta y enviada a {$destinoTexto}",
+            'destino' => $destino,
             'auditoria' => $this->find($idAuditoria)
         ];
     }
