@@ -89,62 +89,70 @@ $porcentajeProgreso = $totalItems > 0 ? round(($itemsCalificados / $totalItems) 
 $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
 ?>
 
-<div class="card mb-4 <?= $todoCalificado ? 'border-success' : 'border-warning' ?> sticky-top" style="top: 70px; z-index: 1020; background-color: white;">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0">
-                <i class="bi bi-clipboard-data"></i> Progreso de Calificación
-            </h6>
-            <span class="badge <?= $todoCalificado ? 'bg-success' : 'bg-warning' ?>">
-                <?= $itemsCalificados ?>/<?= $totalItems ?> ítems calificados
-            </span>
-        </div>
-        <div class="progress" style="height: 25px;">
-            <div class="progress-bar <?= $todoCalificado ? 'bg-success' : 'bg-warning' ?>"
-                 role="progressbar"
-                 style="width: <?= $porcentajeProgreso ?>%;"
-                 aria-valuenow="<?= $porcentajeProgreso ?>"
-                 aria-valuemin="0"
-                 aria-valuemax="100">
-                <?= $porcentajeProgreso ?>%
-            </div>
-        </div>
-        <?php if ($todoCalificado): ?>
-            <small class="text-success mt-2 d-block">
-                <i class="bi bi-check-circle-fill"></i> Todos los ítems han sido calificados. Puede cerrar la auditoría.
-            </small>
-        <?php else: ?>
-            <small class="text-muted mt-2 d-block">
-                <i class="bi bi-info-circle"></i> Faltan <?= $totalItems - $itemsCalificados ?> ítem(s) por calificar.
-            </small>
-        <?php endif; ?>
-
-        <!-- DEBUG: Mostrar información de calificación -->
-        <details class="mt-3">
-            <summary class="text-primary" style="cursor: pointer;">
-                <small><i class="bi bi-bug"></i> Ver detalle de calificación (debug)</small>
-            </summary>
-            <div class="mt-2 p-2 bg-light rounded" style="max-height: 300px; overflow-y: auto;">
-                <small>
-                    <strong>Total ítems:</strong> <?= $totalItems ?><br>
-                    <strong>Ítems calificados:</strong> <?= $itemsCalificados ?><br>
-                    <strong>Porcentaje:</strong> <?= $porcentajeProgreso ?>%<br>
-                    <hr>
-                    <?php foreach ($debugInfo as $idx => $info): ?>
-                        <div class="mb-1 <?= $info['calificado'] === 'SI' ? 'text-success' : 'text-danger' ?>">
-                            <?= ($idx + 1) ?>. [<?= $info['tipo'] ?>] <?= esc($info['titulo']) ?>
-                            <?php if (isset($info['cliente'])): ?>
-                                - <?= esc($info['cliente']) ?>
-                            <?php endif; ?>
-                            - <strong><?= $info['calificado'] ?></strong>
-                            <?php if (isset($info['calificacion'])): ?>
-                                (<?= $info['calificacion'] ?>)
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
+<!-- Barra de progreso compacta y flotante -->
+<div id="progress-bar-compact" class="sticky-top" style="top: 56px; z-index: 1020;">
+    <div class="bg-white border-bottom shadow-sm py-2 px-3">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center flex-grow-1 me-3">
+                <span class="badge <?= $todoCalificado ? 'bg-success' : 'bg-warning' ?> me-2" style="min-width: 80px;">
+                    <?= $porcentajeProgreso ?>%
+                </span>
+                <div class="progress flex-grow-1" style="height: 8px; max-width: 200px;">
+                    <div class="progress-bar <?= $todoCalificado ? 'bg-success' : 'bg-warning' ?>"
+                         role="progressbar"
+                         style="width: <?= $porcentajeProgreso ?>%;">
+                    </div>
+                </div>
+                <small class="ms-2 text-muted d-none d-md-inline">
+                    <?= $itemsCalificados ?>/<?= $totalItems ?> ítems
                 </small>
             </div>
-        </details>
+            <?php if ($todoCalificado): ?>
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle-fill"></i> Listo para cerrar
+                </span>
+            <?php endif; ?>
+            <button class="btn btn-sm btn-link text-muted p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#progress-details" aria-expanded="false">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+
+        <!-- Panel expandible con detalles -->
+        <div class="collapse" id="progress-details">
+            <div class="pt-2 mt-2 border-top">
+                <?php if ($todoCalificado): ?>
+                    <small class="text-success d-block">
+                        <i class="bi bi-check-circle-fill"></i> Todos los ítems han sido calificados. Puede cerrar la auditoría.
+                    </small>
+                <?php else: ?>
+                    <small class="text-muted d-block">
+                        <i class="bi bi-info-circle"></i> Faltan <?= $totalItems - $itemsCalificados ?> ítem(s) por calificar.
+                    </small>
+                <?php endif; ?>
+
+                <!-- DEBUG expandible -->
+                <details class="mt-2">
+                    <summary class="text-primary small" style="cursor: pointer;">
+                        <i class="bi bi-bug"></i> Ver detalle de calificación (debug)
+                    </summary>
+                    <div class="mt-2 p-2 bg-light rounded" style="max-height: 200px; overflow-y: auto; font-size: 0.75rem;">
+                        <strong>Total:</strong> <?= $totalItems ?> |
+                        <strong>Calificados:</strong> <?= $itemsCalificados ?> |
+                        <strong>%:</strong> <?= $porcentajeProgreso ?>%
+                        <hr class="my-1">
+                        <?php foreach ($debugInfo as $idx => $info): ?>
+                            <div class="<?= $info['calificado'] === 'SI' ? 'text-success' : 'text-danger' ?>">
+                                <?= ($idx + 1) ?>. [<?= $info['tipo'] ?>] <?= esc(substr($info['titulo'], 0, 30)) ?>...
+                                <?php if (isset($info['cliente'])): ?>
+                                    - <?= esc(substr($info['cliente'], 0, 15)) ?>
+                                <?php endif; ?>
+                                - <strong><?= $info['calificado'] ?></strong>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </details>
+            </div>
+        </div>
     </div>
 </div>
 
