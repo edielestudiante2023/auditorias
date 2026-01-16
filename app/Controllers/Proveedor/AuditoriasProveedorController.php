@@ -269,10 +269,14 @@ class AuditoriasProveedorController extends BaseController
                 return $this->response->setJSON(['ok' => false, 'message' => 'Tipo inválido']);
             }
 
+            // Calcular progreso actualizado
+            $progreso = $this->calcularProgreso($idAuditoria);
+
             return $this->response->setJSON([
                 'ok' => true,
                 'message' => 'Guardado',
                 'timestamp' => date('H:i:s'),
+                'progreso' => $progreso,
                 'csrf_token' => csrf_token(),
                 'csrf_hash' => csrf_hash()
             ]);
@@ -282,6 +286,278 @@ class AuditoriasProveedorController extends BaseController
             return $this->response->setJSON([
                 'ok' => false,
                 'message' => 'Error al guardar',
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Guardar ítem completo vía AJAX (comentario + archivos)
+     * Retorna JSON en lugar de redirect
+     */
+    public function guardarItemAjax(int $idAuditoria, int $idAuditoriaItem)
+    {
+        // Verificar que es una petición AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['ok' => false, 'message' => 'Petición inválida']);
+        }
+
+        $db = \Config\Database::connect();
+
+        // Verificar acceso
+        $auditoria = $db->query("
+            SELECT a.*, p.nit as proveedor_nit
+            FROM auditorias a
+            JOIN proveedores p ON p.id_proveedor = a.id_proveedor
+            JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
+            WHERE a.id_auditoria = ?
+              AND cpc.id_usuario_responsable = ?
+              AND cpc.estado = 'activo'
+        ", [$idAuditoria, userId()])->getRowArray();
+
+        if (!$auditoria) {
+            return $this->response->setJSON([
+                'ok' => false,
+                'message' => 'Auditoría no encontrada',
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        if ($auditoria['estado'] !== 'en_proveedor') {
+            return $this->response->setJSON([
+                'ok' => false,
+                'message' => 'La auditoría no está en estado editable',
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        $item = $this->auditoriaItemModel->find($idAuditoriaItem);
+        if (!$item || $item['id_auditoria'] != $idAuditoria) {
+            return $this->response->setJSON([
+                'ok' => false,
+                'message' => 'Ítem no válido',
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
+        // Obtener alcance del ítem
+        $itemBanco = $this->itemsBancoModel->find($item['id_item']);
+        $idCliente = $this->request->getPost('id_cliente');
+        $tipo = $itemBanco['alcance'] === 'global' ? 'global' : 'cliente';
+
+        try {
+            $archivosSubidos = [];
+
+            if ($tipo === 'global') {
+                // Guardar comentario global
+                $comentario = $this->request->getPost('comentario_proveedor');
+                $this->auditoriaItemModel->update($idAuditoriaItem, [
+                    'comentario_proveedor' => $comentario,
+                ]);
+
+                // Registrar en bitácora
+                if (!empty($comentario)) {
+                    $this->auditoriaLogModel->registrarComentarioGlobal(
+                        $idAuditoria,
+                        $idAuditoriaItem,
+                        $itemBanco['titulo'] ?? 'Ítem sin título'
+                    );
+                }
+
+                // Procesar evidencias globales
+                $files = $this->request->getFileMultiple('evidencias');
+                if ($files) {
+                    foreach ($files as $file) {
+                        if ($file->isValid() && !$file->hasMoved()) {
+                            $validation = $this->validateFile($file);
+                            if (!$validation['ok']) {
+                                return $this->response->setJSON([
+                                    'ok' => false,
+                                    'message' => $validation['error'],
+                                    'csrf_token' => csrf_token(),
+                                    'csrf_hash' => csrf_hash()
+                                ]);
+                            }
+
+                            $result = $this->uploadService->saveEvidencia([
+                                'name' => $file->getName(),
+                                'type' => $file->getClientMimeType(),
+                                'tmp_name' => $file->getTempName(),
+                                'error' => $file->getError(),
+                                'size' => $file->getSize(),
+                            ], $auditoria['proveedor_nit'], $idAuditoria, $idAuditoriaItem, [
+                                'user_id' => userId(),
+                                'id_auditoria' => $idAuditoria,
+                                'id_item' => $item['id_item'],
+                                'id_auditoria_item' => $idAuditoriaItem,
+                            ]);
+
+                            if ($result['ok']) {
+                                $this->evidenciaModel->insert([
+                                    'id_auditoria_item' => $idAuditoriaItem,
+                                    'nombre_archivo_original' => $file->getName(),
+                                    'ruta_archivo' => $result['path'],
+                                    'tipo_mime' => $result['mime'],
+                                    'tamanio_bytes' => $result['size'],
+                                    'hash_archivo' => hash_file('sha256', WRITEPATH . $result['path']),
+                                    'created_at' => date('Y-m-d H:i:s'),
+                                ]);
+
+                                $archivosSubidos[] = $file->getName();
+
+                                $this->auditoriaLogModel->registrarEvidenciaGlobalSubida(
+                                    $idAuditoria,
+                                    $idAuditoriaItem,
+                                    $file->getName(),
+                                    $result['size']
+                                );
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Guardar ítem por cliente
+                if (!$idCliente) {
+                    return $this->response->setJSON([
+                        'ok' => false,
+                        'message' => 'Debe especificar el cliente',
+                        'csrf_token' => csrf_token(),
+                        'csrf_hash' => csrf_hash()
+                    ]);
+                }
+
+                $comentario = $this->request->getPost('comentario_proveedor_cliente');
+
+                // Buscar o crear registro
+                $itemCliente = $this->auditoriaItemClienteModel
+                    ->where('id_auditoria_item', $idAuditoriaItem)
+                    ->where('id_cliente', $idCliente)
+                    ->first();
+
+                if (!$itemCliente) {
+                    $this->auditoriaItemClienteModel->insert([
+                        'id_auditoria_item' => $idAuditoriaItem,
+                        'id_cliente' => $idCliente,
+                        'comentario_proveedor_cliente' => $comentario,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ], false);
+                    $idAuditoriaItemCliente = $this->auditoriaItemClienteModel->getInsertID();
+                } else {
+                    $this->auditoriaItemClienteModel->update($itemCliente['id_auditoria_item_cliente'], [
+                        'comentario_proveedor_cliente' => $comentario,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                    $idAuditoriaItemCliente = $itemCliente['id_auditoria_item_cliente'];
+                }
+
+                // Registrar en bitácora
+                if (!empty($comentario)) {
+                    $cliente = $this->auditoriaClienteModel
+                        ->select('clientes.razon_social')
+                        ->join('clientes', 'clientes.id_cliente = auditoria_clientes.id_cliente')
+                        ->where('auditoria_clientes.id_cliente', $idCliente)
+                        ->first();
+
+                    $this->auditoriaLogModel->registrarComentarioCliente(
+                        $idAuditoria,
+                        $idAuditoriaItem,
+                        $idCliente,
+                        $itemBanco['titulo'] ?? 'Ítem sin título',
+                        $cliente['razon_social'] ?? 'Cliente'
+                    );
+                }
+
+                // Procesar evidencias por cliente
+                $files = $this->request->getFileMultiple('evidencias_cliente');
+                if ($files && $idAuditoriaItemCliente) {
+                    $proveedor = $this->proveedorModel->find($auditoria['id_proveedor']);
+
+                    foreach ($files as $file) {
+                        if ($file->isValid() && !$file->hasMoved()) {
+                            $validation = $this->validateFile($file);
+                            if (!$validation['ok']) {
+                                return $this->response->setJSON([
+                                    'ok' => false,
+                                    'message' => $validation['error'],
+                                    'csrf_token' => csrf_token(),
+                                    'csrf_hash' => csrf_hash()
+                                ]);
+                            }
+
+                            $result = $this->uploadService->saveEvidenciaCliente([
+                                'name' => $file->getName(),
+                                'type' => $file->getClientMimeType(),
+                                'tmp_name' => $file->getTempName(),
+                                'error' => $file->getError(),
+                                'size' => $file->getSize(),
+                            ], $proveedor['nit'], $idAuditoria, $idAuditoriaItem, $idCliente, [
+                                'user_id' => userId(),
+                                'id_auditoria' => $idAuditoria,
+                                'id_item' => $item['id_item'],
+                                'id_auditoria_item' => $idAuditoriaItem,
+                                'id_cliente' => $idCliente,
+                            ]);
+
+                            if ($result['ok']) {
+                                $this->evidenciaClienteModel->insert([
+                                    'id_auditoria_item_cliente' => $idAuditoriaItemCliente,
+                                    'nombre_archivo_original' => $file->getName(),
+                                    'ruta_archivo' => $result['path'],
+                                    'tipo_mime' => $result['mime'],
+                                    'tamanio_bytes' => $result['size'],
+                                    'hash_archivo' => hash_file('sha256', WRITEPATH . $result['path']),
+                                    'created_at' => date('Y-m-d H:i:s'),
+                                ]);
+
+                                $archivosSubidos[] = $file->getName();
+
+                                $clienteInfo = $this->auditoriaClienteModel
+                                    ->select('clientes.razon_social')
+                                    ->join('clientes', 'clientes.id_cliente = auditoria_clientes.id_cliente')
+                                    ->where('auditoria_clientes.id_cliente', $idCliente)
+                                    ->first();
+
+                                $this->auditoriaLogModel->registrarEvidenciaClienteSubida(
+                                    $idAuditoria,
+                                    $idAuditoriaItem,
+                                    $idCliente,
+                                    $file->getName(),
+                                    $result['size'],
+                                    $clienteInfo['razon_social'] ?? 'Cliente'
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Calcular progreso actualizado
+            $progreso = $this->calcularProgreso($idAuditoria);
+
+            $mensaje = '✅ Ítem guardado exitosamente';
+            if (!empty($archivosSubidos)) {
+                $mensaje .= '. Archivos subidos: ' . count($archivosSubidos);
+            }
+
+            return $this->response->setJSON([
+                'ok' => true,
+                'message' => $mensaje,
+                'timestamp' => date('H:i:s'),
+                'progreso' => $progreso,
+                'archivos_subidos' => $archivosSubidos,
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'guardarItemAjax error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'ok' => false,
+                'message' => 'Error al guardar: ' . $e->getMessage(),
                 'csrf_token' => csrf_token(),
                 'csrf_hash' => csrf_hash()
             ]);
