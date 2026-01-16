@@ -880,15 +880,33 @@ class AuditoriasProveedorController extends BaseController
      */
     public function deleteEvidencia(int $idAuditoria, int $idEvidencia)
     {
+        $isAjax = $this->request->isAJAX();
+
         $evidencia = $this->evidenciaModel->find($idEvidencia);
 
         if (!$evidencia) {
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Evidencia no encontrada',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash' => csrf_hash()
+                ]);
+            }
             return redirect()->back()->with('error', 'Evidencia no encontrada');
         }
 
         $auditoriaItem = $this->auditoriaItemModel->find($evidencia['id_auditoria_item']);
 
         if (!$auditoriaItem || $auditoriaItem['id_auditoria'] != $idAuditoria) {
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Evidencia no válida',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash' => csrf_hash()
+                ]);
+            }
             return redirect()->back()->with('error', 'Evidencia no válida');
         }
 
@@ -901,6 +919,16 @@ class AuditoriasProveedorController extends BaseController
         // Eliminar registro
         $this->evidenciaModel->delete($idEvidencia);
 
+        if ($isAjax) {
+            return $this->response->setJSON([
+                'ok' => true,
+                'message' => 'Evidencia eliminada',
+                'id_item' => $auditoriaItem['id_auditoria_item'],
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Evidencia eliminada');
     }
 
@@ -909,20 +937,46 @@ class AuditoriasProveedorController extends BaseController
      */
     public function deleteEvidenciaCliente(int $idAuditoria, int $idEvidenciaCliente)
     {
+        $isAjax = $this->request->isAJAX();
+
         $evidencia = $this->evidenciaClienteModel->find($idEvidenciaCliente);
 
         if (!$evidencia) {
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Evidencia no encontrada',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash' => csrf_hash()
+                ]);
+            }
             return redirect()->back()->with('error', 'Evidencia no encontrada');
         }
 
         // Verificar que pertenece a esta auditoría
         $itemCliente = $this->auditoriaItemClienteModel->find($evidencia['id_auditoria_item_cliente']);
         if (!$itemCliente) {
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Evidencia no válida',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash' => csrf_hash()
+                ]);
+            }
             return redirect()->back()->with('error', 'Evidencia no válida');
         }
 
         $auditoriaItem = $this->auditoriaItemModel->find($itemCliente['id_auditoria_item']);
         if (!$auditoriaItem || $auditoriaItem['id_auditoria'] != $idAuditoria) {
+            if ($isAjax) {
+                return $this->response->setJSON([
+                    'ok' => false,
+                    'message' => 'Evidencia no válida',
+                    'csrf_token' => csrf_token(),
+                    'csrf_hash' => csrf_hash()
+                ]);
+            }
             return redirect()->back()->with('error', 'Evidencia no válida');
         }
 
@@ -934,6 +988,17 @@ class AuditoriasProveedorController extends BaseController
 
         // Eliminar registro
         $this->evidenciaClienteModel->delete($idEvidenciaCliente);
+
+        if ($isAjax) {
+            return $this->response->setJSON([
+                'ok' => true,
+                'message' => 'Evidencia del cliente eliminada',
+                'id_item' => $auditoriaItem['id_auditoria_item'],
+                'id_cliente' => $itemCliente['id_cliente'],
+                'csrf_token' => csrf_token(),
+                'csrf_hash' => csrf_hash()
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Evidencia del cliente eliminada');
     }
