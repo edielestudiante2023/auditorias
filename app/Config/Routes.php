@@ -284,6 +284,9 @@ $routes->group('consultor', ['filter' => 'role:2'], function ($routes) {
 
     // Eliminar auditoría (solo borrador o en_proveedor)
     $routes->post('auditorias/(:num)/eliminar', 'Consultor\AuditoriasConsultorController::eliminar/$1');
+
+    // Reenviar email de credenciales al proveedor
+    $routes->post('auditoria/(:num)/reenviar-email', 'Consultor\AuditoriasConsultorController::reenviarEmailProveedor/$1');
 });
 
 // ============================================================
