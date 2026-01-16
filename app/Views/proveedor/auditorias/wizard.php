@@ -686,63 +686,19 @@ const FormManager = {
                     const saved = await this.saveFormWithFiles(form, btn);
                     if (saved) {
                         // Solo avanzar al siguiente ítem si es GLOBAL
-                        // Para ítems por cliente, el usuario debe poder seguir trabajando con otros clientes
+                        // Para ítems por cliente: NO MOVER - el usuario decide cuándo cambiar de pestaña
                         if (tipo === 'global') {
                             const accordionItem = form.closest('.accordion-item');
                             if (accordionItem) {
                                 const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
                                 this.expandNextItemFromIndex(itemIndex);
                             }
-                        } else {
-                            // Para ítems por cliente: avanzar a la siguiente pestaña de cliente si existe
-                            this.advanceToNextClientTab(form);
                         }
+                        // Para tipo 'cliente': no hacer nada, quedarse en la misma pestaña
                     }
                 }
             });
         });
-    },
-
-    // Avanzar a la siguiente pestaña de cliente dentro del mismo ítem
-    advanceToNextClientTab(form) {
-        const tabPane = form.closest('.tab-pane');
-        if (!tabPane) return;
-
-        const tabContent = tabPane.closest('.tab-content');
-        if (!tabContent) return;
-
-        const allPanes = Array.from(tabContent.querySelectorAll('.tab-pane'));
-        const currentIndex = allPanes.indexOf(tabPane);
-
-        // Buscar el siguiente cliente que NO esté completo
-        const navTabs = tabContent.previousElementSibling;
-        if (!navTabs || !navTabs.classList.contains('nav-tabs')) return;
-
-        const allTabs = Array.from(navTabs.querySelectorAll('.nav-link'));
-
-        // Buscar siguiente cliente sin completar (sin el check verde)
-        for (let i = currentIndex + 1; i < allTabs.length; i++) {
-            const tab = allTabs[i];
-            if (!tab.querySelector('.bi-check-circle-fill')) {
-                // Activar esta pestaña
-                const bsTab = new bootstrap.Tab(tab);
-                bsTab.show();
-                return;
-            }
-        }
-
-        // Si todos los siguientes están completos, verificar si TODOS están completos
-        const todosCompletos = allTabs.every(tab => tab.querySelector('.bi-check-circle-fill'));
-
-        if (todosCompletos) {
-            // Todos los clientes de este ítem están completos, avanzar al siguiente ítem
-            const accordionItem = form.closest('.accordion-item');
-            if (accordionItem) {
-                const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
-                this.expandNextItemFromIndex(itemIndex);
-            }
-        }
-        // Si no todos están completos pero ya revisamos los siguientes, quedarse donde está
     },
 
     // Listeners para textareas (autosave)
