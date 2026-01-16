@@ -21,86 +21,77 @@
 
 <?= view('partials/flash') ?>
 
-<!-- Progreso General -->
-<div class="card mb-4 border-primary shadow-sm sticky-top" style="top: 70px; z-index: 1020; background-color: white;">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Progreso General</h5>
-            <span class="badge bg-<?= $progreso['porcentaje_total'] >= 100 ? 'success' : 'warning' ?> fs-6">
-                <?= number_format($progreso['porcentaje_total'], 0) ?>%
-            </span>
-        </div>
-
-        <!-- Barra de progreso total -->
-        <div class="progress mb-3" style="height: 30px;">
-            <div class="progress-bar <?= $progreso['porcentaje_total'] >= 100 ? 'bg-success' : 'bg-primary' ?>"
-                 role="progressbar"
-                 style="width: <?= $progreso['porcentaje_total'] ?>%;"
-                 aria-valuenow="<?= $progreso['porcentaje_total'] ?>"
-                 aria-valuemin="0"
-                 aria-valuemax="100">
-                <?= number_format($progreso['porcentaje_total'], 0) ?>%
-            </div>
-        </div>
-
-        <!-- Desglose de progreso -->
-        <div class="row g-2">
-            <!-- Ítems Globales -->
-            <div class="col-md-6">
-                <div class="border rounded p-2 bg-light">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="fw-bold text-primary">
-                            <i class="bi bi-globe"></i> Ítems Globales
-                        </small>
-                        <small class="badge bg-primary">
-                            <?= $progreso['globales_completos'] ?> / <?= $progreso['globales_total'] ?>
-                        </small>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <?php
-                        $pctGlobales = $progreso['globales_total'] > 0
-                            ? ($progreso['globales_completos'] / $progreso['globales_total']) * 100
-                            : 0;
-                        ?>
-                        <div class="progress-bar bg-primary"
-                             style="width: <?= $pctGlobales ?>%;"></div>
+<!-- Barra de progreso compacta y flotante -->
+<?php
+$pctGlobales = $progreso['globales_total'] > 0
+    ? ($progreso['globales_completos'] / $progreso['globales_total']) * 100
+    : 0;
+$pctPorCliente = $progreso['por_cliente_total'] > 0
+    ? ($progreso['por_cliente_completos'] / $progreso['por_cliente_total']) * 100
+    : 0;
+$todoCompleto = $progreso['porcentaje_total'] >= 100;
+?>
+<div id="progress-bar-compact" class="sticky-top" style="top: 56px; z-index: 1020;">
+    <div class="bg-white border-bottom shadow-sm py-2 px-3">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center flex-grow-1 me-3">
+                <span class="badge <?= $todoCompleto ? 'bg-success' : 'bg-primary' ?> me-2" style="min-width: 80px;">
+                    <?= number_format($progreso['porcentaje_total'], 0) ?>%
+                </span>
+                <div class="progress flex-grow-1" style="height: 8px; max-width: 200px;">
+                    <div class="progress-bar <?= $todoCompleto ? 'bg-success' : 'bg-primary' ?>"
+                         role="progressbar"
+                         style="width: <?= $progreso['porcentaje_total'] ?>%;">
                     </div>
                 </div>
+                <small class="ms-2 text-muted d-none d-md-inline">
+                    <?= $progreso['total_completados'] ?>/<?= $progreso['total'] ?> ítems
+                </small>
             </div>
-
-            <!-- Ítems Por Cliente -->
-            <div class="col-md-6">
-                <div class="border rounded p-2 bg-light">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="fw-bold text-warning">
-                            <i class="bi bi-building"></i> Ítems Por Cliente
-                        </small>
-                        <small class="badge bg-warning">
-                            <?= $progreso['por_cliente_completos'] ?> / <?= $progreso['por_cliente_total'] ?>
-                        </small>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <?php
-                        $pctPorCliente = $progreso['por_cliente_total'] > 0
-                            ? ($progreso['por_cliente_completos'] / $progreso['por_cliente_total']) * 100
-                            : 0;
-                        ?>
-                        <div class="progress-bar bg-warning"
-                             style="width: <?= $pctPorCliente ?>%;"></div>
-                    </div>
-                </div>
-            </div>
+            <?php if ($todoCompleto): ?>
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle-fill"></i> Listo para enviar
+                </span>
+            <?php endif; ?>
+            <button class="btn btn-sm btn-link text-muted p-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#progress-details" aria-expanded="false">
+                <i class="bi bi-chevron-down"></i>
+            </button>
         </div>
 
-        <?php if ($progreso['porcentaje_total'] >= 100): ?>
-            <div class="alert alert-success mt-3 mb-0">
-                <i class="bi bi-check-circle-fill"></i> Todos los ítems están completos. Puede enviar a revisión.
+        <!-- Panel expandible con detalles -->
+        <div class="collapse" id="progress-details">
+            <div class="pt-2 mt-2 border-top">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-globe text-primary me-1"></i>
+                            <small class="text-muted">Globales: <?= $progreso['globales_completos'] ?>/<?= $progreso['globales_total'] ?></small>
+                            <div class="progress ms-2 flex-grow-1" style="height: 4px;">
+                                <div class="progress-bar bg-primary" style="width: <?= $pctGlobales ?>%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-building text-warning me-1"></i>
+                            <small class="text-muted">Por Cliente: <?= $progreso['por_cliente_completos'] ?>/<?= $progreso['por_cliente_total'] ?></small>
+                            <div class="progress ms-2 flex-grow-1" style="height: 4px;">
+                                <div class="progress-bar bg-warning" style="width: <?= $pctPorCliente ?>%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php if ($todoCompleto): ?>
+                    <small class="text-success mt-2 d-block">
+                        <i class="bi bi-check-circle-fill"></i> Todos los ítems están completos. Puede enviar a revisión.
+                    </small>
+                <?php else: ?>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle"></i> Faltan <?= $progreso['total'] - $progreso['total_completados'] ?> ítem(s) por completar.
+                    </small>
+                <?php endif; ?>
             </div>
-        <?php else: ?>
-            <small class="text-muted mt-3 d-block">
-                Complete todos los ítems con al menos un comentario para poder finalizar la auditoría
-            </small>
-        <?php endif; ?>
+        </div>
     </div>
 </div>
 
@@ -522,11 +513,15 @@ function expandNextItem() {
             setTimeout(() => {
                 nextBsCollapse.show();
 
-                // Scroll to the next item smoothly
+                // Scroll suave al siguiente ítem con offset para el header sticky
                 setTimeout(() => {
-                    nextItem.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
+                    const headerOffset = 100; // Altura del header sticky + margen
+                    const elementPosition = nextItem.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
                     });
                 }, 350);
             }, 350);
@@ -535,9 +530,13 @@ function expandNextItem() {
             const finalizarCard = document.querySelector('.card.border-primary');
             if (finalizarCard) {
                 setTimeout(() => {
-                    finalizarCard.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
+                    const headerOffset = 100;
+                    const elementPosition = finalizarCard.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
                     });
                 }, 500);
             }
