@@ -316,7 +316,7 @@ function confirmarReabrir() {
                 let opcionesHtml = '';
                 if (response.destino === 'proveedor') {
                     opcionesHtml = `
-                        <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/reenviar-email" class="btn btn-primary">
+                        <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/reenviar-credenciales" class="btn btn-primary" onclick="event.preventDefault(); reenviarCredenciales(${idAuditoria});">
                             <i class="bi bi-envelope"></i> Enviar Email al Proveedor
                         </a>
                         <a href="<?= site_url('admin/auditorias') ?>/${idAuditoria}/adicionar-clientes" class="btn btn-outline-primary">
@@ -369,6 +369,37 @@ function confirmarReabrir() {
         },
         error: function() {
             alert('Error al reabrir la auditoría');
+        }
+    });
+}
+
+function reenviarCredenciales(idAuditoria) {
+    if (!confirm('¿Enviar email con credenciales al proveedor?')) {
+        return;
+    }
+
+    $.ajax({
+        url: '<?= site_url('admin/auditorias') ?>/' + idAuditoria + '/reenviar-credenciales',
+        type: 'POST',
+        data: {
+            <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+        },
+        beforeSend: function() {
+            // Mostrar loading
+            $('body').append('<div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;"><div class="spinner-border text-light" role="status"></div></div>');
+        },
+        success: function(response) {
+            $('#loadingOverlay').remove();
+            if (response.success) {
+                alert(response.message);
+                location.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            $('#loadingOverlay').remove();
+            alert('Error al enviar el email');
         }
     });
 }
