@@ -90,9 +90,9 @@
                         </div>
 
                         <?php if ($isCompleted && $estadoActual == 'en_proveedor'): ?>
-                            <div class="alert alert-danger mb-0 py-2">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                                <strong>ACCION REQUERIDA:</strong> Debe hacer clic en "Finalizar y Enviar a Revisión" dentro de la auditoría para completar el envío.
+                            <div class="alert alert-info mb-0 py-2">
+                                <i class="bi bi-info-circle-fill"></i>
+                                Puede <strong>modificar documentos</strong> o <strong>enviar a revisión</strong>.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -104,11 +104,19 @@
                                 <i class="bi bi-eye"></i> Ver auditoría
                             </a>
                         <?php elseif ($isCompleted && $estadoActual == 'en_proveedor'): ?>
-                            <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
-                               class="btn btn-danger w-100 btn-lg">
-                                <i class="bi bi-send-check-fill"></i>
-                                <strong>FINALIZAR Y ENVIAR</strong>
-                            </a>
+                            <!-- Auditoría completa pero aún editable - mostrar ambas opciones -->
+                            <div class="d-grid gap-2">
+                                <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
+                                   class="btn btn-warning w-100">
+                                    <i class="bi bi-pencil-square"></i>
+                                    <strong>Modificar/Agregar Documentos</strong>
+                                </a>
+                                <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
+                                   class="btn btn-outline-danger w-100">
+                                    <i class="bi bi-send-check-fill"></i>
+                                    Finalizar y Enviar
+                                </a>
+                            </div>
                         <?php else: ?>
                             <a href="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria']) ?>"
                                class="btn btn-warning w-100">
