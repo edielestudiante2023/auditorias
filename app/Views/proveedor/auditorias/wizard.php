@@ -266,26 +266,49 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                         No hay clientes asignados a esta auditoría para este ítem.
                     </div>
                 <?php else: ?>
+                    <?php
+                    // Colores distintivos para cada cliente (basado en su ID para consistencia)
+                    $coloresCliente = [
+                        ['bg' => '#e3f2fd', 'border' => '#2196f3', 'text' => '#1565c0'], // Azul
+                        ['bg' => '#fff3e0', 'border' => '#ff9800', 'text' => '#e65100'], // Naranja
+                        ['bg' => '#f3e5f5', 'border' => '#9c27b0', 'text' => '#7b1fa2'], // Púrpura
+                        ['bg' => '#e8f5e9', 'border' => '#4caf50', 'text' => '#2e7d32'], // Verde
+                        ['bg' => '#fce4ec', 'border' => '#e91e63', 'text' => '#c2185b'], // Rosa
+                        ['bg' => '#e0f7fa', 'border' => '#00bcd4', 'text' => '#00838f'], // Cian
+                        ['bg' => '#fff8e1', 'border' => '#ffc107', 'text' => '#ff8f00'], // Ámbar
+                        ['bg' => '#efebe9', 'border' => '#795548', 'text' => '#5d4037'], // Café
+                    ];
+                    ?>
                     <ul class="nav nav-tabs mb-3" role="tablist">
                         <?php foreach ($clientes as $idx => $cliente): ?>
+                            <?php
+                            // Asignar color basado en el ID del cliente (consistente en toda la auditoría)
+                            $colorIdx = $cliente['id_cliente'] % count($coloresCliente);
+                            $colorCliente = $coloresCliente[$colorIdx];
+
+                            // Verificar si este cliente tiene comentario
+                            $clienteCompleto = false;
+                            foreach ($item['items_cliente'] as $ic) {
+                                if ($ic['id_cliente'] == $cliente['id_cliente'] && !empty($ic['comentario_proveedor_cliente'])) {
+                                    $clienteCompleto = true;
+                                    break;
+                                }
+                            }
+                            ?>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link <?= $idx === 0 ? 'active' : '' ?>"
                                         id="tab-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                         data-bs-toggle="tab"
                                         data-bs-target="#content-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                         type="button"
-                                        role="tab">
-                                    <?php
-                                    // Verificar si este cliente tiene comentario
-                                    $clienteCompleto = false;
-                                    foreach ($item['items_cliente'] as $ic) {
-                                        if ($ic['id_cliente'] == $cliente['id_cliente'] && !empty($ic['comentario_proveedor_cliente'])) {
-                                            $clienteCompleto = true;
-                                            break;
-                                        }
-                                    }
-                                    ?>
-                                    <?= esc($cliente['razon_social']) ?>
+                                        role="tab"
+                                        style="border-left: 4px solid <?= $colorCliente['border'] ?>; background-color: <?= $idx === 0 ? $colorCliente['bg'] : 'transparent' ?>;"
+                                        data-color-bg="<?= $colorCliente['bg'] ?>"
+                                        data-color-border="<?= $colorCliente['border'] ?>">
+                                    <span style="color: <?= $colorCliente['text'] ?>; font-weight: 600;">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                        <?= esc($cliente['razon_social']) ?>
+                                    </span>
                                     <?php if ($clienteCompleto): ?>
                                         <i class="bi bi-check-circle-fill text-success ms-1"></i>
                                     <?php endif; ?>
@@ -305,15 +328,20 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                                     break;
                                 }
                             }
+                            // Color para este cliente
+                            $colorIdx = $cliente['id_cliente'] % count($coloresCliente);
+                            $colorCliente = $coloresCliente[$colorIdx];
                             ?>
                             <div class="tab-pane fade <?= $idx === 0 ? 'show active' : '' ?>"
                                  id="content-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                  role="tabpanel">
 
-                                <div class="alert alert-secondary mb-3 d-flex justify-content-between align-items-center">
+                                <div class="alert mb-3 d-flex justify-content-between align-items-center"
+                                     style="background-color: <?= $colorCliente['bg'] ?>; border-left: 4px solid <?= $colorCliente['border'] ?>;">
                                     <div>
-                                        <i class="bi bi-building"></i>
-                                        <strong>Cliente:</strong> <?= esc($cliente['razon_social']) ?>
+                                        <i class="bi bi-building" style="color: <?= $colorCliente['text'] ?>;"></i>
+                                        <strong style="color: <?= $colorCliente['text'] ?>;">Cliente:</strong>
+                                        <span style="color: <?= $colorCliente['text'] ?>; font-weight: 600;"><?= esc($cliente['razon_social']) ?></span>
                                         (NIT: <?= esc($cliente['nit']) ?>)
                                     </div>
                                     <?php if ($itemCliente && !empty($itemCliente['comentario_proveedor_cliente'])): ?>
@@ -467,6 +495,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     sessionStorage.setItem('lastSavedItemIndex', itemIndex);
                 }
             }
+        });
+    });
+
+    // Colorear pestañas de clientes al cambiar
+    document.querySelectorAll('.nav-tabs .nav-link[data-color-bg]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function() {
+            // Quitar color de fondo de todas las pestañas hermanas
+            const navTabs = this.closest('.nav-tabs');
+            navTabs.querySelectorAll('.nav-link').forEach(t => {
+                t.style.backgroundColor = 'transparent';
+            });
+            // Aplicar color a la pestaña activa
+            this.style.backgroundColor = this.dataset.colorBg;
         });
     });
 });
