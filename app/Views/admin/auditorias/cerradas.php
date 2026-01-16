@@ -192,20 +192,26 @@
                 <p>¿Está seguro que desea reabrir la auditoría <strong id="codigoReabrir"></strong>?</p>
 
                 <div class="mb-3">
-                    <label class="form-label">Enviar a <span class="text-danger">*</span></label>
-                    <div class="d-flex gap-3">
-                        <div class="form-check">
+                    <label class="form-label">¿Quién debe actuar primero? <span class="text-danger">*</span></label>
+                    <div class="d-grid gap-2">
+                        <div class="form-check border rounded p-3">
                             <input class="form-check-input" type="radio" name="destinoReabrir" id="destinoProveedor" value="proveedor">
-                            <label class="form-check-label" for="destinoProveedor">
-                                <i class="bi bi-building text-primary"></i> Proveedor
-                                <small class="d-block text-muted">Para que suba nuevos documentos</small>
+                            <label class="form-check-label w-100" for="destinoProveedor">
+                                <i class="bi bi-building text-primary"></i> <strong>Proveedor primero</strong>
+                                <small class="d-block text-muted mt-1">
+                                    <i class="bi bi-1-circle-fill text-primary"></i> Proveedor sube documentos
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                    <i class="bi bi-2-circle-fill text-success"></i> Luego pasa a Consultor para revisión
+                                </small>
                             </label>
                         </div>
-                        <div class="form-check">
+                        <div class="form-check border rounded p-3">
                             <input class="form-check-input" type="radio" name="destinoReabrir" id="destinoConsultor" value="consultor" checked>
-                            <label class="form-check-label" for="destinoConsultor">
-                                <i class="bi bi-person-badge text-success"></i> Consultor
-                                <small class="d-block text-muted">Para que revise/califique</small>
+                            <label class="form-check-label w-100" for="destinoConsultor">
+                                <i class="bi bi-person-badge text-success"></i> <strong>Consultor directamente</strong>
+                                <small class="d-block text-muted mt-1">
+                                    El consultor revisa y recalifica sin nuevos documentos del proveedor
+                                </small>
                             </label>
                         </div>
                     </div>
@@ -276,10 +282,10 @@ $('input[name="destinoReabrir"]').on('change', function() {
 function actualizarTextoDestino() {
     const destino = $('input[name="destinoReabrir"]:checked').val();
     if (destino === 'proveedor') {
-        $('#textoDestino').html('<strong>Proveedor:</strong> Podrá subir nuevos documentos y evidencias.');
+        $('#textoDestino').html('<i class="bi bi-arrow-right-circle"></i> <strong>Flujo:</strong> Proveedor sube documentos → Luego el Consultor revisa y califica');
         $('#alertaDestino').removeClass('alert-info').addClass('alert-primary');
     } else {
-        $('#textoDestino').html('<strong>Consultor:</strong> Podrá revisar y cambiar calificaciones.');
+        $('#textoDestino').html('<i class="bi bi-person-badge"></i> <strong>Directo:</strong> El Consultor revisa/recalifica con las evidencias existentes');
         $('#alertaDestino').removeClass('alert-primary').addClass('alert-info');
     }
 }
