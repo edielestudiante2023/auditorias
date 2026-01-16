@@ -668,11 +668,11 @@ const FormManager = {
         } else if (status === 'saved') {
             check.style.display = 'inline-block';
             alert.className = 'alert alert-success py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
-            setTimeout(() => { indicator.style.display = 'none'; }, 2000);
+            setTimeout(() => { indicator.style.display = 'none'; }, 4000);
         } else if (status === 'error') {
             errorIcon.style.display = 'inline-block';
             alert.className = 'alert alert-danger py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
-            setTimeout(() => { indicator.style.display = 'none'; }, 4000);
+            setTimeout(() => { indicator.style.display = 'none'; }, 6000);
         }
     },
 

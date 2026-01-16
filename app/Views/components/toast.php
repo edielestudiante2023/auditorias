@@ -121,7 +121,7 @@ html {
  * @param {string} type - Tipo: 'success', 'error', 'warning', 'info'
  * @param {number} duration - Duración en ms (default: 4000)
  */
-function showToast(message, type = 'info', duration = 4000) {
+function showToast(message, type = 'info', duration = 6000) {
     const toastEl = document.getElementById('mainToast');
     const toastIcon = document.getElementById('toastIcon');
     const toastMessage = document.getElementById('toastMessage');
