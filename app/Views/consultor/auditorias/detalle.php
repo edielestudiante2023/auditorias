@@ -347,15 +347,16 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
              aria-labelledby="heading-<?= $item['id_auditoria_item'] ?>"
              data-bs-parent="#accordionItems">
             <div class="accordion-body" style="background-color: #d5f4e6;">
-            <?php if (!empty($item['descripcion'])): ?>
-                <div class="alert alert-info mb-3">
-                    <i class="bi bi-info-circle"></i>
-                    <strong>Descripción:</strong> <?= esc($item['descripcion']) ?>
-                </div>
-            <?php endif; ?>
 
             <?php if ($item['alcance'] === 'global'): ?>
                 <!-- ÍTEM GLOBAL -->
+                <?php if (!empty($item['descripcion'])): ?>
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Descripción:</strong> <?= esc($item['descripcion']) ?>
+                    </div>
+                <?php endif; ?>
+
                 <div class="alert alert-light mb-3">
                     <strong><i class="bi bi-chat-left-text"></i> Comentario del Proveedor:</strong>
                     <p class="mb-0 mt-2"><?= nl2br(esc($item['comentario_proveedor'] ?? 'Sin comentario')) ?></p>
@@ -507,6 +508,14 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                             <div class="tab-pane fade <?= $idx === 0 ? 'show active' : '' ?>"
                                  id="content-consultor-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                  role="tabpanel">
+
+                                <!-- Descripción del ítem (dentro de cada pestaña de cliente) -->
+                                <?php if (!empty($item['descripcion'])): ?>
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Descripción:</strong> <?= esc($item['descripcion']) ?>
+                                    </div>
+                                <?php endif; ?>
 
                                 <div class="alert alert-secondary mb-3">
                                     <i class="bi bi-building"></i>

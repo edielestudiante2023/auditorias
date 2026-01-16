@@ -192,15 +192,16 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
              aria-labelledby="heading-<?= $item['id_auditoria_item'] ?>"
              data-bs-parent="#accordionItems">
             <div class="accordion-body" style="background-color: #fdebd0;">
-            <?php if (!empty($item['descripcion'])): ?>
-                <div class="alert alert-info mb-3">
-                    <i class="bi bi-info-circle"></i>
-                    <strong>Descripción:</strong> <?= esc($item['descripcion']) ?>
-                </div>
-            <?php endif; ?>
 
             <?php if ($item['alcance'] === 'global'): ?>
                 <!-- ÍTEM GLOBAL -->
+                <?php if (!empty($item['descripcion'])): ?>
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Descripción:</strong> <?= esc($item['descripcion']) ?>
+                    </div>
+                <?php endif; ?>
+
                 <form class="form-item-ajax"
                       data-tipo="global"
                       data-id-auditoria="<?= $auditoria['id_auditoria'] ?>"
@@ -272,7 +273,7 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                 </form>
 
             <?php else: ?>
-                <!-- ÍTEM POR CLIENTE - TABS -->
+                <!-- ÍTEM POR CLIENTE - TABS (pestañas antes de la descripción) -->
                 <?php if (empty($clientes)): ?>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
@@ -292,6 +293,8 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                         ['bg' => '#efebe9', 'border' => '#795548', 'text' => '#5d4037'], // Café
                     ];
                     ?>
+
+                    <!-- Pestañas de clientes PRIMERO -->
                     <ul class="nav nav-tabs mb-3" role="tablist">
                         <?php foreach ($clientes as $idx => $cliente): ?>
                             <?php
@@ -348,6 +351,14 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                             <div class="tab-pane fade <?= $idx === 0 ? 'show active' : '' ?>"
                                  id="content-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                  role="tabpanel">
+
+                                <!-- Descripción del ítem (dentro de cada pestaña de cliente) -->
+                                <?php if (!empty($item['descripcion'])): ?>
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Descripción:</strong> <?= esc($item['descripcion']) ?>
+                                    </div>
+                                <?php endif; ?>
 
                                 <div class="alert mb-3 d-flex justify-content-between align-items-center"
                                      style="background-color: <?= $colorCliente['bg'] ?>; border-left: 4px solid <?= $colorCliente['border'] ?>;">
