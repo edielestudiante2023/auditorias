@@ -187,10 +187,11 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
 
             <?php if ($item['alcance'] === 'global'): ?>
                 <!-- ÍTEM GLOBAL -->
-                <form method="post"
-                      action="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/item/' . $item['id_auditoria_item'] . '/guardar') ?>"
+                <form class="form-item-ajax"
+                      data-tipo="global"
+                      data-id-auditoria="<?= $auditoria['id_auditoria'] ?>"
+                      data-id-item="<?= $item['id_auditoria_item'] ?>"
                       enctype="multipart/form-data">
-                    <?= csrf_field() ?>
 
                     <div class="mb-3">
                         <label class="form-label">
@@ -220,10 +221,10 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                         </small>
                     </div>
 
-                    <?php if (!empty($item['evidencias'])): ?>
-                        <div class="mb-3">
+                    <div class="mb-3 evidencias-container" id="evidencias-<?= $item['id_auditoria_item'] ?>">
+                        <?php if (!empty($item['evidencias'])): ?>
                             <label class="form-label">
-                                <i class="bi bi-file-earmark-check"></i> Archivos Cargados (<?= count($item['evidencias']) ?>)
+                                <i class="bi bi-file-earmark-check"></i> Archivos Cargados (<span class="evidencias-count"><?= count($item['evidencias']) ?></span>)
                             </label>
                             <div class="list-group">
                                 <?php foreach ($item['evidencias'] as $ev): ?>
@@ -248,10 +249,10 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                        </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
 
-                    <button type="submit" class="btn btn-success">
+                    <button type="button" class="btn btn-success btn-guardar-item">
                         <i class="bi bi-save"></i> Guardar Ítem
                     </button>
                 </form>
@@ -321,10 +322,12 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                                     <?php endif; ?>
                                 </div>
 
-                                <form method="post"
-                                      action="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/item/' . $item['id_auditoria_item'] . '/guardar') ?>"
+                                <form class="form-item-ajax"
+                                      data-tipo="cliente"
+                                      data-id-auditoria="<?= $auditoria['id_auditoria'] ?>"
+                                      data-id-item="<?= $item['id_auditoria_item'] ?>"
+                                      data-id-cliente="<?= $cliente['id_cliente'] ?>"
                                       enctype="multipart/form-data">
-                                    <?= csrf_field() ?>
                                     <input type="hidden" name="id_cliente" value="<?= $cliente['id_cliente'] ?>">
 
                                     <div class="mb-3">
@@ -356,10 +359,10 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                                         </small>
                                     </div>
 
-                                    <?php if ($itemCliente && !empty($itemCliente['evidencias'])): ?>
-                                        <div class="mb-3">
+                                    <div class="mb-3 evidencias-container" id="evidencias-<?= $item['id_auditoria_item'] ?>-<?= $cliente['id_cliente'] ?>">
+                                        <?php if ($itemCliente && !empty($itemCliente['evidencias'])): ?>
                                             <label class="form-label">
-                                                <i class="bi bi-file-earmark-check"></i> Archivos Cargados (<?= count($itemCliente['evidencias']) ?>)
+                                                <i class="bi bi-file-earmark-check"></i> Archivos Cargados (<span class="evidencias-count"><?= count($itemCliente['evidencias']) ?></span>)
                                             </label>
                                             <div class="list-group">
                                                 <?php foreach ($itemCliente['evidencias'] as $ev): ?>
@@ -384,10 +387,10 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                                                     </div>
                                                 <?php endforeach; ?>
                                             </div>
-                                        </div>
-                                    <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
 
-                                    <button type="submit" class="btn btn-success save-cliente-btn" data-cliente-nombre="<?= esc($cliente['razon_social']) ?>">
+                                    <button type="button" class="btn btn-success btn-guardar-item" data-cliente-nombre="<?= esc($cliente['razon_social']) ?>">
                                         <i class="bi bi-save"></i> Guardar para <?= esc($cliente['razon_social']) ?>
                                     </button>
                                 </form>
@@ -639,9 +642,9 @@ document.addEventListener('click', function(e) {
 <?php if ($auditoria['estado'] === 'en_proveedor'): ?>
 <script>
 // ============================================================
-// AUTOSAVE SYSTEM - Guarda automáticamente los comentarios
+// SISTEMA DE FORMULARIOS AJAX - Proveedor
 // ============================================================
-const AutoSave = {
+const FormManager = {
     idAuditoria: <?= $auditoria['id_auditoria'] ?>,
     csrfToken: '<?= csrf_token() ?>',
     csrfHash: '<?= csrf_hash() ?>',
@@ -649,14 +652,14 @@ const AutoSave = {
     pendingChanges: new Set(),
 
     init() {
+        this.setupButtonListeners();
         this.setupTextareaListeners();
         this.setupBeforeUnloadWarning();
-        this.addAutosaveIndicator();
-        console.log('AutoSave Proveedor inicializado para auditoría', this.idAuditoria);
+        this.addIndicator();
+        console.log('FormManager Proveedor inicializado para auditoría', this.idAuditoria);
     },
 
-    // Agregar indicador visual de autosave
-    addAutosaveIndicator() {
+    addIndicator() {
         const indicator = document.createElement('div');
         indicator.id = 'autosave-indicator';
         indicator.className = 'position-fixed';
@@ -683,7 +686,6 @@ const AutoSave = {
         indicator.style.display = 'block';
         text.textContent = message;
 
-        // Reset icons
         spinner.style.display = 'none';
         check.style.display = 'none';
         errorIcon.style.display = 'none';
@@ -698,11 +700,30 @@ const AutoSave = {
         } else if (status === 'error') {
             errorIcon.style.display = 'inline-block';
             alert.className = 'alert alert-danger py-2 px-3 mb-0 shadow-sm d-flex align-items-center';
-            setTimeout(() => { indicator.style.display = 'none'; }, 3000);
+            setTimeout(() => { indicator.style.display = 'none'; }, 4000);
         }
     },
 
-    // Listeners para textareas (guardar con debounce de 2 segundos)
+    // Listeners para botones de guardar
+    setupButtonListeners() {
+        document.querySelectorAll('.btn-guardar-item').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const form = e.target.closest('.form-item-ajax');
+                if (form) {
+                    const saved = await this.saveFormWithFiles(form, btn);
+                    if (saved) {
+                        const accordionItem = form.closest('.accordion-item');
+                        if (accordionItem) {
+                            const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
+                            this.expandNextItemFromIndex(itemIndex);
+                        }
+                    }
+                }
+            });
+        });
+    },
+
+    // Listeners para textareas (autosave)
     setupTextareaListeners() {
         document.querySelectorAll('textarea.autosave-textarea').forEach(textarea => {
             const textareaId = this.getTextareaId(textarea);
@@ -710,18 +731,15 @@ const AutoSave = {
             textarea.addEventListener('input', (e) => {
                 this.pendingChanges.add(textareaId);
 
-                // Cancelar timer anterior
                 if (this.debounceTimers[textareaId]) {
                     clearTimeout(this.debounceTimers[textareaId]);
                 }
 
-                // Nuevo timer de 2 segundos
                 this.debounceTimers[textareaId] = setTimeout(() => {
                     this.saveTextarea(textarea);
                 }, 2000);
             });
 
-            // También guardar cuando pierde el foco
             textarea.addEventListener('blur', (e) => {
                 if (this.pendingChanges.has(textareaId)) {
                     if (this.debounceTimers[textareaId]) {
@@ -740,7 +758,7 @@ const AutoSave = {
         return `${tipo}-${itemId}-${clienteId}`;
     },
 
-    // Guardar textarea vía AJAX
+    // Guardar solo textarea vía AJAX (autosave)
     async saveTextarea(textarea) {
         const textareaId = this.getTextareaId(textarea);
         const tipo = textarea.dataset.tipo;
@@ -763,14 +781,11 @@ const AutoSave = {
             const response = await fetch(`<?= site_url('proveedor/auditoria/') ?>${this.idAuditoria}/autosave`, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
 
             const data = await response.json();
 
-            // Actualizar token CSRF para la siguiente petición
             if (data.csrf_token && data.csrf_hash) {
                 this.csrfToken = data.csrf_token;
                 this.csrfHash = data.csrf_hash;
@@ -780,9 +795,13 @@ const AutoSave = {
                 this.pendingChanges.delete(textareaId);
                 this.showIndicator('saved', `Guardado ${data.timestamp}`);
 
-                // Actualizar visual del badge si el comentario no está vacío
                 if (comentario.trim()) {
                     this.updateItemBadge(idAuditoriaItem, tipo, idCliente);
+                }
+
+                // Actualizar progreso si viene en la respuesta
+                if (data.progreso) {
+                    this.updateProgressBar(data.progreso);
                 }
             } else {
                 this.showIndicator('error', data.message || 'Error al guardar');
@@ -793,19 +812,227 @@ const AutoSave = {
         }
     },
 
+    // Guardar formulario completo con archivos
+    async saveFormWithFiles(form, btn) {
+        const tipo = form.dataset.tipo;
+        const idAuditoria = form.dataset.idAuditoria;
+        const idAuditoriaItem = form.dataset.idItem;
+        const idCliente = form.dataset.idCliente;
+
+        // Validar comentario
+        let comentarioField;
+        if (tipo === 'global') {
+            comentarioField = form.querySelector('textarea[name="comentario_proveedor"]');
+        } else {
+            comentarioField = form.querySelector('textarea[name="comentario_proveedor_cliente"]');
+        }
+
+        if (!comentarioField || !comentarioField.value.trim()) {
+            showSuccessToast('Debe ingresar un comentario', 'warning');
+            comentarioField?.focus();
+            return false;
+        }
+
+        // Deshabilitar botón y mostrar loading
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        this.showIndicator('saving', 'Guardando ítem...');
+
+        try {
+            const formData = new FormData(form);
+            formData.append(this.csrfToken, this.csrfHash);
+
+            const url = `<?= site_url('proveedor/auditoria/') ?>${idAuditoria}/item/${idAuditoriaItem}/guardar-ajax`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            const data = await response.json();
+
+            // Actualizar token CSRF
+            if (data.csrf_token && data.csrf_hash) {
+                this.csrfToken = data.csrf_token;
+                this.csrfHash = data.csrf_hash;
+            }
+
+            if (data.ok) {
+                this.showIndicator('saved', data.message);
+                showSuccessToast(data.message);
+
+                // Limpiar input de archivos
+                const fileInputs = form.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => input.value = '');
+
+                // Actualizar badge
+                this.updateItemBadge(idAuditoriaItem, tipo, idCliente);
+
+                // Actualizar progreso
+                if (data.progreso) {
+                    this.updateProgressBar(data.progreso);
+                }
+
+                // Limpiar cambios pendientes
+                const textareaId = `${tipo}-${idAuditoriaItem}-${idCliente || ''}`;
+                this.pendingChanges.delete(textareaId);
+
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return true;
+            } else {
+                this.showIndicator('error', data.message || 'Error al guardar');
+                showSuccessToast(data.message || 'Error al guardar', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return false;
+            }
+        } catch (error) {
+            console.error('Error al guardar:', error);
+            this.showIndicator('error', 'Error de conexión');
+            showSuccessToast('Error de conexión. Intente nuevamente.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            return false;
+        }
+    },
+
+    // Actualizar barra de progreso en tiempo real
+    updateProgressBar(progreso) {
+        const porcentaje = Math.round(progreso.porcentaje_total);
+        const todoCompleto = porcentaje >= 100;
+
+        // Actualizar badge de porcentaje
+        const badgePct = document.querySelector('#progress-bar-compact .badge');
+        if (badgePct) {
+            badgePct.textContent = `${porcentaje}%`;
+            badgePct.className = `badge ${todoCompleto ? 'bg-success' : 'bg-primary'} me-2`;
+        }
+
+        // Actualizar barra principal
+        const progressBar = document.querySelector('#progress-bar-compact .progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${porcentaje}%`;
+            progressBar.className = `progress-bar ${todoCompleto ? 'bg-success' : 'bg-primary'}`;
+        }
+
+        // Actualizar contador de ítems
+        const itemsCount = document.querySelector('#progress-bar-compact small.text-muted');
+        if (itemsCount) {
+            itemsCount.textContent = `${progreso.total_completados}/${progreso.total} ítems`;
+        }
+
+        // Mostrar/ocultar badge "Listo para enviar"
+        let readyBadge = document.querySelector('#progress-bar-compact .badge.bg-success:last-of-type');
+        if (todoCompleto) {
+            if (!readyBadge || !readyBadge.textContent.includes('Listo')) {
+                const container = document.querySelector('#progress-bar-compact .d-flex');
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-success';
+                badge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Listo para enviar';
+                const chevronBtn = container.querySelector('button[data-bs-toggle="collapse"]');
+                if (chevronBtn) {
+                    container.insertBefore(badge, chevronBtn);
+                }
+            }
+        }
+
+        // Habilitar/deshabilitar botón de finalizar
+        const finalizarBtn = document.querySelector('.card.border-primary button[type="submit"]');
+        if (finalizarBtn) {
+            finalizarBtn.disabled = !todoCompleto;
+        }
+
+        // Actualizar detalles expandibles
+        const globalesInfo = document.querySelector('#progress-details .col-6:first-child small');
+        if (globalesInfo) {
+            globalesInfo.textContent = `Globales: ${progreso.globales_completos}/${progreso.globales_total}`;
+        }
+
+        const clientesInfo = document.querySelector('#progress-details .col-6:last-child small');
+        if (clientesInfo) {
+            clientesInfo.textContent = `Por Cliente: ${progreso.por_cliente_completos}/${progreso.por_cliente_total}`;
+        }
+    },
+
     // Actualizar badge visual del ítem
     updateItemBadge(idAuditoriaItem, tipo, idCliente) {
-        // Buscar el accordion item
         const accordionItem = document.getElementById(`item-${idAuditoriaItem}`);
         if (!accordionItem) return;
 
-        // Si es cliente, actualizar el tab del cliente
+        const button = accordionItem.querySelector('.accordion-button');
+        if (!button) return;
+
+        // Para ítems por cliente, actualizar el tab del cliente
         if (tipo === 'cliente' && idCliente) {
             const tabButton = document.getElementById(`tab-item${idAuditoriaItem}-cliente${idCliente}`);
             if (tabButton && !tabButton.querySelector('.bi-check-circle-fill')) {
                 const checkIcon = document.createElement('i');
                 checkIcon.className = 'bi bi-check-circle-fill text-success ms-1';
                 tabButton.appendChild(checkIcon);
+            }
+        }
+
+        // Actualizar badge del accordion header (global o cuando todos los clientes están completos)
+        if (tipo === 'global') {
+            const statusBadge = button.querySelector('.badge.bg-warning');
+            if (statusBadge) {
+                statusBadge.className = 'badge bg-success';
+                statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Completado';
+            }
+            accordionItem.classList.add('border-success');
+            button.classList.add('bg-success', 'bg-opacity-10');
+        }
+    },
+
+    // Expandir siguiente ítem con scroll suave
+    expandNextItemFromIndex(currentIndex) {
+        const nextIndex = currentIndex + 1;
+        const nextItem = document.querySelector(`.accordion-item[data-item-index="${nextIndex}"]`);
+
+        if (nextItem) {
+            const currentItem = document.querySelector(`.accordion-item[data-item-index="${currentIndex}"]`);
+            if (currentItem) {
+                const currentCollapse = currentItem.querySelector('.accordion-collapse');
+                const bsCollapse = bootstrap.Collapse.getInstance(currentCollapse);
+                if (bsCollapse) {
+                    bsCollapse.hide();
+                }
+            }
+
+            const nextCollapse = nextItem.querySelector('.accordion-collapse');
+            const nextBsCollapse = new bootstrap.Collapse(nextCollapse, { toggle: false });
+
+            setTimeout(() => {
+                nextBsCollapse.show();
+
+                setTimeout(() => {
+                    const headerOffset = 100;
+                    const elementPosition = nextItem.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }, 350);
+            }, 300);
+        } else {
+            const finalizarCard = document.querySelector('.card.border-primary');
+            if (finalizarCard) {
+                setTimeout(() => {
+                    const headerOffset = 100;
+                    const elementPosition = finalizarCard.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }, 400);
             }
         }
     },
@@ -819,20 +1046,36 @@ const AutoSave = {
                 return e.returnValue;
             }
         });
-
-        // Limpiar pendingChanges cuando se hace submit de un formulario
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', () => {
-                this.pendingChanges.clear();
-            });
-        });
     }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar autosave
-    AutoSave.init();
+    FormManager.init();
 });
+
+// Toast helper
+function showSuccessToast(message, type = 'success') {
+    const toastEl = document.getElementById('successToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastDiv = toastEl.querySelector('.toast');
+
+    toastMessage.textContent = message;
+
+    if (type === 'error') {
+        toastDiv.className = 'toast align-items-center text-white bg-danger border-0';
+    } else if (type === 'warning') {
+        toastDiv.className = 'toast align-items-center text-white bg-warning border-0';
+    } else {
+        toastDiv.className = 'toast align-items-center text-white bg-success border-0';
+    }
+
+    const toast = new bootstrap.Toast(toastEl, {
+        animation: true,
+        autohide: true,
+        delay: 4000
+    });
+    toast.show();
+}
 </script>
 <?php endif; ?>
 
