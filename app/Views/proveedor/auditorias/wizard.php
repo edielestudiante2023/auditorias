@@ -3,6 +3,19 @@
 <?= $this->section('styles') ?>
 <!-- SweetAlert2 CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<style>
+/* SweetAlert personalizado para navegación de clientes */
+.swal-wide {
+    max-width: 450px !important;
+}
+.swal2-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.swal2-actions button {
+    margin: 0 !important;
+}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -471,6 +484,9 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
 <?php endif; ?>
 
 
+<!-- SweetAlert2 JS (cargado antes de los handlers que lo usan) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <!-- JavaScript for Accordion auto-navigation and Toast notifications -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -582,65 +598,160 @@ function expandNextItem() {
 
 
 /**
- * Manejar eliminación de evidencias globales
+ * Manejar eliminación de evidencias globales vía AJAX
  */
-document.addEventListener('click', function(e) {
+document.addEventListener('click', async function(e) {
     if (e.target.closest('.btn-delete-evidencia')) {
         const btn = e.target.closest('.btn-delete-evidencia');
         const url = btn.getAttribute('data-url');
         const nombre = btn.getAttribute('data-nombre');
 
-        if (confirm(`¿Está seguro de eliminar el archivo "${nombre}"?`)) {
+        const result = await Swal.fire({
+            title: '¿Eliminar archivo?',
+            text: `Se eliminará "${nombre}"`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
             // Deshabilitar botón y mostrar loading
             btn.disabled = true;
+            const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-            // Crear formulario y enviarlo
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
+            try {
+                const formData = new FormData();
+                formData.append('<?= csrf_token() ?>', FormManager ? FormManager.csrfHash : '<?= csrf_hash() ?>');
 
-            // Agregar token CSRF
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '<?= csrf_token() ?>';
-            csrfInput.value = '<?= csrf_hash() ?>';
-            form.appendChild(csrfInput);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
 
-            document.body.appendChild(form);
-            form.submit();
+                const data = await response.json();
+
+                // Actualizar token CSRF
+                if (data.csrf_token && data.csrf_hash && FormManager) {
+                    FormManager.csrfToken = data.csrf_token;
+                    FormManager.csrfHash = data.csrf_hash;
+                }
+
+                if (data.ok) {
+                    showToast(data.message || 'Archivo eliminado', 'success');
+                    // Eliminar el elemento de la lista visualmente
+                    const listItem = btn.closest('.list-group-item');
+                    if (listItem) {
+                        listItem.remove();
+                        // Actualizar contador de evidencias
+                        const container = document.querySelector(`#evidencias-${data.id_item || ''}`);
+                        if (container) {
+                            const countSpan = container.querySelector('.evidencias-count');
+                            if (countSpan) {
+                                const newCount = parseInt(countSpan.textContent) - 1;
+                                countSpan.textContent = newCount;
+                                if (newCount === 0) {
+                                    container.innerHTML = '';
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Error al eliminar', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+                showToast('Error de conexión', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
     }
 });
 
 /**
- * Manejar eliminación de evidencias de cliente
+ * Manejar eliminación de evidencias de cliente vía AJAX
  */
-document.addEventListener('click', function(e) {
+document.addEventListener('click', async function(e) {
     if (e.target.closest('.btn-delete-evidencia-cliente')) {
         const btn = e.target.closest('.btn-delete-evidencia-cliente');
         const url = btn.getAttribute('data-url');
         const nombre = btn.getAttribute('data-nombre');
 
-        if (confirm(`¿Está seguro de eliminar el archivo "${nombre}"?`)) {
+        const result = await Swal.fire({
+            title: '¿Eliminar archivo?',
+            text: `Se eliminará "${nombre}"`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
             // Deshabilitar botón y mostrar loading
             btn.disabled = true;
+            const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
-            // Crear formulario y enviarlo
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
+            try {
+                const formData = new FormData();
+                formData.append('<?= csrf_token() ?>', FormManager ? FormManager.csrfHash : '<?= csrf_hash() ?>');
 
-            // Agregar token CSRF
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '<?= csrf_token() ?>';
-            csrfInput.value = '<?= csrf_hash() ?>';
-            form.appendChild(csrfInput);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
 
-            document.body.appendChild(form);
-            form.submit();
+                const data = await response.json();
+
+                // Actualizar token CSRF
+                if (data.csrf_token && data.csrf_hash && FormManager) {
+                    FormManager.csrfToken = data.csrf_token;
+                    FormManager.csrfHash = data.csrf_hash;
+                }
+
+                if (data.ok) {
+                    showToast(data.message || 'Archivo eliminado', 'success');
+                    // Eliminar el elemento de la lista visualmente
+                    const listItem = btn.closest('.list-group-item');
+                    if (listItem) {
+                        listItem.remove();
+                        // Actualizar contador de evidencias en el contenedor correcto
+                        const tabPane = btn.closest('.tab-pane');
+                        if (tabPane) {
+                            const container = tabPane.querySelector('.evidencias-container');
+                            if (container) {
+                                const countSpan = container.querySelector('.evidencias-count');
+                                if (countSpan) {
+                                    const newCount = parseInt(countSpan.textContent) - 1;
+                                    countSpan.textContent = newCount;
+                                    if (newCount === 0) {
+                                        container.innerHTML = '';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Error al eliminar', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+                showToast('Error de conexión', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
     }
 });
@@ -649,9 +760,6 @@ document.addEventListener('click', function(e) {
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- SweetAlert2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <?php if ($auditoria['estado'] === 'en_proveedor'): ?>
 <script>
 // ============================================================
@@ -726,20 +834,84 @@ const FormManager = {
                     const tipo = form.dataset.tipo;
                     const saved = await this.saveFormWithFiles(form, btn);
                     if (saved) {
-                        // Solo avanzar al siguiente ítem si es GLOBAL
-                        // Para ítems por cliente: NO MOVER - el usuario decide cuándo cambiar de pestaña
                         if (tipo === 'global') {
+                            // Para ítems globales: avanzar al siguiente ítem automáticamente
                             const accordionItem = form.closest('.accordion-item');
                             if (accordionItem) {
                                 const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
                                 this.expandNextItemFromIndex(itemIndex);
                             }
+                        } else {
+                            // Para ítems por cliente: preguntar qué desea hacer
+                            await this.askNextActionForClient(form, btn);
                         }
-                        // Para tipo 'cliente': no hacer nada, quedarse en la misma pestaña
                     }
                 }
             });
         });
+    },
+
+    // Preguntar al usuario qué desea hacer después de guardar para un cliente
+    // Solo se muestra si hay más de 1 cliente
+    async askNextActionForClient(form, btn) {
+        const accordionItem = form.closest('.accordion-item');
+        const tabPane = form.closest('.tab-pane');
+        const navTabs = accordionItem.querySelector('.nav-tabs');
+
+        if (!navTabs || !tabPane) return;
+
+        // Contar clientes (pestañas)
+        const allTabs = Array.from(navTabs.querySelectorAll('.nav-link'));
+
+        // Si solo hay 1 cliente, no mostrar el diálogo - simplemente quedarse
+        if (allTabs.length <= 1) {
+            return;
+        }
+
+        // Obtener información del ítem actual
+        const clienteNombre = btn.dataset.clienteNombre || 'este cliente';
+
+        // Encontrar la pestaña actual activa
+        const currentTab = navTabs.querySelector('.nav-link.active');
+        const currentIndex = allTabs.indexOf(currentTab);
+
+        // Verificar si hay siguiente cliente en este ítem
+        const hasNextClient = currentIndex < allTabs.length - 1;
+        const nextClientName = hasNextClient
+            ? allTabs[currentIndex + 1].querySelector('span')?.textContent.trim() || 'siguiente cliente'
+            : null;
+
+        // Construir las opciones del SweetAlert
+        let html = `<p class="mb-3">Has guardado exitosamente para <strong>${clienteNombre}</strong>.</p>`;
+        html += `<p class="text-muted">¿Qué deseas hacer ahora?</p>`;
+
+        const result = await Swal.fire({
+            title: '¿Continuar?',
+            html: html,
+            icon: 'success',
+            showCancelButton: true,
+            showDenyButton: hasNextClient,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            denyButtonColor: '#0d6efd',
+            confirmButtonText: `<i class="bi bi-arrow-repeat"></i> Seguir en ${clienteNombre}`,
+            denyButtonText: hasNextClient ? `<i class="bi bi-arrow-right"></i> Ir a ${nextClientName}` : '',
+            cancelButtonText: '<i class="bi bi-x"></i> Cerrar',
+            allowOutsideClick: false,
+            customClass: {
+                popup: 'swal-wide'
+            }
+        });
+
+        if (result.isDenied && hasNextClient) {
+            // Ir al siguiente cliente del mismo ítem
+            const nextTab = allTabs[currentIndex + 1];
+            if (nextTab) {
+                const tab = new bootstrap.Tab(nextTab);
+                tab.show();
+            }
+        }
+        // Si confirma o cancela, se queda en la pestaña actual
     },
 
     // Listeners para textareas (autosave)

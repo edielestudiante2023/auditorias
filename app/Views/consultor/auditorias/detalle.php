@@ -1,5 +1,23 @@
 <?= $this->extend('layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<!-- SweetAlert2 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<style>
+/* SweetAlert personalizado para navegación de clientes */
+.swal-wide {
+    max-width: 450px !important;
+}
+.swal2-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.swal2-actions button {
+    margin: 0 !important;
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <!-- Incluir componente Toast -->
@@ -422,27 +440,50 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                         No hay clientes asignados para calificar este ítem.
                     </div>
                 <?php else: ?>
+                    <?php
+                    // Colores distintivos para cada cliente (basado en su ID para consistencia)
+                    $coloresCliente = [
+                        ['bg' => '#e3f2fd', 'border' => '#2196f3', 'text' => '#1565c0'], // Azul
+                        ['bg' => '#fff3e0', 'border' => '#ff9800', 'text' => '#e65100'], // Naranja
+                        ['bg' => '#f3e5f5', 'border' => '#9c27b0', 'text' => '#7b1fa2'], // Púrpura
+                        ['bg' => '#e8f5e9', 'border' => '#4caf50', 'text' => '#2e7d32'], // Verde
+                        ['bg' => '#fce4ec', 'border' => '#e91e63', 'text' => '#c2185b'], // Rosa
+                        ['bg' => '#e0f7fa', 'border' => '#00bcd4', 'text' => '#00838f'], // Cian
+                        ['bg' => '#fff8e1', 'border' => '#ffc107', 'text' => '#ff8f00'], // Ámbar
+                        ['bg' => '#efebe9', 'border' => '#795548', 'text' => '#5d4037'], // Café
+                    ];
+                    ?>
                     <ul class="nav nav-tabs mb-3" role="tablist">
                         <?php foreach ($clientes as $idx => $cliente): ?>
+                            <?php
+                            // Asignar color basado en el ID del cliente (consistente en toda la auditoría)
+                            $colorIdx = $cliente['id_cliente'] % count($coloresCliente);
+                            $colorCliente = $coloresCliente[$colorIdx];
+
+                            // Verificar si este cliente tiene calificación
+                            $clienteCalificado = false;
+                            foreach ($item['items_cliente'] as $ic) {
+                                if ($ic['id_cliente'] == $cliente['id_cliente']) {
+                                    $calif = $ic['calificacion_ajustada'] ?? null;
+                                    $clienteCalificado = !empty($calif) && $calif !== 'sin_revision';
+                                    break;
+                                }
+                            }
+                            ?>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link <?= $idx === 0 ? 'active' : '' ?>"
                                         id="tab-consultor-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                         data-bs-toggle="tab"
                                         data-bs-target="#content-consultor-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
                                         type="button"
-                                        role="tab">
-                                    <?php
-                                    // Verificar si este cliente tiene calificación
-                                    $clienteCalificado = false;
-                                    foreach ($item['items_cliente'] as $ic) {
-                                        if ($ic['id_cliente'] == $cliente['id_cliente']) {
-                                            $calif = $ic['calificacion_ajustada'] ?? null;
-                                            $clienteCalificado = !empty($calif) && $calif !== 'sin_revision';
-                                            break;
-                                        }
-                                    }
-                                    ?>
-                                    <?= esc($cliente['razon_social']) ?>
+                                        role="tab"
+                                        style="border-left: 4px solid <?= $colorCliente['border'] ?>; background-color: <?= $idx === 0 ? $colorCliente['bg'] : 'transparent' ?>;"
+                                        data-color-bg="<?= $colorCliente['bg'] ?>"
+                                        data-color-border="<?= $colorCliente['border'] ?>">
+                                    <span style="color: <?= $colorCliente['text'] ?>; font-weight: 600;">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                        <?= esc($cliente['razon_social']) ?>
+                                    </span>
                                     <?php if ($clienteCalificado): ?>
                                         <i class="bi bi-check-circle-fill text-success ms-1"></i>
                                     <?php endif; ?>
@@ -554,7 +595,7 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                                                   placeholder="Agregue observaciones específicas para este cliente..."><?= esc($itemCliente['comentario_cliente'] ?? '') ?></textarea>
                                     </div>
 
-                                    <button type="button" class="btn btn-success btn-guardar-calificacion">
+                                    <button type="button" class="btn btn-success btn-guardar-calificacion" data-cliente-nombre="<?= esc($cliente['razon_social']) ?>">
                                         <i class="bi bi-save"></i> Guardar Calificación para <?= esc($cliente['razon_social']) ?>
                                     </button>
                                 </form>
@@ -672,6 +713,9 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
     </div>
 <?php endif; ?>
 
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 // ============================================================
 // SISTEMA DE CALIFICACIÓN - Guarda calificaciones vía AJAX
@@ -744,18 +788,87 @@ const CalificacionManager = {
             btn.addEventListener('click', async (e) => {
                 const form = e.target.closest('.form-calificacion');
                 if (form) {
+                    const tipo = form.dataset.tipo;
                     const saved = await this.saveFormWithFeedback(form, true);
                     if (saved) {
-                        // Expandir siguiente ítem después de guardar exitosamente
-                        const accordionItem = form.closest('.accordion-item');
-                        if (accordionItem) {
-                            const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
-                            this.expandNextItemFromIndex(itemIndex);
+                        if (tipo === 'global') {
+                            // Para ítems globales: avanzar al siguiente ítem automáticamente
+                            const accordionItem = form.closest('.accordion-item');
+                            if (accordionItem) {
+                                const itemIndex = parseInt(accordionItem.getAttribute('data-item-index'));
+                                this.expandNextItemFromIndex(itemIndex);
+                            }
+                        } else {
+                            // Para ítems por cliente: preguntar qué desea hacer (solo si hay más de 1 cliente)
+                            await this.askNextActionForClient(form, btn);
                         }
                     }
                 }
             });
         });
+    },
+
+    // Preguntar al usuario qué desea hacer después de guardar para un cliente
+    // Solo se muestra si hay más de 1 cliente
+    async askNextActionForClient(form, btn) {
+        const accordionItem = form.closest('.accordion-item');
+        const tabPane = form.closest('.tab-pane');
+        const navTabs = accordionItem.querySelector('.nav-tabs');
+
+        if (!navTabs || !tabPane) return;
+
+        // Contar clientes (pestañas)
+        const allTabs = Array.from(navTabs.querySelectorAll('.nav-link'));
+
+        // Si solo hay 1 cliente, no mostrar el diálogo - simplemente quedarse
+        if (allTabs.length <= 1) {
+            return;
+        }
+
+        // Obtener información del cliente actual
+        const clienteNombre = btn.dataset.clienteNombre || 'este cliente';
+
+        // Encontrar la pestaña actual activa
+        const currentTab = navTabs.querySelector('.nav-link.active');
+        const currentIndex = allTabs.indexOf(currentTab);
+
+        // Verificar si hay siguiente cliente en este ítem
+        const hasNextClient = currentIndex < allTabs.length - 1;
+        const nextClientName = hasNextClient
+            ? allTabs[currentIndex + 1].querySelector('span')?.textContent.trim() || 'siguiente cliente'
+            : null;
+
+        // Construir las opciones del SweetAlert
+        let html = `<p class="mb-3">Has guardado exitosamente para <strong>${clienteNombre}</strong>.</p>`;
+        html += `<p class="text-muted">¿Qué deseas hacer ahora?</p>`;
+
+        const result = await Swal.fire({
+            title: '¿Continuar?',
+            html: html,
+            icon: 'success',
+            showCancelButton: true,
+            showDenyButton: hasNextClient,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            denyButtonColor: '#0d6efd',
+            confirmButtonText: `<i class="bi bi-arrow-repeat"></i> Seguir en ${clienteNombre}`,
+            denyButtonText: hasNextClient ? `<i class="bi bi-arrow-right"></i> Ir a ${nextClientName}` : '',
+            cancelButtonText: '<i class="bi bi-x"></i> Cerrar',
+            allowOutsideClick: false,
+            customClass: {
+                popup: 'swal-wide'
+            }
+        });
+
+        if (result.isDenied && hasNextClient) {
+            // Ir al siguiente cliente del mismo ítem
+            const nextTab = allTabs[currentIndex + 1];
+            if (nextTab) {
+                const tab = new bootstrap.Tab(nextTab);
+                tab.show();
+            }
+        }
+        // Si confirma o cancela, se queda en la pestaña actual
     },
 
     // Listeners para radio buttons (autosave)
@@ -1160,6 +1273,19 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php if (session()->getFlashdata('warning')): ?>
         showToast('<?= esc(session()->getFlashdata('warning')) ?>', 'warning', 5000);
     <?php endif; ?>
+
+    // Colorear pestañas de clientes al cambiar
+    document.querySelectorAll('.nav-tabs .nav-link[data-color-bg]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function() {
+            // Quitar color de fondo de todas las pestañas hermanas
+            const navTabs = this.closest('.nav-tabs');
+            navTabs.querySelectorAll('.nav-link').forEach(t => {
+                t.style.backgroundColor = 'transparent';
+            });
+            // Aplicar color a la pestaña activa
+            this.style.backgroundColor = this.dataset.colorBg;
+        });
+    });
 });
 
 /**
