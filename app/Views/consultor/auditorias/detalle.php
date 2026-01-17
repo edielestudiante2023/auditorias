@@ -505,9 +505,17 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                                 }
                             }
                             ?>
+                            <?php
+                            // Color para este cliente
+                            $colorIdx = $cliente['id_cliente'] % count($coloresCliente);
+                            $colorClienteTab = $coloresCliente[$colorIdx];
+                            ?>
                             <div class="tab-pane fade <?= $idx === 0 ? 'show active' : '' ?>"
                                  id="content-consultor-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
-                                 role="tabpanel">
+                                 role="tabpanel"
+                                 style="background-color: <?= $colorClienteTab['bg'] ?>; border-radius: 0 0 8px 8px; padding: 15px; border: 1px solid <?= $colorClienteTab['border'] ?>; border-top: none;"
+                                 data-color-bg="<?= $colorClienteTab['bg'] ?>"
+                                 data-color-border="<?= $colorClienteTab['border'] ?>">
 
                                 <!-- Descripción del ítem (dentro de cada pestaña de cliente) -->
                                 <?php if (!empty($item['descripcion'])): ?>
