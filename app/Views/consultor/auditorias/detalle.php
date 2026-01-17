@@ -1291,7 +1291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('<?= esc(session()->getFlashdata('warning')) ?>', 'warning', 5000);
     <?php endif; ?>
 
-    // Colorear pestañas de clientes al cambiar
+    // Colorear pestañas de clientes al cambiar y guardar pestaña activa
     document.querySelectorAll('.nav-tabs .nav-link[data-color-bg]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', function() {
             // Quitar color de fondo de todas las pestañas hermanas
@@ -1301,9 +1301,40 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             // Aplicar color a la pestaña activa
             this.style.backgroundColor = this.dataset.colorBg;
+
+            // Guardar pestaña activa en sessionStorage para restaurar después de recargar
+            const accordionItem = this.closest('.accordion-item');
+            if (accordionItem) {
+                const itemIndex = accordionItem.getAttribute('data-item-index');
+                const tabId = this.getAttribute('id');
+                sessionStorage.setItem(`activeTabConsultor_item_${itemIndex}`, tabId);
+            }
         });
     });
+
+    // Restaurar pestañas activas guardadas en sessionStorage
+    restoreActiveTabsConsultor();
 });
+
+/**
+ * Restaura las pestañas de clientes activas después de recargar la página
+ */
+function restoreActiveTabsConsultor() {
+    // Buscar todos los ítems con pestañas
+    document.querySelectorAll('.accordion-item').forEach(item => {
+        const itemIndex = item.getAttribute('data-item-index');
+        const savedTabId = sessionStorage.getItem(`activeTabConsultor_item_${itemIndex}`);
+
+        if (savedTabId) {
+            const savedTab = document.getElementById(savedTabId);
+            if (savedTab) {
+                // Activar la pestaña guardada
+                const tab = new bootstrap.Tab(savedTab);
+                tab.show();
+            }
+        }
+    });
+}
 
 /**
  * Función legacy para compatibilidad (ya no se usa con POST tradicional)
