@@ -350,7 +350,10 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                             ?>
                             <div class="tab-pane fade <?= $idx === 0 ? 'show active' : '' ?>"
                                  id="content-item<?= $item['id_auditoria_item'] ?>-cliente<?= $cliente['id_cliente'] ?>"
-                                 role="tabpanel">
+                                 role="tabpanel"
+                                 style="background-color: <?= $colorCliente['bg'] ?>; border-radius: 0 0 8px 8px; padding: 15px; border: 1px solid <?= $colorCliente['border'] ?>; border-top: none;"
+                                 data-color-bg="<?= $colorCliente['bg'] ?>"
+                                 data-color-border="<?= $colorCliente['border'] ?>">
 
                                 <!-- Descripción del ítem (dentro de cada pestaña de cliente) -->
                                 <?php if (!empty($item['descripcion'])): ?>
@@ -1070,6 +1073,11 @@ const FormManager = {
                 const fileInputs = form.querySelectorAll('input[type="file"]');
                 fileInputs.forEach(input => input.value = '');
 
+                // Actualizar lista de evidencias si hay archivos
+                if (data.evidencias && data.evidencias.length > 0) {
+                    this.renderEvidencias(data.evidencias, data.id_item, data.id_cliente, data.tipo, data.id_auditoria);
+                }
+
                 // Actualizar badge
                 this.updateItemBadge(idAuditoriaItem, tipo, idCliente);
 
@@ -1248,6 +1256,81 @@ const FormManager = {
                 return e.returnValue;
             }
         });
+    },
+
+    // Renderizar lista de evidencias después de subir archivos
+    renderEvidencias(evidencias, idItem, idCliente, tipo, idAuditoria) {
+        let containerId;
+        if (tipo === 'global') {
+            containerId = `evidencias-${idItem}`;
+        } else {
+            containerId = `evidencias-${idItem}-${idCliente}`;
+        }
+
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error('Contenedor de evidencias no encontrado:', containerId);
+            return;
+        }
+
+        // Construir HTML de la lista de evidencias
+        let html = `
+            <label class="form-label">
+                <i class="bi bi-file-earmark-check"></i> Archivos Cargados (<span class="evidencias-count">${evidencias.length}</span>)
+            </label>
+            <div class="list-group">
+        `;
+
+        evidencias.forEach(ev => {
+            const sizeKB = (ev.tamanio_bytes / 1024).toFixed(2);
+            const fecha = new Date(ev.created_at).toLocaleString('es-CO', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Determinar URL de eliminación según tipo
+            let deleteUrl;
+            if (tipo === 'global') {
+                deleteUrl = `<?= site_url('proveedor/auditoria/') ?>${idAuditoria}/evidencia/${ev.id_evidencia}/eliminar`;
+            } else {
+                deleteUrl = `<?= site_url('proveedor/auditoria/') ?>${idAuditoria}/evidencia-cliente/${ev.id_evidencia_cliente}/eliminar`;
+            }
+
+            const btnClass = tipo === 'global' ? 'btn-delete-evidencia' : 'btn-delete-evidencia-cliente';
+
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-file-earmark text-primary"></i>
+                        <strong>${this.escapeHtml(ev.nombre_archivo_original)}</strong>
+                        <br>
+                        <small class="text-muted">
+                            ${sizeKB} KB
+                            • Subido: ${fecha}
+                        </small>
+                    </div>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger ${btnClass}"
+                            data-url="${deleteUrl}"
+                            data-nombre="${this.escapeHtml(ev.nombre_archivo_original)}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    },
+
+    // Escapar HTML para prevenir XSS
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 };
 

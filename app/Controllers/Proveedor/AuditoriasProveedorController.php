@@ -543,12 +543,36 @@ class AuditoriasProveedorController extends BaseController
                 $mensaje .= '. Archivos subidos: ' . count($archivosSubidos);
             }
 
+            // Obtener lista actualizada de evidencias para devolver al frontend
+            $evidenciasActualizadas = [];
+            if ($tipo === 'global') {
+                $evidenciasActualizadas = $this->evidenciaModel
+                    ->where('id_auditoria_item', $idAuditoriaItem)
+                    ->findAll();
+            } else if ($idCliente) {
+                // Buscar el id_auditoria_item_cliente
+                $itemClienteActual = $this->auditoriaItemClienteModel
+                    ->where('id_auditoria_item', $idAuditoriaItem)
+                    ->where('id_cliente', $idCliente)
+                    ->first();
+                if ($itemClienteActual) {
+                    $evidenciasActualizadas = $this->evidenciaClienteModel
+                        ->where('id_auditoria_item_cliente', $itemClienteActual['id_auditoria_item_cliente'])
+                        ->findAll();
+                }
+            }
+
             return $this->response->setJSON([
                 'ok' => true,
                 'message' => $mensaje,
                 'timestamp' => date('H:i:s'),
                 'progreso' => $progreso,
                 'archivos_subidos' => $archivosSubidos,
+                'evidencias' => $evidenciasActualizadas,
+                'id_auditoria' => $idAuditoria,
+                'id_item' => $idAuditoriaItem,
+                'id_cliente' => $idCliente,
+                'tipo' => $tipo,
                 'csrf_token' => csrf_token(),
                 'csrf_hash' => csrf_hash()
             ]);
