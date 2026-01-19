@@ -34,17 +34,17 @@ foreach ($items as $item) {
 }
 ?>
 <?php if ($tieneItemsPorCliente && !empty($clientes)): ?>
-<div id="current-client-bar" class="sticky-top" style="top: 56px; z-index: 1019; display: none;">
+<div id="current-client-bar" class="sticky-top" style="top: 100px; z-index: 1019; display: none;">
     <div class="py-2 px-3 shadow-sm" id="current-client-inner" style="border-left: 4px solid #2196f3; background-color: #e3f2fd;">
         <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center">
-                <i class="bi bi-building-fill me-2" id="current-client-icon"></i>
+                <i class="bi bi-building-fill me-2 fs-4" id="current-client-icon" style="color: #2196f3;"></i>
                 <div>
-                    <small class="text-muted d-block">Evaluando:</small>
-                    <strong id="current-client-name">Cliente</strong>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Evaluando cliente:</small>
+                    <strong id="current-client-name" style="font-size: 1.1rem;">Cliente</strong>
                 </div>
             </div>
-            <span class="badge" id="current-client-badge">Cliente Activo</span>
+            <span class="badge bg-primary" id="current-client-badge">Cliente Activo</span>
         </div>
     </div>
 </div>
@@ -1374,29 +1374,49 @@ function restoreActiveTabsConsultor() {
  */
 function updateCurrentClientBar(tabElement) {
     const clientBar = document.getElementById('current-client-bar');
-    if (!clientBar) return;
+    if (!clientBar) {
+        console.log('No se encontró current-client-bar');
+        return;
+    }
 
-    const clientName = tabElement.querySelector('span')?.textContent?.trim() || 'Cliente';
+    // Obtener nombre del cliente desde el span dentro del tab
+    let clientName = 'Cliente';
+    const spanElement = tabElement.querySelector('span');
+    if (spanElement) {
+        clientName = spanElement.textContent.trim();
+    }
+
     const colorBg = tabElement.dataset.colorBg || '#e3f2fd';
     const colorBorder = tabElement.dataset.colorBorder || '#2196f3';
 
+    console.log('Actualizando barra de cliente:', clientName, colorBg, colorBorder);
+
     // Actualizar contenido
-    document.getElementById('current-client-name').textContent = clientName;
+    const nameElement = document.getElementById('current-client-name');
+    if (nameElement) {
+        nameElement.textContent = clientName;
+    }
 
     // Actualizar colores
     const innerBar = document.getElementById('current-client-inner');
-    innerBar.style.backgroundColor = colorBg;
-    innerBar.style.borderLeftColor = colorBorder;
+    if (innerBar) {
+        innerBar.style.backgroundColor = colorBg;
+        innerBar.style.borderLeftColor = colorBorder;
+    }
 
     // Actualizar icono
     const icon = document.getElementById('current-client-icon');
-    icon.style.color = colorBorder;
+    if (icon) {
+        icon.style.color = colorBorder;
+    }
 
     // Actualizar badge
     const badge = document.getElementById('current-client-badge');
-    badge.style.backgroundColor = colorBorder;
-    badge.style.color = '#fff';
-    badge.textContent = 'Evaluando';
+    if (badge) {
+        badge.style.backgroundColor = colorBorder;
+        badge.style.color = '#fff';
+        badge.textContent = 'Evaluando';
+    }
 
     // Mostrar la barra
     clientBar.style.display = 'block';
@@ -1408,20 +1428,28 @@ function updateCurrentClientBar(tabElement) {
  */
 function setupAccordionObserver() {
     const clientBar = document.getElementById('current-client-bar');
-    if (!clientBar) return;
+    if (!clientBar) {
+        console.log('No hay barra de cliente en esta página');
+        return;
+    }
+
+    console.log('Configurando observer para accordion...');
 
     // Observar cambios en los accordion-collapse
     document.querySelectorAll('.accordion-collapse').forEach(collapse => {
         collapse.addEventListener('shown.bs.collapse', function() {
+            console.log('Accordion abierto:', this.id);
             // Verificar si este ítem tiene pestañas de clientes (es por_cliente)
             const navTabs = this.querySelector('.nav-tabs');
             if (navTabs) {
                 const activeTab = navTabs.querySelector('.nav-link.active');
                 if (activeTab) {
+                    console.log('Tab activo encontrado');
                     updateCurrentClientBar(activeTab);
                 }
             } else {
                 // Es un ítem global, ocultar la barra
+                console.log('Ítem global, ocultando barra');
                 clientBar.style.display = 'none';
             }
         });
@@ -1435,12 +1463,18 @@ function setupAccordionObserver() {
         });
     });
 
-    // Verificar estado inicial
-    const openClientItem = document.querySelector('.accordion-collapse.show .nav-tabs');
-    if (openClientItem) {
-        const activeTab = openClientItem.querySelector('.nav-link.active');
-        if (activeTab) {
-            updateCurrentClientBar(activeTab);
+    // Verificar estado inicial - importante para cuando la página carga con un ítem ya abierto
+    console.log('Verificando estado inicial...');
+    const openCollapse = document.querySelector('.accordion-collapse.show');
+    if (openCollapse) {
+        console.log('Hay un accordion abierto:', openCollapse.id);
+        const navTabs = openCollapse.querySelector('.nav-tabs');
+        if (navTabs) {
+            const activeTab = navTabs.querySelector('.nav-link.active');
+            if (activeTab) {
+                console.log('Tab activo inicial encontrado:', activeTab.textContent);
+                updateCurrentClientBar(activeTab);
+            }
         }
     }
 }
