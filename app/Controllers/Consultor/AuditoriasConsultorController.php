@@ -58,15 +58,44 @@ class AuditoriasConsultorController extends BaseController
             return view('consultor/sin_consultor');
         }
 
-        $anio = $this->request->getGet('anio') ?? date('Y');
-        $anioParam = ($anio !== 'todos') ? (int)$anio : null;
+        // Obtener años con auditorías para este consultor
+        $db = \Config\Database::connect();
+        $aniosConAuditorias = $db->query("
+            SELECT DISTINCT YEAR(created_at) as anio, COUNT(*) as cantidad
+            FROM auditorias
+            WHERE id_consultor = ?
+            GROUP BY YEAR(created_at)
+            ORDER BY anio DESC
+        ", [$this->idConsultor])->getResultArray();
 
-        $auditorias = $this->auditoriaModel->getAuditoriasByConsultor($this->idConsultor, $anioParam);
+        // Convertir a array asociativo [año => cantidad]
+        $auditoriasPorAnio = [];
+        foreach ($aniosConAuditorias as $row) {
+            $auditoriasPorAnio[$row['anio']] = $row['cantidad'];
+        }
+
+        // Si el usuario no especificó año y el año actual no tiene auditorías,
+        // auto-seleccionar el año más reciente con auditorías
+        $anioParam = $this->request->getGet('anio');
+        if ($anioParam === null && !empty($auditoriasPorAnio)) {
+            $anioActual = date('Y');
+            if (!isset($auditoriasPorAnio[$anioActual])) {
+                // Redirigir al año más reciente con auditorías
+                $anioMasReciente = array_key_first($auditoriasPorAnio);
+                return redirect()->to('/consultor/auditorias?anio=' . $anioMasReciente);
+            }
+        }
+
+        $anio = $anioParam ?? date('Y');
+        $anioParaQuery = ($anio !== 'todos') ? (int)$anio : null;
+
+        $auditorias = $this->auditoriaModel->getAuditoriasByConsultor($this->idConsultor, $anioParaQuery);
 
         return view('consultor/auditorias/index', [
             'title' => 'Mis Auditorías',
             'auditorias' => $auditorias,
             'anio' => $anio,
+            'auditoriasPorAnio' => $auditoriasPorAnio,
         ]);
     }
 
@@ -731,7 +760,36 @@ class AuditoriasConsultorController extends BaseController
             return view('consultor/sin_consultor');
         }
 
-        $anio = $this->request->getGet('anio') ?? date('Y');
+        // Obtener años con auditorías pendientes para este consultor
+        $db = \Config\Database::connect();
+        $aniosConAuditorias = $db->query("
+            SELECT DISTINCT YEAR(created_at) as anio, COUNT(*) as cantidad
+            FROM auditorias
+            WHERE id_consultor = ?
+              AND estado = 'en_revision_consultor'
+            GROUP BY YEAR(created_at)
+            ORDER BY anio DESC
+        ", [$this->idConsultor])->getResultArray();
+
+        // Convertir a array asociativo [año => cantidad]
+        $auditoriasPorAnio = [];
+        foreach ($aniosConAuditorias as $row) {
+            $auditoriasPorAnio[$row['anio']] = $row['cantidad'];
+        }
+
+        // Si el usuario no especificó año y el año actual no tiene auditorías,
+        // auto-seleccionar el año más reciente con auditorías
+        $anioParam = $this->request->getGet('anio');
+        if ($anioParam === null && !empty($auditoriasPorAnio)) {
+            $anioActual = date('Y');
+            if (!isset($auditoriasPorAnio[$anioActual])) {
+                // Redirigir al año más reciente con auditorías
+                $anioMasReciente = array_key_first($auditoriasPorAnio);
+                return redirect()->to('/consultor/auditorias/pendientes?anio=' . $anioMasReciente);
+            }
+        }
+
+        $anio = $anioParam ?? date('Y');
 
         $builder = $this->auditoriaModel
             ->where('id_consultor', $this->idConsultor)
@@ -754,6 +812,7 @@ class AuditoriasConsultorController extends BaseController
             'title' => 'Pendientes de Revisión',
             'auditorias' => $auditorias,
             'anio' => $anio,
+            'auditoriasPorAnio' => $auditoriasPorAnio,
         ]);
     }
 

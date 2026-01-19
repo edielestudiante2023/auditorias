@@ -5,7 +5,11 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-check-circle"></i> Auditorías Completadas</h2>
     <div class="d-flex align-items-center gap-2">
-        <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('proveedor/auditorias/completadas')]) ?>
+        <?= view('partials/filtro_anio', [
+            'anio_actual' => $anio ?? date('Y'),
+            'url_base' => site_url('proveedor/auditorias/completadas'),
+            'auditorias_por_anio' => $auditoriasPorAnio ?? []
+        ]) ?>
         <a href="<?= site_url('proveedor/dashboard') ?>" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver
         </a>
@@ -18,11 +22,36 @@
     <div class="card shadow-sm">
         <div class="card-body text-center py-5">
             <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
-            <h5 class="mt-3 text-muted">No hay auditorías completadas</h5>
-            <p class="text-muted">Aún no has completado ninguna auditoría.</p>
-            <a href="<?= site_url('proveedor/auditorias') ?>" class="btn btn-warning mt-3">
-                <i class="bi bi-envelope-exclamation"></i> Ver Auditorías Pendientes
-            </a>
+            <?php
+            $auditoriasPorAnio = $auditoriasPorAnio ?? [];
+            $hayEnOtrosAnios = !empty($auditoriasPorAnio);
+            $anioActual = $anio ?? date('Y');
+            ?>
+
+            <?php if ($hayEnOtrosAnios && $anioActual !== 'todos'): ?>
+                <!-- Hay auditorías pero en otros años -->
+                <h5 class="mt-3 text-muted">No hay auditorías completadas en <strong><?= $anioActual ?></strong></h5>
+                <div class="alert alert-info d-inline-block mt-3">
+                    <i class="bi bi-lightbulb"></i>
+                    <strong>Tienes auditorías completadas en otros años:</strong>
+                    <div class="mt-2">
+                        <?php foreach ($auditoriasPorAnio as $year => $cantidad): ?>
+                            <a href="<?= site_url('proveedor/auditorias/completadas?anio=' . $year) ?>"
+                               class="btn btn-sm <?= $cantidad > 0 ? 'btn-primary' : 'btn-outline-secondary' ?> m-1">
+                                <i class="bi bi-calendar"></i> <?= $year ?>
+                                <span class="badge bg-light text-dark"><?= $cantidad ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- No hay auditorías en ningún año -->
+                <h5 class="mt-3 text-muted">No hay auditorías completadas</h5>
+                <p class="text-muted">Aún no has completado ninguna auditoría.</p>
+                <a href="<?= site_url('proveedor/auditorias') ?>" class="btn btn-warning mt-3">
+                    <i class="bi bi-envelope-exclamation"></i> Ver Auditorías Pendientes
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 <?php else: ?>

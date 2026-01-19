@@ -1240,7 +1240,41 @@ class AuditoriasProveedorController extends BaseController
     public function completadas()
     {
         $db = \Config\Database::connect();
-        $anio = $this->request->getGet('anio') ?? date('Y');
+
+        // Primero obtener los años que tienen auditorías completadas para este usuario
+        $aniosConAuditorias = $db->query("
+            SELECT DISTINCT YEAR(a.created_at) as anio, COUNT(*) as cantidad
+            FROM auditorias a
+            WHERE a.estado = 'cerrada'
+              AND EXISTS (
+                  SELECT 1
+                  FROM contratos_proveedor_cliente cpc
+                  WHERE cpc.id_proveedor = a.id_proveedor
+                    AND cpc.id_usuario_responsable = ?
+              )
+            GROUP BY YEAR(a.created_at)
+            ORDER BY anio DESC
+        ", [userId()])->getResultArray();
+
+        // Convertir a array asociativo [año => cantidad]
+        $auditoriasPorAnio = [];
+        foreach ($aniosConAuditorias as $row) {
+            $auditoriasPorAnio[$row['anio']] = $row['cantidad'];
+        }
+
+        // Si el usuario no especificó año y el año actual no tiene auditorías,
+        // auto-seleccionar el año más reciente con auditorías
+        $anioParam = $this->request->getGet('anio');
+        if ($anioParam === null && !empty($auditoriasPorAnio)) {
+            $anioActual = date('Y');
+            if (!isset($auditoriasPorAnio[$anioActual])) {
+                // Redirigir al año más reciente con auditorías
+                $anioMasReciente = array_key_first($auditoriasPorAnio);
+                return redirect()->to('/proveedor/auditorias/completadas?anio=' . $anioMasReciente);
+            }
+        }
+
+        $anio = $anioParam ?? date('Y');
         $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Buscar auditorías cerradas asignadas a este usuario responsable
@@ -1268,6 +1302,7 @@ class AuditoriasProveedorController extends BaseController
             'title' => 'Auditorías Completadas',
             'auditorias' => $auditorias,
             'anio' => $anio,
+            'auditoriasPorAnio' => $auditoriasPorAnio,
         ]);
     }
 
