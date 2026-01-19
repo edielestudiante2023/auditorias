@@ -15,6 +15,14 @@
 .swal2-actions button {
     margin: 0 !important;
 }
+/* Barra de cliente actual fija */
+#current-client-bar {
+    display: none;
+    transition: all 0.3s ease;
+}
+#current-client-bar.show {
+    display: block;
+}
 </style>
 <?= $this->endSection() ?>
 
@@ -105,6 +113,24 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                     </small>
                 <?php endif; ?>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de cliente actual (fija) -->
+<div id="current-client-bar" class="sticky-top" style="top: 100px; z-index: 1019;">
+    <div class="py-2 px-3 shadow-sm" id="current-client-inner" style="border-left: 4px solid #2196f3; background-color: #e3f2fd;">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-building-fill me-2" id="current-client-icon" style="color: #1565c0; font-size: 1.2rem;"></i>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.7rem; line-height: 1;">Trabajando en:</small>
+                    <strong id="current-client-name" style="color: #1565c0; font-size: 1rem;">Cliente</strong>
+                </div>
+            </div>
+            <span class="badge" id="current-client-badge" style="background-color: #1565c0;">
+                <i class="bi bi-person-workspace"></i> Cliente Activo
+            </span>
         </div>
     </div>
 </div>
@@ -546,11 +572,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tabId = this.getAttribute('id');
                 sessionStorage.setItem(`activeTab_item_${itemIndex}`, tabId);
             }
+
+            // Actualizar barra de cliente actual
+            updateCurrentClientBar(this);
+        });
+    });
+
+    // Detectar cuando se abre/cierra un accordion para mostrar/ocultar barra de cliente
+    document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+        collapse.addEventListener('shown.bs.collapse', function() {
+            // Verificar si el ítem expandido tiene pestañas de clientes
+            const navTabs = this.querySelector('.nav-tabs');
+            if (navTabs) {
+                const activeTab = navTabs.querySelector('.nav-link.active');
+                if (activeTab) {
+                    updateCurrentClientBar(activeTab);
+                }
+            } else {
+                // Es un ítem global, ocultar barra de cliente
+                hideCurrentClientBar();
+            }
+        });
+
+        collapse.addEventListener('hidden.bs.collapse', function() {
+            // Verificar si hay otro accordion abierto con cliente
+            checkVisibleClientBar();
         });
     });
 
     // Restaurar pestañas activas guardadas en sessionStorage
     restoreActiveTabs();
+
+    // Verificar cliente activo inicial
+    setTimeout(() => {
+        checkVisibleClientBar();
+    }, 100);
 });
 
 /**
@@ -571,6 +627,66 @@ function restoreActiveTabs() {
             }
         }
     });
+}
+
+/**
+ * Actualiza la barra de cliente actual con la información del cliente seleccionado
+ */
+function updateCurrentClientBar(tabElement) {
+    const bar = document.getElementById('current-client-bar');
+    const inner = document.getElementById('current-client-inner');
+    const nameEl = document.getElementById('current-client-name');
+    const iconEl = document.getElementById('current-client-icon');
+    const badgeEl = document.getElementById('current-client-badge');
+
+    // Obtener nombre del cliente desde el contenido del tab
+    const clienteName = tabElement.querySelector('span')?.textContent.trim() || 'Cliente';
+    const colorBg = tabElement.dataset.colorBg || '#e3f2fd';
+    const colorBorder = tabElement.dataset.colorBorder || '#2196f3';
+
+    // Calcular color de texto basado en el borde
+    const colorText = colorBorder;
+
+    // Actualizar contenido
+    nameEl.textContent = clienteName;
+    nameEl.style.color = colorText;
+    iconEl.style.color = colorText;
+    badgeEl.style.backgroundColor = colorBorder;
+
+    // Actualizar estilos de la barra
+    inner.style.backgroundColor = colorBg;
+    inner.style.borderLeftColor = colorBorder;
+
+    // Mostrar barra
+    bar.classList.add('show');
+}
+
+/**
+ * Oculta la barra de cliente actual
+ */
+function hideCurrentClientBar() {
+    const bar = document.getElementById('current-client-bar');
+    bar.classList.remove('show');
+}
+
+/**
+ * Verifica si hay un accordion con cliente visible y actualiza la barra
+ */
+function checkVisibleClientBar() {
+    // Buscar si hay un accordion abierto con pestañas de clientes
+    const openCollapse = document.querySelector('.accordion-collapse.show');
+    if (openCollapse) {
+        const navTabs = openCollapse.querySelector('.nav-tabs');
+        if (navTabs) {
+            const activeTab = navTabs.querySelector('.nav-link.active');
+            if (activeTab && activeTab.dataset.colorBg) {
+                updateCurrentClientBar(activeTab);
+                return;
+            }
+        }
+    }
+    // No hay cliente visible, ocultar barra
+    hideCurrentClientBar();
 }
 
 /**
