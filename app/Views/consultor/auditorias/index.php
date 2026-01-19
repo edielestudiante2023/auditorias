@@ -56,6 +56,84 @@
     </div>
   </div>
 
+  <?php
+  // Calcular estadísticas por estado
+  $total = count($auditorias ?? []);
+  $borradores = count(array_filter($auditorias ?? [], fn($a) => $a['estado'] === 'borrador'));
+  $enProveedor = count(array_filter($auditorias ?? [], fn($a) => $a['estado'] === 'en_proveedor'));
+  $enRevision = count(array_filter($auditorias ?? [], fn($a) => $a['estado'] === 'en_revision_consultor'));
+  $cerradas = count(array_filter($auditorias ?? [], fn($a) => $a['estado'] === 'cerrada'));
+  ?>
+
+  <!-- Tarjetas de filtrado por estado -->
+  <div class="row mb-4">
+    <div class="col">
+      <div class="d-flex flex-wrap gap-2 justify-content-center">
+        <!-- Todas -->
+        <div class="card filter-card active" data-filter="todos" style="cursor: pointer; min-width: 140px; transition: all 0.2s;">
+          <div class="card-body text-center py-3 px-3">
+            <i class="bi bi-grid-3x3-gap-fill text-primary fs-4"></i>
+            <h4 class="mb-0 mt-1"><?= $total ?></h4>
+            <small class="text-muted">Todas</small>
+          </div>
+        </div>
+
+        <!-- Borradores -->
+        <div class="card filter-card" data-filter="borrador" style="cursor: pointer; min-width: 140px; transition: all 0.2s;">
+          <div class="card-body text-center py-3 px-3">
+            <i class="bi bi-pencil-square text-secondary fs-4"></i>
+            <h4 class="mb-0 mt-1"><?= $borradores ?></h4>
+            <small class="text-muted">Borradores</small>
+          </div>
+        </div>
+
+        <!-- En Proveedor -->
+        <div class="card filter-card" data-filter="en_proveedor" style="cursor: pointer; min-width: 140px; transition: all 0.2s;">
+          <div class="card-body text-center py-3 px-3">
+            <i class="bi bi-send-fill text-info fs-4"></i>
+            <h4 class="mb-0 mt-1"><?= $enProveedor ?></h4>
+            <small class="text-muted">En Proveedor</small>
+          </div>
+        </div>
+
+        <!-- Pendientes de Revisión -->
+        <div class="card filter-card" data-filter="en_revision_consultor" style="cursor: pointer; min-width: 140px; transition: all 0.2s;">
+          <div class="card-body text-center py-3 px-3">
+            <i class="bi bi-clock-history text-warning fs-4"></i>
+            <h4 class="mb-0 mt-1"><?= $enRevision ?></h4>
+            <small class="text-muted">Por Revisar</small>
+          </div>
+        </div>
+
+        <!-- Cerradas -->
+        <div class="card filter-card" data-filter="cerrada" style="cursor: pointer; min-width: 140px; transition: all 0.2s;">
+          <div class="card-body text-center py-3 px-3">
+            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+            <h4 class="mb-0 mt-1"><?= $cerradas ?></h4>
+            <small class="text-muted">Cerradas</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .filter-card {
+      border: 2px solid transparent;
+      opacity: 0.7;
+    }
+    .filter-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 1;
+    }
+    .filter-card.active {
+      border-color: #0d6efd;
+      opacity: 1;
+      box-shadow: 0 2px 8px rgba(13,110,253,0.25);
+    }
+  </style>
+
   <?php if (empty($auditorias)): ?>
     <div class="text-center py-5">
       <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
@@ -206,48 +284,6 @@
       </div>
     </div>
 
-    <!-- Resumen de Estadísticas -->
-    <div class="row mt-4">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-body">
-            <h6 class="card-title text-muted mb-3">
-              <i class="bi bi-graph-up"></i> Resumen
-            </h6>
-            <div class="row text-center">
-              <?php
-              $total = count($auditorias);
-              $cerradas = count(array_filter($auditorias, fn($a) => $a['estado'] === 'cerrada'));
-              $enRevision = count(array_filter($auditorias, fn($a) => $a['estado'] === 'en_revision_consultor'));
-              $enProgreso = count(array_filter($auditorias, fn($a) => $a['estado'] === 'en_progreso'));
-              ?>
-              <div class="col-md-3">
-                <div class="border-end">
-                  <h3 class="text-primary mb-0"><?= $total ?></h3>
-                  <small class="text-muted">Total</small>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="border-end">
-                  <h3 class="text-success mb-0"><?= $cerradas ?></h3>
-                  <small class="text-muted">Cerradas</small>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="border-end">
-                  <h3 class="text-info mb-0"><?= $enRevision ?></h3>
-                  <small class="text-muted">En Revisión</small>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <h3 class="text-warning mb-0"><?= $enProgreso ?></h3>
-                <small class="text-muted">En Progreso</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   <?php endif; ?>
 </div>
 
@@ -294,6 +330,31 @@ $(document).ready(function() {
                     api.column(colIdx).search(this.value).draw();
                 });
             });
+        }
+    });
+
+    // Mapeo de filtros a textos de estado en la tabla
+    var estadoTextos = {
+        'borrador': 'Borrador',
+        'en_proveedor': 'En Proveedor',
+        'en_revision_consultor': 'En Revisión',
+        'cerrada': 'Cerrada'
+    };
+
+    // Click en tarjetas de filtrado
+    $('.filter-card').on('click', function() {
+        var filtro = $(this).data('filter');
+
+        // Actualizar estado visual de las tarjetas
+        $('.filter-card').removeClass('active');
+        $(this).addClass('active');
+
+        // Aplicar filtro a la columna de estado (índice 4)
+        if (filtro === 'todos') {
+            table.column(4).search('').draw();
+        } else {
+            var textoEstado = estadoTextos[filtro] || filtro;
+            table.column(4).search(textoEstado).draw();
         }
     });
 });
