@@ -355,6 +355,14 @@ class AuditoriasProveedorController extends BaseController
             if ($tipo === 'global') {
                 // Guardar comentario global
                 $comentario = $this->request->getPost('comentario_proveedor');
+
+                // Si no hay comentario pero hay archivos, poner "Sin observaciones"
+                $files = $this->request->getFileMultiple('evidencias');
+                $hayArchivos = $files && count(array_filter($files, fn($f) => $f->isValid())) > 0;
+                if (empty(trim($comentario ?? '')) && $hayArchivos) {
+                    $comentario = 'Sin observaciones';
+                }
+
                 $this->auditoriaItemModel->update($idAuditoriaItem, [
                     'comentario_proveedor' => $comentario,
                 ]);
@@ -431,6 +439,13 @@ class AuditoriasProveedorController extends BaseController
                 }
 
                 $comentario = $this->request->getPost('comentario_proveedor_cliente');
+
+                // Si no hay comentario pero hay archivos, poner "Sin observaciones"
+                $filesCliente = $this->request->getFileMultiple('evidencias_cliente');
+                $hayArchivosCliente = $filesCliente && count(array_filter($filesCliente, fn($f) => $f->isValid())) > 0;
+                if (empty(trim($comentario ?? '')) && $hayArchivosCliente) {
+                    $comentario = 'Sin observaciones';
+                }
 
                 // Buscar o crear registro
                 $itemCliente = $this->auditoriaItemClienteModel
