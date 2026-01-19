@@ -96,7 +96,37 @@ class AuditoriasProveedorController extends BaseController
             }
         }
 
-        $anio = $this->request->getGet('anio') ?? date('Y');
+        // Primero obtener los años que tienen auditorías para este usuario
+        $aniosConAuditorias = $db->query("
+            SELECT DISTINCT YEAR(a.created_at) as anio, COUNT(*) as cantidad
+            FROM auditorias a
+            JOIN contratos_proveedor_cliente cpc ON cpc.id_proveedor = a.id_proveedor
+            WHERE cpc.id_usuario_responsable = ?
+              AND cpc.estado = 'activo'
+              AND a.estado IN ('en_proveedor', 'en_revision_consultor')
+            GROUP BY YEAR(a.created_at)
+            ORDER BY anio DESC
+        ", [userId()])->getResultArray();
+
+        // Convertir a array asociativo [año => cantidad]
+        $auditoriasPorAnio = [];
+        foreach ($aniosConAuditorias as $row) {
+            $auditoriasPorAnio[$row['anio']] = $row['cantidad'];
+        }
+
+        // Si el usuario no especificó año y el año actual no tiene auditorías,
+        // auto-seleccionar el año más reciente con auditorías
+        $anioParam = $this->request->getGet('anio');
+        if ($anioParam === null && !empty($auditoriasPorAnio)) {
+            $anioActual = date('Y');
+            if (!isset($auditoriasPorAnio[$anioActual])) {
+                // Redirigir al año más reciente con auditorías
+                $anioMasReciente = array_key_first($auditoriasPorAnio);
+                return redirect()->to('/proveedor/auditorias?anio=' . $anioMasReciente);
+            }
+        }
+
+        $anio = $anioParam ?? date('Y');
         $filtroAnio = ($anio !== 'todos') ? "AND YEAR(a.created_at) = " . (int)$anio : "";
 
         // Buscar auditorías asignadas a este usuario responsable
@@ -127,6 +157,7 @@ class AuditoriasProveedorController extends BaseController
             'title' => 'Mis Auditorías',
             'auditorias' => $auditorias,
             'anio' => $anio,
+            'auditoriasPorAnio' => $auditoriasPorAnio,
         ]);
     }
 
