@@ -4,7 +4,11 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-clipboard-check"></i> Mis Auditorías</h2>
-    <?= view('partials/filtro_anio', ['anio_actual' => $anio ?? date('Y'), 'url_base' => site_url('proveedor/auditorias')]) ?>
+    <?= view('partials/filtro_anio', [
+        'anio_actual' => $anio ?? date('Y'),
+        'url_base' => site_url('proveedor/auditorias'),
+        'auditorias_por_anio' => $auditoriasPorAnio ?? []
+    ]) ?>
 </div>
 
 <?= view('partials/flash') ?>
@@ -12,8 +16,33 @@
 <?php if (empty($auditorias)): ?>
     <div class="text-center py-5">
         <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
-        <p class="text-muted mt-3 fs-5">No tienes auditorías asignadas</p>
-        <p class="text-muted">Cuando un consultor te asigne una auditoría, aparecerá aquí</p>
+        <?php
+        $auditoriasPorAnio = $auditoriasPorAnio ?? [];
+        $hayEnOtrosAnios = !empty($auditoriasPorAnio);
+        $anioActual = $anio ?? date('Y');
+        ?>
+
+        <?php if ($hayEnOtrosAnios && $anioActual !== 'todos'): ?>
+            <!-- Hay auditorías pero en otros años -->
+            <p class="text-muted mt-3 fs-5">No tienes auditorías en <strong><?= $anioActual ?></strong></p>
+            <div class="alert alert-info d-inline-block mt-3">
+                <i class="bi bi-lightbulb"></i>
+                <strong>Tienes auditorías en otros años:</strong>
+                <div class="mt-2">
+                    <?php foreach ($auditoriasPorAnio as $year => $cantidad): ?>
+                        <a href="<?= site_url('proveedor/auditorias?anio=' . $year) ?>"
+                           class="btn btn-sm <?= $cantidad > 0 ? 'btn-primary' : 'btn-outline-secondary' ?> m-1">
+                            <i class="bi bi-calendar"></i> <?= $year ?>
+                            <span class="badge bg-light text-dark"><?= $cantidad ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php else: ?>
+            <!-- No hay auditorías en ningún año -->
+            <p class="text-muted mt-3 fs-5">No tienes auditorías asignadas</p>
+            <p class="text-muted">Cuando un consultor te asigne una auditoría, aparecerá aquí</p>
+        <?php endif; ?>
     </div>
 <?php else: ?>
     <div class="row g-4 mb-4">
