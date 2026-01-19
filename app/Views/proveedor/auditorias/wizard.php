@@ -581,6 +581,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Detectar cuando se abre/cierra un accordion para mostrar/ocultar barra de cliente
     document.querySelectorAll('.accordion-collapse').forEach(collapse => {
         collapse.addEventListener('shown.bs.collapse', function() {
+            // Guardar el ítem expandido en sessionStorage
+            const accordionItem = this.closest('.accordion-item');
+            if (accordionItem) {
+                const itemIndex = accordionItem.getAttribute('data-item-index');
+                sessionStorage.setItem('currentExpandedItem_<?= $auditoria['id_auditoria'] ?>', itemIndex);
+            }
+
             // Verificar si el ítem expandido tiene pestañas de clientes
             const navTabs = this.querySelector('.nav-tabs');
             if (navTabs) {
@@ -600,8 +607,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Restaurar pestañas activas guardadas en sessionStorage
-    restoreActiveTabs();
+    // Restaurar estado completo: ítem expandido y pestañas activas
+    restoreWorkingState();
 
     // Verificar cliente activo inicial
     setTimeout(() => {
@@ -610,10 +617,47 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Restaura las pestañas de clientes activas después de recargar la página
+ * Restaura el estado completo de trabajo: ítem expandido y pestañas activas
  */
-function restoreActiveTabs() {
-    // Buscar todos los ítems con pestañas
+function restoreWorkingState() {
+    const idAuditoria = <?= $auditoria['id_auditoria'] ?>;
+
+    // 1. Restaurar el ítem expandido
+    const savedExpandedItem = sessionStorage.getItem(`currentExpandedItem_${idAuditoria}`);
+
+    if (savedExpandedItem !== null) {
+        const itemIndex = parseInt(savedExpandedItem);
+        const targetItem = document.querySelector(`.accordion-item[data-item-index="${itemIndex}"]`);
+
+        if (targetItem) {
+            // Cerrar todos los accordions primero
+            document.querySelectorAll('.accordion-collapse.show').forEach(collapse => {
+                const bsCollapse = bootstrap.Collapse.getInstance(collapse);
+                if (bsCollapse) {
+                    bsCollapse.hide();
+                }
+            });
+
+            // Abrir el ítem guardado después de un pequeño delay
+            setTimeout(() => {
+                const targetCollapse = targetItem.querySelector('.accordion-collapse');
+                if (targetCollapse) {
+                    const bsCollapse = new bootstrap.Collapse(targetCollapse, { toggle: false });
+                    bsCollapse.show();
+
+                    // Scroll al ítem
+                    setTimeout(() => {
+                        const headerOffset = 120;
+                        const elementPosition = targetItem.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                    }, 300);
+                }
+            }, 100);
+        }
+    }
+
+    // 2. Restaurar las pestañas de clientes activas
     document.querySelectorAll('.accordion-item').forEach(item => {
         const itemIndex = item.getAttribute('data-item-index');
         const savedTabId = sessionStorage.getItem(`activeTab_item_${itemIndex}`);
@@ -627,6 +671,14 @@ function restoreActiveTabs() {
             }
         }
     });
+}
+
+/**
+ * Restaura las pestañas de clientes activas después de recargar la página
+ * @deprecated Usar restoreWorkingState() en su lugar
+ */
+function restoreActiveTabs() {
+    // Mantener por compatibilidad, pero ya no se usa directamente
 }
 
 /**
