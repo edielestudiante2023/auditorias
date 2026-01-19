@@ -23,6 +23,33 @@
 <!-- Incluir componente Toast -->
 <?= $this->include('components/toast') ?>
 
+<!-- Barra fija de cliente actual (solo visible cuando hay ítems por cliente) -->
+<?php
+$tieneItemsPorCliente = false;
+foreach ($items as $item) {
+    if ($item['alcance'] === 'por_cliente') {
+        $tieneItemsPorCliente = true;
+        break;
+    }
+}
+?>
+<?php if ($tieneItemsPorCliente && !empty($clientes)): ?>
+<div id="current-client-bar" class="sticky-top" style="top: 56px; z-index: 1019; display: none;">
+    <div class="py-2 px-3 shadow-sm" id="current-client-inner" style="border-left: 4px solid #2196f3; background-color: #e3f2fd;">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-building-fill me-2" id="current-client-icon"></i>
+                <div>
+                    <small class="text-muted d-block">Evaluando:</small>
+                    <strong id="current-client-name">Cliente</strong>
+                </div>
+            </div>
+            <span class="badge" id="current-client-badge">Cliente Activo</span>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2><i class="bi bi-clipboard-check"></i> Revisión de Auditoría</h2>
@@ -1309,8 +1336,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tabId = this.getAttribute('id');
                 sessionStorage.setItem(`activeTabConsultor_item_${itemIndex}`, tabId);
             }
+
+            // Actualizar la barra de cliente actual
+            updateCurrentClientBar(this);
         });
     });
+
+    // Configurar observer para detectar cuando un accordion de ítem por_cliente se abre/cierra
+    setupAccordionObserver();
 
     // Restaurar pestañas activas guardadas en sessionStorage
     restoreActiveTabsConsultor();
@@ -1334,6 +1367,82 @@ function restoreActiveTabsConsultor() {
             }
         }
     });
+}
+
+/**
+ * Actualiza la barra fija de cliente actual
+ */
+function updateCurrentClientBar(tabElement) {
+    const clientBar = document.getElementById('current-client-bar');
+    if (!clientBar) return;
+
+    const clientName = tabElement.querySelector('span')?.textContent?.trim() || 'Cliente';
+    const colorBg = tabElement.dataset.colorBg || '#e3f2fd';
+    const colorBorder = tabElement.dataset.colorBorder || '#2196f3';
+
+    // Actualizar contenido
+    document.getElementById('current-client-name').textContent = clientName;
+
+    // Actualizar colores
+    const innerBar = document.getElementById('current-client-inner');
+    innerBar.style.backgroundColor = colorBg;
+    innerBar.style.borderLeftColor = colorBorder;
+
+    // Actualizar icono
+    const icon = document.getElementById('current-client-icon');
+    icon.style.color = colorBorder;
+
+    // Actualizar badge
+    const badge = document.getElementById('current-client-badge');
+    badge.style.backgroundColor = colorBorder;
+    badge.style.color = '#fff';
+    badge.textContent = 'Evaluando';
+
+    // Mostrar la barra
+    clientBar.style.display = 'block';
+}
+
+/**
+ * Configura observer para mostrar/ocultar la barra de cliente
+ * según si hay un ítem por_cliente expandido
+ */
+function setupAccordionObserver() {
+    const clientBar = document.getElementById('current-client-bar');
+    if (!clientBar) return;
+
+    // Observar cambios en los accordion-collapse
+    document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+        collapse.addEventListener('shown.bs.collapse', function() {
+            // Verificar si este ítem tiene pestañas de clientes (es por_cliente)
+            const navTabs = this.querySelector('.nav-tabs');
+            if (navTabs) {
+                const activeTab = navTabs.querySelector('.nav-link.active');
+                if (activeTab) {
+                    updateCurrentClientBar(activeTab);
+                }
+            } else {
+                // Es un ítem global, ocultar la barra
+                clientBar.style.display = 'none';
+            }
+        });
+
+        collapse.addEventListener('hidden.bs.collapse', function() {
+            // Verificar si algún otro ítem por_cliente está abierto
+            const openClientItem = document.querySelector('.accordion-collapse.show .nav-tabs');
+            if (!openClientItem) {
+                clientBar.style.display = 'none';
+            }
+        });
+    });
+
+    // Verificar estado inicial
+    const openClientItem = document.querySelector('.accordion-collapse.show .nav-tabs');
+    if (openClientItem) {
+        const activeTab = openClientItem.querySelector('.nav-link.active');
+        if (activeTab) {
+            updateCurrentClientBar(activeTab);
+        }
+    }
 }
 
 /**
