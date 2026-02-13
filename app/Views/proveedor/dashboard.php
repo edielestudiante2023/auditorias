@@ -122,6 +122,61 @@
       </div>
     </div>
   </div>
+
+  <!-- Sección Video Tutorial -->
+  <div class="row mt-5">
+    <div class="col-12">
+      <div class="card shadow border-0 overflow-hidden">
+        <div class="card-body p-0">
+          <div class="row g-0 align-items-center">
+            <!-- Lado izquierdo: Info -->
+            <div class="col-lg-5 p-4 p-lg-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <span class="badge bg-light text-dark mb-3 px-3 py-2 rounded-pill" style="font-size: 0.8rem;">
+                <i class="bi bi-play-circle-fill me-1"></i> Tutorial
+              </span>
+              <h3 class="text-white fw-bold mb-3">
+                <i class="bi bi-camera-video-fill me-2"></i>Aprende a usar el sistema
+              </h3>
+              <p class="text-white-50 mb-4" style="font-size: 0.95rem; line-height: 1.7;">
+                Mira este video paso a paso para conocer cómo completar tu auditoría, subir evidencias y gestionar tus documentos de forma eficiente.
+              </p>
+              <ul class="list-unstyled mb-4">
+                <li class="text-white mb-2">
+                  <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                  Cómo navegar por el sistema
+                </li>
+                <li class="text-white mb-2">
+                  <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                  Subir y gestionar evidencias
+                </li>
+                <li class="text-white mb-2">
+                  <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                  Completar ítems de auditoría
+                </li>
+              </ul>
+              <a href="https://youtu.be/a62uz-d4MXc?si=x0-D1ohNrRgS-pvD" target="_blank" class="btn btn-warning btn-lg fw-bold px-4 shadow-sm">
+                <i class="bi bi-youtube me-2"></i>Ver en YouTube
+              </a>
+            </div>
+            <!-- Lado derecho: Video embebido -->
+            <div class="col-lg-7 bg-dark d-flex align-items-center justify-content-center" style="min-height: 350px;">
+              <div class="ratio ratio-16x9 w-100">
+                <iframe
+                  src="https://www.youtube.com/embed/a62uz-d4MXc"
+                  title="Tutorial - Cómo completar tu auditoría"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                  style="border-radius: 0;">
+                </iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

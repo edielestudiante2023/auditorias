@@ -125,7 +125,7 @@
         </p>
 
         <div style="text-align: center; margin: 20px 0;">
-          <a href="https://www.youtube.com/watch?v=XgU_5wdEaCU" target="_blank" style="display: inline-block; padding: 15px 30px; background: #FF0000; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
+          <a href="https://youtu.be/a62uz-d4MXc?si=x0-D1ohNrRgS-pvD" target="_blank" style="display: inline-block; padding: 15px 30px; background: #FF0000; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
             ▶️ Ver Tutorial en YouTube
           </a>
         </div>
