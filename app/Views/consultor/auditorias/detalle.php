@@ -679,10 +679,9 @@ $todoCalificado = $itemsCalificados === $totalItems && $totalItems > 0;
                     Faltan <strong><?= $totalItems - $itemsCalificados ?></strong> ítem(s) por calificar.
                 </div>
             <?php endif; ?>
-            <form method="post" action="<?= site_url('consultor/auditoria/' . $auditoria['id_auditoria'] . '/cerrar') ?>"
-                  onsubmit="return confirm('¿Está seguro de cerrar esta auditoría? Los porcentajes se calcularán automáticamente.');">
+            <form id="form-cerrar-auditoria" method="post" action="<?= site_url('consultor/auditoria/' . $auditoria['id_auditoria'] . '/cerrar') ?>">
                 <?= csrf_field() ?>
-                <button type="submit" class="btn btn-success btn-lg" <?= !$todoCalificado ? 'disabled' : '' ?>>
+                <button type="button" class="btn btn-success btn-lg" id="btn-cerrar-auditoria" <?= !$todoCalificado ? 'disabled' : '' ?>>
                     <i class="bi bi-lock-fill"></i> Cerrar Auditoría
                 </button>
             </form>
@@ -1547,6 +1546,78 @@ function enviarPdfCliente(idAuditoria, idCliente, nombreCliente) {
     document.body.appendChild(form);
     form.submit();
 }
+
+/**
+ * Manejo del botón Cerrar Auditoría con SweetAlert
+ * Advierte al usuario que recargue la página si ha pasado mucho tiempo
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCerrar = document.getElementById('btn-cerrar-auditoria');
+    const formCerrar = document.getElementById('form-cerrar-auditoria');
+
+    if (btnCerrar && formCerrar) {
+        btnCerrar.addEventListener('click', function() {
+            Swal.fire({
+                title: '<i class="bi bi-exclamation-triangle text-warning"></i> Antes de cerrar',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-3">Para evitar errores, por favor:</p>
+                        <ol class="mb-3">
+                            <li class="mb-2"><strong>Recargue la página</strong> presionando <kbd>F5</kbd> o <kbd>Ctrl+R</kbd></li>
+                            <li class="mb-2">Luego vuelva a hacer clic en <strong>"Cerrar Auditoría"</strong></li>
+                        </ol>
+                        <div class="alert alert-info py-2 mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            <small>Esto asegura que la sesión esté actualizada y evita errores de seguridad.</small>
+                        </div>
+                    </div>
+                `,
+                icon: null,
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonColor: '#198754',
+                denyButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-lock-fill"></i> Ya recargué, cerrar ahora',
+                denyButtonText: '<i class="bi bi-arrow-clockwise"></i> Recargar página',
+                cancelButtonText: '<i class="bi bi-x"></i> Cancelar',
+                reverseButtons: false,
+                focusDeny: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Usuario confirma que ya recargó - proceder con el cierre
+                    Swal.fire({
+                        title: '¿Confirma cerrar la auditoría?',
+                        text: 'Los porcentajes de cumplimiento se calcularán automáticamente. Esta acción no se puede deshacer.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#198754',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="bi bi-check-lg"></i> Sí, cerrar auditoría',
+                        cancelButtonText: '<i class="bi bi-x"></i> Cancelar'
+                    }).then((confirmResult) => {
+                        if (confirmResult.isConfirmed) {
+                            // Mostrar loading
+                            Swal.fire({
+                                title: 'Cerrando auditoría...',
+                                html: 'Por favor espere mientras se calculan los porcentajes de cumplimiento.',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                            formCerrar.submit();
+                        }
+                    });
+                } else if (result.isDenied) {
+                    // Usuario quiere recargar la página
+                    location.reload();
+                }
+            });
+        });
+    }
+});
 </script>
 
 <?= $this->endSection() ?>

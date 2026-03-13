@@ -78,6 +78,12 @@ $routes->get('/login', 'AuthController::login');
 $routes->post('/login', 'AuthController::doLogin');
 $routes->get('/logout', 'AuthController::logout');
 
+// Recuperación de contraseña (sin protección)
+$routes->get('/forgot-password', 'AuthController::forgotPassword');
+$routes->post('/forgot-password', 'AuthController::doForgotPassword');
+$routes->get('/reset-password', 'AuthController::resetPassword');
+$routes->post('/reset-password', 'AuthController::doResetPassword');
+
 // ============================================================
 // Rutas para servir archivos subidos (requiere autenticación)
 // ============================================================

@@ -499,11 +499,11 @@ $todoCompleto = $progreso['porcentaje_total'] >= 100;
                     <br><small class="text-danger">Faltan <?= $progreso['total'] - $progreso['total_completados'] ?> ítems por completar</small>
                 <?php endif; ?>
             </p>
-            <form method="post"
-                  action="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/finalizar') ?>"
-                  onsubmit="return confirm('¿Está seguro de finalizar esta auditoría? Se enviará al consultor para revisión y no podrá realizar más cambios.');">
+            <form id="form-finalizar-auditoria" method="post"
+                  action="<?= site_url('proveedor/auditoria/' . $auditoria['id_auditoria'] . '/finalizar') ?>">
                 <?= csrf_field() ?>
-                <button type="submit"
+                <button type="button"
+                        id="btn-finalizar-auditoria"
                         class="btn btn-primary btn-lg"
                         <?= $progreso['porcentaje_total'] < 100 ? 'disabled' : '' ?>>
                     <i class="bi bi-send-check"></i> Finalizar y Enviar a Revisión
@@ -1631,6 +1631,78 @@ document.querySelectorAll('form[enctype="multipart/form-data"]').forEach(functio
             e.preventDefault();
         }
     });
+});
+
+/**
+ * Manejo del botón Finalizar Auditoría con SweetAlert
+ * Advierte al usuario que recargue la página si ha pasado mucho tiempo
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const btnFinalizar = document.getElementById('btn-finalizar-auditoria');
+    const formFinalizar = document.getElementById('form-finalizar-auditoria');
+
+    if (btnFinalizar && formFinalizar) {
+        btnFinalizar.addEventListener('click', function() {
+            Swal.fire({
+                title: '<i class="bi bi-exclamation-triangle text-warning"></i> Antes de finalizar',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-3">Para evitar errores, por favor:</p>
+                        <ol class="mb-3">
+                            <li class="mb-2"><strong>Recargue la página</strong> presionando <kbd>F5</kbd> o <kbd>Ctrl+R</kbd></li>
+                            <li class="mb-2">Luego vuelva a hacer clic en <strong>"Finalizar y Enviar a Revisión"</strong></li>
+                        </ol>
+                        <div class="alert alert-info py-2 mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            <small>Esto asegura que la sesión esté actualizada y evita errores de seguridad.</small>
+                        </div>
+                    </div>
+                `,
+                icon: null,
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonColor: '#0d6efd',
+                denyButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-send-check"></i> Ya recargué, finalizar ahora',
+                denyButtonText: '<i class="bi bi-arrow-clockwise"></i> Recargar página',
+                cancelButtonText: '<i class="bi bi-x"></i> Cancelar',
+                reverseButtons: false,
+                focusDeny: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Usuario confirma que ya recargó - proceder con la finalización
+                    Swal.fire({
+                        title: '¿Confirma finalizar la auditoría?',
+                        text: 'Se enviará al consultor para revisión y no podrá realizar más cambios.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="bi bi-check-lg"></i> Sí, finalizar y enviar',
+                        cancelButtonText: '<i class="bi bi-x"></i> Cancelar'
+                    }).then((confirmResult) => {
+                        if (confirmResult.isConfirmed) {
+                            // Mostrar loading
+                            Swal.fire({
+                                title: 'Finalizando auditoría...',
+                                html: 'Por favor espere mientras se envía la auditoría al consultor.',
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                            formFinalizar.submit();
+                        }
+                    });
+                } else if (result.isDenied) {
+                    // Usuario quiere recargar la página
+                    location.reload();
+                }
+            });
+        });
+    }
 });
 </script>
 <?= $this->endSection() ?>

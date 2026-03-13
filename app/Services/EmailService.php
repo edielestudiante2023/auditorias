@@ -1013,6 +1013,58 @@ class EmailService
     }
 
     /**
+     * Envía email de recuperación de contraseña con enlace seguro
+     */
+    public function enviarRecuperacionPassword(
+        string $email,
+        string $nombreUsuario,
+        string $urlReset
+    ): array {
+        $tipo = 'recuperacion_password';
+        $asunto = 'Recuperación de contraseña - Sistema de Auditorías';
+        $payload = ['email' => $email, 'nombre_usuario' => $nombreUsuario];
+
+        try {
+            $htmlContent = view('emails/recuperacion_password', [
+                'nombreUsuario' => $nombreUsuario,
+                'urlReset'      => $urlReset,
+            ]);
+
+            // Modo log-only si no hay API key
+            if (empty($this->apiKey)) {
+                $this->guardarEmailEnLog($email, $asunto, $htmlContent);
+                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'log_only', 'Sin API key, guardado en logs');
+                log_message('info', "Email de recuperación guardado en logs: {$email}");
+
+                return ['ok' => true, 'message' => 'Email guardado en logs (modo log-only)', 'error' => null];
+            }
+
+            $email_obj = new Mail();
+            $email_obj->setFrom($this->fromEmail, $this->fromName);
+            $email_obj->setSubject($asunto);
+            $email_obj->addTo($email, $nombreUsuario);
+            $email_obj->addContent('text/html', $htmlContent);
+
+            $sendgrid = new SendGrid($this->apiKey);
+            $response = $sendgrid->send($email_obj);
+
+            if ($response->statusCode() >= 200 && $response->statusCode() < 300) {
+                log_message('info', "Email de recuperación enviado a {$email}");
+                $this->registrarNotificacion(null, $tipo, $asunto, $htmlContent, $payload, 'enviado');
+
+                return ['ok' => true, 'message' => 'Email enviado exitosamente', 'error' => null];
+            } else {
+                throw new \Exception('Error al enviar email. Status: ' . $response->statusCode());
+            }
+        } catch (\Exception $e) {
+            log_message('error', "Error al enviar email de recuperación a {$email}: {$e->getMessage()}");
+            $this->registrarNotificacion(null, $tipo, $asunto, '', $payload, 'fallido', $e->getMessage());
+
+            return ['ok' => false, 'message' => 'No se pudo enviar el email', 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Registra una notificación en la base de datos
      *
      * @param int|null $idUser ID del usuario destinatario

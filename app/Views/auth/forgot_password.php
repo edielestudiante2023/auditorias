@@ -2,11 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ingreso | Sistema de Gestión de Auditorías - Cycloid Talent</title>
+  <title>Recuperar Contraseña | Sistema de Gestión de Auditorías - Cycloid Talent</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="<?= base_url('assets/images/brand/favicon.ico?v=2') ?>">
-  <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('assets/images/brand/favicon.ico?v=2') ?>">
-  <link rel="apple-touch-icon" href="<?= base_url('assets/images/brand/favicon.ico?v=2') ?>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
@@ -22,14 +20,8 @@
     }
 
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes pulse {
@@ -48,7 +40,6 @@
       overflow: hidden;
     }
 
-    /* Partículas flotantes en el fondo */
     body::before {
       content: '';
       position: absolute;
@@ -104,18 +95,12 @@
       transition: left 0.5s;
     }
 
-    .btn-login:hover::before {
-      left: 100%;
-    }
+    .btn-login:hover::before { left: 100%; }
 
     .btn-login:hover {
       background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-login:active {
-      transform: translateY(0);
     }
 
     .brand-footer {
@@ -136,9 +121,7 @@
       transform: translateY(-2px);
     }
 
-    .alert {
-      animation: fadeInUp 0.4s ease-out;
-    }
+    .alert { animation: fadeInUp 0.4s ease-out; }
 
     h5 {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -148,28 +131,12 @@
       animation: pulse 2s ease-in-out infinite;
     }
 
-    .password-toggle {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      color: #667eea;
-      z-index: 10;
-      transition: color 0.3s ease;
+    .back-link {
+      color: rgba(255,255,255,0.9);
+      text-decoration: none;
+      transition: color 0.3s;
     }
-
-    .password-toggle:hover {
-      color: #764ba2;
-    }
-
-    .password-wrapper {
-      position: relative;
-    }
-
-    .password-wrapper input {
-      padding-right: 40px;
-    }
+    .back-link:hover { color: #fff; }
   </style>
 </head>
 <body>
@@ -181,7 +148,10 @@
       </div>
       <div class="card shadow-lg login-card">
         <div class="card-body p-4">
-          <h5 class="mb-4 text-center fw-bold">Sistema de Gestión de Auditorías</h5>
+          <h5 class="mb-2 text-center fw-bold">Recuperar Contraseña</h5>
+          <p class="text-muted text-center mb-4" style="font-size: 0.9rem;">
+            Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+          </p>
 
           <?php if (session()->getFlashdata('error')): ?>
             <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
@@ -191,25 +161,24 @@
             <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
           <?php endif; ?>
 
-          <form method="post" action="<?= site_url('login') ?>">
-
+          <form method="post" action="<?= site_url('forgot-password') ?>">
             <?= csrf_field() ?>
             <div class="mb-3">
-              <label class="form-label">Correo</label>
-              <input type="email" name="email" class="form-control" required value="<?= old('email') ?>">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Contraseña</label>
-              <div class="password-wrapper">
-                <input type="password" id="password" name="password" class="form-control" required>
-                <i class="bi bi-eye password-toggle" id="togglePassword"></i>
+              <label class="form-label">Correo electrónico</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input type="email" name="email" class="form-control" required
+                       placeholder="tu@correo.com" value="<?= old('email') ?>">
               </div>
             </div>
-            <button class="btn btn-login w-100 text-white" type="submit">Ingresar</button>
+            <button class="btn btn-login w-100 text-white" type="submit">
+              <i class="bi bi-send me-1"></i> Enviar enlace de recuperación
+            </button>
           </form>
+
           <div class="text-center mt-3">
-            <a href="<?= site_url('forgot-password') ?>" class="text-decoration-none" style="color: #667eea; font-size: 0.9rem;">
-              <i class="bi bi-question-circle me-1"></i>¿Olvidaste tu contraseña?
+            <a href="<?= site_url('login') ?>" class="text-decoration-none" style="color: #667eea;">
+              <i class="bi bi-arrow-left me-1"></i> Volver al inicio de sesión
             </a>
           </div>
         </div>
@@ -221,20 +190,5 @@
     </div>
   </div>
 </div>
-
-<script>
-  // Toggle password visibility
-  const togglePassword = document.getElementById('togglePassword');
-  const password = document.getElementById('password');
-
-  togglePassword.addEventListener('click', function() {
-    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-    password.setAttribute('type', type);
-
-    // Toggle icon
-    this.classList.toggle('bi-eye');
-    this.classList.toggle('bi-eye-slash');
-  });
-</script>
 </body>
 </html>

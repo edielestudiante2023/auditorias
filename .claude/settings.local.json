@@ -47,7 +47,11 @@
       "Bash(/c/xampp/php/php.exe:*)",
       "Bash(rm:*)",
       "Bash(cat:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(cmd /c \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -P 25060 -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG --ssl-mode=REQUIRED cycloid_auditorias -e \"\"SELECT id, nombre FROM proveedores WHERE nombre LIKE ''%MULTIASEO%'';\"\"\")",
+      "Bash(powershell -Command \"& ''C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe'' -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -P 25060 -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG --ssl-mode=REQUIRED cycloid_auditorias -e ''SELECT id, nombre FROM proveedores WHERE nombre LIKE \"\"%MULTIASEO%\"\";''\")",
+      "Bash(powershell -Command \"& ''C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe'' -h db-mysql-cycloid-do-user-18794030-0.h.db.ondigitalocean.com -P 25060 -u cycloid_userdb -pAVNS_iDypWizlpMRwHIORJGG --ssl cycloid_auditorias -e ''SELECT id, nombre FROM proveedores WHERE nombre LIKE \"\"%MULTIASEO%\"\";''\")",
+      "Bash(del \"c:\\\\xampp\\\\htdocs\\\\auditorias\\\\db_query.php\")"
     ],
     "deny": [],
     "ask": []
