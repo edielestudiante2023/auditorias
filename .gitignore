@@ -131,8 +131,17 @@ _modules/*
 fix_*.php
 fix_*.sql
 texto.txt
+tmp_*.txt
 *.bak
 *.backup
+*.stackdump
+
+# Scripts de debug y test (no son parte del sistema)
+debug_*.php
+test_*.php
+check_*.php
+final_debug.php
+tmp_*.php
 
 # Scripts con credenciales de base de datos
 actualizar_descripcion_item.php
@@ -142,7 +151,14 @@ ver_estructura_auditoria_items.php
 verificar_porcentajes.php
 recalcular_porcentajes_produccion.php
 recalcular_porcentajes_local.php
-check_*.php
+
+# Scripts SQL temporales
+temp_*.sql
+add_porcentaje_cumplimiento.sql
+check_pk.sql
+create_personal_table.sql
+fix_notificaciones_nullable.sql
+fix_primary_keys.sql
 
 #-------------------------
 # Archivos de Documentación con Credenciales
@@ -153,4 +169,12 @@ env.smtp.example
 EMAIL-SERVICE-IMPLEMENTATION.md
 GUIA_PRUEBAS_CERRAR_AUDITORIA.md
 
-app/Services/EmailService.php
+#-------------------------
+# Claude Code
+#-------------------------
+.claude/
+
+#-------------------------
+# Archivos de configuración de servidor (no commitear)
+#-------------------------
+nul

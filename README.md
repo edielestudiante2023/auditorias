@@ -1,130 +1,148 @@
-# Sistema de Gestión de Auditorías SG-SST
+# Sistema de Gestion de Auditorias SG-SST
 
-Sistema web para la gestión integral de auditorías de Seguridad y Salud en el Trabajo (SG-SST), desarrollado para **Cycloid Talent SAS**.
+Sistema web para la gestion integral de auditorias de Seguridad y Salud en el Trabajo (SG-SST), desarrollado para **Cycloid Talent SAS**.
 
-## 📋 Descripción
+## Stack tecnologico
 
-Plataforma completa que permite a consultores SST gestionar auditorías para múltiples proveedores y clientes, con generación automática de informes PDF y notificaciones por correo electrónico.
+| Componente | Tecnologia |
+|------------|-----------|
+| Backend | PHP 8.1+ con CodeIgniter 4.6.3 |
+| Base de datos | MySQL 8.0 (DigitalOcean Managed, SSL required) |
+| Servidor web | Nginx (Ubuntu 24.04) / Apache (XAMPP local) |
+| Email | SendGrid API v3 |
+| PDF | DomPDF 3.1 |
+| Frontend | Bootstrap 5.3.2 + Bootstrap Icons |
+| Testing | PHPUnit 10.5 |
 
-## 🚀 Características Principales
+## Modulos principales
 
-### Módulo Administrador
-- ✅ Gestión de usuarios (Admin, Consultor, Proveedor)
-- ✅ Gestión de clientes y proveedores
-- ✅ Configuración de contratos
-- ✅ Gestión del banco de ítems de auditoría
+### Modulo Administrador (`app/Controllers/Admin/`)
+- Gestion de usuarios (Admin, Consultor, Proveedor)
+- Gestion de clientes y proveedores
+- Configuracion de contratos y servicios
+- Banco de items de auditoria
+- Dashboard administrativo con reportes
 
-### Módulo Consultor
-- ✅ Creación y configuración de auditorías
-- ✅ Asignación de clientes y proveedores
-- ✅ Selección de ítems del banco (globales y por cliente)
-- ✅ Revisión y calificación de auditorías
-- ✅ Generación de PDFs por cliente bajo demanda
-- ✅ Envío de informes PDF a clientes con CC automático
-- ✅ Gestión de perfil y firma digital
+### Modulo Consultor (`app/Controllers/Consultor/`)
+- Creacion y configuracion de auditorias
+- Asignacion de clientes, proveedores e items
+- Revision y calificacion de auditorias por cliente
+- Generacion de PDFs de informe por cliente
+- Envio de informes por email con CC automatico
 
-### Módulo Proveedor
-- ✅ Visualización de auditorías asignadas
-- ✅ Diligenciamiento de ítems con comentarios
-- ✅ Carga de evidencias (global y por cliente)
-- ✅ Seguimiento de progreso en tiempo real
-- ✅ Finalización y envío a revisión
-- ✅ Gestión de información empresarial
+### Modulo Proveedor (`app/Controllers/Proveedor/`)
+- Visualizacion de auditorias asignadas
+- Diligenciamiento de items con comentarios
+- Carga de evidencias (global y por cliente)
+- Seguimiento de progreso en tiempo real
+- Gestion de personal asignado
 
-## 🛠️ Tecnologías
+## Roles de usuario
 
-- **Framework:** CodeIgniter 4.6.3
-- **PHP:** 8.x
-- **Base de Datos:** MySQL 8.x
-- **Frontend:** Bootstrap 5.3.2, Bootstrap Icons
-- **PDF:** DomPDF
-- **Email:** SendGrid API
+| Rol | Acceso |
+|-----|--------|
+| admin | Todo el sistema + gestion de usuarios + configuracion |
+| consultor | Gestion de auditorias asignadas + revision + PDFs + email |
+| proveedor | Portal de auditorias + items + evidencias + personal |
 
-## 📦 Instalación
+## Estructura del proyecto
 
-### Requisitos Previos
+```
+auditorias/
+├── app/
+│   ├── Commands/          # Comandos CLI (ResetPassword)
+│   ├── Config/            # Routes.php, Database.php, Filters.php, Security.php
+│   ├── Controllers/
+│   │   ├── Admin/         # 10 controladores administrativos
+│   │   ├── Consultor/     # 3 controladores de consultor
+│   │   └── Proveedor/     # 4 controladores de proveedor
+│   ├── Database/
+│   │   ├── Migrations/    # 37 migraciones
+│   │   └── Seeds/         # 13 seeders
+│   ├── Filters/           # AuthFilter, RoleFilter, CsrfExceptionFilter
+│   ├── Models/            # 20 modelos
+│   ├── Services/          # EmailService, PdfService, UploadService
+│   └── Views/             # Vistas por modulo (admin, consultor, proveedor, auth, pdf, emails)
+├── public/                # Punto de entrada web (index.php, assets, css)
+├── tests/                 # Tests PHPUnit (unit, database, security, session)
+├── writable/              # Logs, cache, sesiones, uploads, reportes PDF
+├── .env                   # Variables de entorno (NO commitear)
+├── .env.example           # Template de variables (SI commitear)
+├── composer.json          # Dependencias PHP
+└── spark                  # CLI de CodeIgniter
+```
+
+## Requisitos previos
+
 - **PHP:** >= 8.1
 - **MySQL:** >= 8.0
 - **Composer:** 2.0+
-- **Extensiones PHP requeridas:**
-  - mysqli, mbstring, json, curl, intl, gd
-  - fileinfo (recomendada)
+- **Extensiones PHP:** mysqli, mbstring, json, curl, intl, gd, fileinfo (recomendada)
 
-### Configuración Local
+## Instalacion local
 
-1. **Clonar repositorio**
 ```bash
-git clone <url-repositorio>
+# 1. Clonar repositorio
+git clone https://github.com/edielestudiante2023/auditorias.git
 cd auditorias
-```
 
-2. **Instalar dependencias**
-```bash
+# 2. Instalar dependencias
 composer install
-```
 
-3. **Configurar archivo .env**
-```bash
+# 3. Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tu configuración
-```
+# Editar .env con tu configuracion local
 
-4. **Importar base de datos**
-```bash
-mysql -u root -p cycloid_auditorias < database.sql
-```
+# 4. Ejecutar migraciones
+php spark migrate
 
-5. **Configurar permisos**
-```bash
+# 5. Ejecutar seeders (datos iniciales)
+php spark db:seed MasterSeeder
+
+# 6. Configurar permisos
 chmod -R 775 writable/
+
+# 7. Acceder al sistema
+# http://localhost/auditorias/public/
 ```
 
-6. **Acceder al sistema**
-```
-http://localhost/auditorias/public/
-```
+## Variables de entorno
 
-## 🚀 Despliegue a Producción
+| Variable | Descripcion |
+|----------|-------------|
+| `CI_ENVIRONMENT` | Ambiente: development / production |
+| `app.baseURL` | URL base de la aplicacion |
+| `app.appTimezone` | Zona horaria (America/Bogota) |
+| `database.default.*` | Credenciales de base de datos |
+| `email.fromEmail` | Email remitente para notificaciones |
+| `email.fromName` | Nombre remitente |
+| `sendgrid.apiKey` | API Key de SendGrid |
+| `tutorial.videoUrl` | URL del video tutorial para proveedores |
 
-Ver documentación completa en [DEPLOY.md](DEPLOY.md)
+## Deploy a produccion
 
-### Verificación del Servidor
+**Servidor:** server1.cycloidtalent.com (66.29.154.174)
+**Ruta:** `/www/wwwroot/auditorias`
+**URL:** https://auditorias.cycloidtalent.com/
 
-Antes de desplegar, ejecuta:
+Ver documentacion completa en [DEPLOY.md](DEPLOY.md)
+
+### Verificacion pre-deploy
 ```bash
 php check-server.php
+php pre_flight_check.php
 ```
 
-## 🐛 Solución de Problemas
+## Documentacion adicional
 
-### Error: "Call to undefined function finfo_open()"
+| Archivo | Descripcion |
+|---------|-------------|
+| [DEPLOY.md](DEPLOY.md) | Guia completa de deploy a produccion |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Solucion de problemas comunes |
+| [SERVER-SETUP.md](SERVER-SETUP.md) | Configuracion del servidor |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guia de contribucion |
+| [docs/HARDENING-auditorias.md](docs/HARDENING-auditorias.md) | Documento de hardening del repositorio |
 
-Este error ocurre cuando la extensión `fileinfo` no está habilitada.
+## Licencia
 
-**Solución:**
-```bash
-# En Linux
-sudo apt-get install php-fileinfo
-sudo systemctl restart apache2
-```
-
-El sistema tiene fallbacks que funcionan sin esta extensión, pero se recomienda habilitarla para mejor seguridad.
-
-Ver [TROUBLESHOOTING.md](TROUBLESHOOTING.md) para más problemas comunes.
-
-## 📚 Documentación
-
-- [DEPLOY.md](DEPLOY.md) - Guía de despliegue a producción
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Solución de problemas
-- [TUTORIAL_VIDEO.md](TUTORIAL_VIDEO.md) - Configuración de tutorial en video
-
-## 🆘 Soporte
-
-1. Revisar [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-2. Ejecutar `php check-server.php`
-3. Revisar logs: `writable/logs/log-*.log`
-4. Contactar al equipo de desarrollo
-
-## 📝 Licencia
-
-Propietario: Cycloid Talent SAS. Todos los derechos reservados © 2024-2025
+Propietario: Cycloid Talent SAS. Todos los derechos reservados 2024-2026.
